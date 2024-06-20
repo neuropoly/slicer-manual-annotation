@@ -149,7 +149,7 @@ To test if your segmentations that you want to perform would be consistents with
 
 #### **Start Segmentation**
 
-**Write the annotator's name in its specific text box. Select the annotator's degree and revision step (from 0 to 2) in the dropdown label menu. Altough this information can be modified at any time, it is mandatory for saving segmentations.**TODO: activate the function that mandate annotator's name requirements.**  **Please note that the revision step is different than the version since a single user may have multiple segmentation versions for the same revision step and both should not interfere.*
+Write the annotator's name in its specific text box. Select the annotator's degree and revision step (from 0 to 2) in the dropdown label menu. Altough this information can be modified at any time, it is mandatory for saving segmentations.**TODO: activate the function that mandate annotator's name requirements.**  **Please note that the revision step is different than the version since a single user may have multiple segmentation versions for the same revision step and both should not interfere.*
 
 When you are ready to perform manual segmentation and/or correction on new data, you can click on Start Segmentation.
 
@@ -167,8 +167,8 @@ N.B. #2 From the moment you modify the first segmentation label in your segmenta
 
 **As mentioned earlier, this will:**
 
-* **Save segmentation masks in the selected output folder/versions (*if first version, creates automatically a versions folder)**
-* **Track the different versions (save the following version if previous version(s) already exist(s)) N.B. limitation to 99 versions for a single file*
+* Save segmentation masks in the selected output folder/versions (*if first version, creates automatically a versions folder)
+* Track the different versions (save the following version if previous version(s) already exist(s)) N.B. limitation to 99 versions for a single file
 * Save a .csv file with segmentation statistics (e.g. subject, annotator's name and degree, revision step, comments)
 * Save a .json with segmentation statistics (e.g. subject, annotator's name and degree, revision step, comments) TODO
 * Generate a QC report (using the QC report template from SCT) TODO

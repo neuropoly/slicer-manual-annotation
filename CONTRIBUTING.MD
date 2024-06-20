@@ -11,6 +11,7 @@ Please feel free to update this programming code of conduct if relevant. We appr
   * my_variable for naming a variable
   * define_my_function() for naming a function (always start with an action verb)
   * TODO: for naming To Dos in the code
+  * Max 80 columns
   * One space line has been added between each function for clarity
   * Useful comments are strongly encouraged.
   * *Some of the code may not respects this convention, since previous related work did not seem to use any and some unmodified blocks has not been

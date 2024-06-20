@@ -1,0 +1,100 @@
+###############################################################################
+#
+#  This is the configuration file for the project you are about to realize.
+#
+#  Please read comments below for further instructions.
+#
+###############################################################################
+
+
+# 1) Insert here the default directory path to the corresponding element. GT =
+#  Ground-Truth. Examples from MaximeB laptop.
+default_volume_directory: '/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data'
+default_segmentation_directory: '/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data'
+output_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data"
+extension_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data"
+gt_references_directory: "/Users/maximebouthillier/gitmax/data_confid/test_sct_sci_data"
+
+#default_volume_directory: '/Users/maximebouthillier/gitmax/data_confid/tsci_segmentation'
+#default_segmentation_directory: '/Users/maximebouthillier/gitmax/data_confid/tsci_segmentation'
+#output_directory: "/Users/maximebouthillier/gitmax/data_confid/tsci_segmentation"
+#extension_directory: "/Users/maximebouthillier/gitmax/data_confid/tsci_segmentation"
+#gt_references_directory: "/Users/maximebouthillier/gitmax/data_confid/tsci_segmentation"
+
+
+# 2) Define extensions to be used
+volume_extension: ".nii.gz"
+segmentation_extension: "*.seg.nii.gz"
+regex_format_segmentation_load: '(ID_.*?)_instUid'
+regex_format_volume_load: '.nii.gz'
+regex_format_volume_save: ""
+
+
+# 3) Precise the folder organization (e.g. using BIDS format)
+# TODO: refractor this process to generalize to various conventions
+folder_organization: "sub-"
+# If modality has multiple contrasts (ex MRI T1w, T2w ...) and you want to
+# filter them, you may indicate it here. By default, all contrasts will be
+# loaded.
+contrast: "T2w"
+
+
+# 4) Configure settings at module startup
+interpolation_state: False # Set each new load to this configuration
+slice_view_color: "Yellow" # Can be replaced by Red or Yellow at startup
+new_cases_for_ref: True # Choose if new segmentation cases will be used for
+# ground-truth in future assessment segmentation sessions
+
+
+# 5) Define the different keyboard shortcuts and their associated function
+KEYBOARD_SHORTCUTS:
+  - method: "keyboard_toggle_fill"
+    shortcut: "f"
+  - method: "save_segmentation"
+    shortcut: "s"
+  - method: "toggle_interpolation_state"
+    shortcut: "c"
+  - method: "toggle_visibility"
+    shortcut: "v"
+
+# 6) Configure all potential labels that may be segmented in the project.
+#    Segmentations sessions will handle empty masks
+LABELS:
+  - name: "edema"
+    value: 1
+    color_r: 255
+    color_g: 10
+    color_b: 10
+
+  - name: "hemorrhage"
+    value: 2
+    color_r: 230
+    color_g: 230
+    color_b: 70
+
+# EXAMPLES OF PREVIOUSLY USED LABELS. Note that the element lower_bound_HU
+#  and upper_bound_HU have been removed in MRI, but could be
+#  uncommented/re-inserted for usage in CTs.
+#  - name: "PHE"
+#    value: 3
+#    color_r: 11
+#    color_g: 80
+#    color_b: 255
+#    lower_bound_HU: 5
+#    upper_bound_HU: 33
+
+#  - name: "ventricular_drain"
+#    value: 4
+#    color_r: 0
+#    color_g: 255
+#    color_b: 0
+#    lower_bound_HU: 90
+#    upper_bound_HU: 200
+
+#  - name: "peri_drain_hemorrhage"
+#    value: 5
+#    color_r: 155
+#    color_g: 0
+#    color_b: 0
+#    lower_bound_HU: 33
+#    upper_bound_HU: 90

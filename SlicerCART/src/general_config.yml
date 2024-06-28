@@ -1,0 +1,15 @@
+input_filetype: '*.nii.gz' # '*.nrrd' or '*.nii.gz'
+
+default_volume_directory: ''
+default_segmentation_directory: ''
+
+modality: 'MRI' # 'CT' or 'MRI'
+slice_view_color: 'Red' # 'Red' or 'Yellow' or 'Green'
+
+interpolate_value: 0
+
+impose_bids_format: True
+
+is_classification_requested: True
+is_segmentation_requested: True
+is_semi_automatic_phe_tool_requested: True

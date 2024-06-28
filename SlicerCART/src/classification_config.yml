@@ -1,0 +1,45 @@
+# Checkboxes (objectName : name of the checkbox)
+checkboxes:
+  Normal_checkbox: Normal
+  ICH_checkbox: ICH
+  IVH_checkbox: IVH
+  SAH_checkbox: SAH
+  EDH_checkbox: EDH
+  SDH_checkbox: SDH
+  Infarct_checkbox: Infarct
+  Intra_axial_tumor_checkbox: Intra-axial tumor
+  Menigioma_checkbox: Meningioma
+  Multiple_lesions_checkbox: Multiple lesions
+  Brain_edema_checkbox: Brain edema
+  Anoxic_injury_checkbox: Anoxic injury
+  Midline_shift_checkbox: Midline shift
+  Tonsillar_herniation_checkbox: Tonsillar herniation
+  EVD_checkbox: EVD
+  Pressure_monitor_checkbox: Pressure monitor
+  Craniotomy_checkbox: Craniotomy
+  Craniectomy_checkbox: Craniectomy
+  Metal_artifact_checkbox: Metal artifact
+  Motion_artifact_checkbox: Motion artifact
+
+# ComboBoxes (objectName : name of the combobox)
+comboboxes:
+  atrophy: # Important note: make sure to use underscores to seperate words in names !! (snakecase)
+    atrophy_none: None
+    atrophy_mild: Mild
+    atrophy_moderate: Moderate
+    atrophy_severe: Severe
+  white_matter_changes:
+    wmc_none: None
+    wmc_mild: Mild
+    wmc_moderate: Moderate
+    wmc_severe: Severe
+  ventricular_size:
+    ventricular_size_normal: Normal/proportional
+    ventricular_size_mild: Mild
+    ventricular_size_moderate: Moderate
+    ventricular_size_severe: Severe
+
+# Free text (objectName : name of the text field)
+freetextboxes: 
+  number_of_focal_points: Number of focal points 
+  other_comments: Comments

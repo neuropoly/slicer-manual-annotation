@@ -1,0 +1,22 @@
+labels:
+  - name: "ICH"
+    value: 1
+    color_r: 255
+    color_g: 10
+    color_b: 10
+    lower_bound_HU: 30
+    upper_bound_HU: 90
+  - name: "IVH"
+    value: 2
+    color_r: 230
+    color_g: 230
+    color_b: 70
+    lower_bound_HU: 30
+    upper_bound_HU: 90
+  - name: "PHE"
+    value: 3
+    color_r: 11
+    color_g: 80
+    color_b: 255
+    lower_bound_HU: 5
+    upper_bound_HU: 33

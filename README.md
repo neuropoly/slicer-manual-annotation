@@ -77,6 +77,7 @@ Although it may work on other versions and/or operating system, please note that
 
 ### Documentation
 TODO (after sufficient development has been made)
+* [SlicerCART Demo Video (June 24th 2024)](https://drive.google.com/drive/u/0/folders/1DClUQDOvTnbYoe68sdhgmVo_GL7vkBKA)
 
 ### Video tutorials 
 TODO (after sufficient development has been made)

@@ -41,8 +41,8 @@ N.B. #2 From the moment you modify the first segmentation label in your segmenta
 
 **As mentioned earlier, this will:**
 
-* **Save segmentation masks in the selected output folder/versions (*if first version, creates automatically a versions folder)**
-* **Track the different versions (save the following version if previous version(s) already exist(s)) N.B. limitation to 99 versions for a single file*
+* Save segmentation masks in the selected output folder/versions (*if first version, creates automatically a versions folder)**
+* Track the different versions (save the following version if previous version(s) already exist(s)) N.B. limitation to 99 versions for a single file*
 * Save a .csv file with segmentation statistics (e.g. subject, annotator's name and degree, revision step, comments)
 * Save a .json with segmentation statistics (e.g. subject, annotator's name and degree, revision step, comments) TODO
 * Generate a QC report (using the QC report template from SCT) TODO

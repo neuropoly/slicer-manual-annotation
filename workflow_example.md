@@ -6,11 +6,12 @@ Below are usage examples that guide the user through accomplishing different tas
 (**Config the option to launch automatically the last folder used TODO)**
 
 1. Select the volume folder you want to use for your segmentation task. Please note that this selection has been settled voluntarily to be done at each startup since the folder should be a site (e.g. site_003) in a BIDS formatted dataset, and that a site may change according to the evolution of a project.
-2. Select the ouput folder you want to use for saving your segmentations.1. If empty: this will automatically create two .yaml files 1) allCases.yaml containing all the cases matching criteria of interests (from the config.yaml file) from the selected volume folder directory 2) remainingCases.yaml containing all remaining cases to segment. Please not that this folder does not needs to be empty (see below).
-   2. If not empty: this will begin by looking for the 2 files allCases.yaml and remainingCases.yaml and update the GUI case list according to the list 'FILES_SEG' in allCases.yaml, and display in the slice viewer the first volume named in the list 'FILES_SEG' in remainingCases.yaml. In fact, if you want to focus your segmentation task on a specific contrast and/or view (e.g. T2w sagittal), this allows the GUI case list (from allCases.yaml) to represent your cases of interests (you just need to replace the elements of 'FILES_SEG' list in allCases.yaml by the elements of interests [at the first time the task is about to be performed, the 'FILES_SEG' list in remainingCases.yaml would ideally be the same as in allCases.yaml). Also, if you have already started your segmentation task (e.g. segmentation completion for 5 cases), this selection will enable to start from where you were at the end of your last segmentation (will load automatically the first element of remainingCases.yaml).
+2. Select the ouput folder you want to use for saving your segmentations.
+   - If empty: this will automatically create two .yaml files 1) allCases.yaml containing all the cases matching criteria of interests (from the config.yaml file) from the selected volume folder directory 2) remainingCases.yaml containing all remaining cases to segment. Please not that this folder does not needs to be empty (see below).
+   - If not empty: this will begin by looking for the 2 files allCases.yaml and remainingCases.yaml and update the GUI case list according to the list 'FILES_SEG' in allCases.yaml, and display in the slice viewer the first volume named in the list 'FILES_SEG' in remainingCases.yaml. In fact, if you want to focus your segmentation task on a specific contrast and/or view (e.g. T2w sagittal), this allows the GUI case list (from allCases.yaml) to represent your cases of interests (you just need to replace the elements of 'FILES_SEG' list in allCases.yaml by the elements of interests [at the first time the task is about to be performed, the 'FILES_SEG' list in remainingCases.yaml would ideally be the same as in allCases.yaml). Also, if you have already started your segmentation task (e.g. segmentation completion for 5 cases), this selection will enable to start from where you were at the end of your last segmentation (will load automatically the first element of remainingCases.yaml).
 
    
-3. Select the ground-truth references folder you want to use when assessing your consistency and/or agreement with ground-truth images.
+4. Select the ground-truth references folder you want to use when assessing your consistency and/or agreement with ground-truth images.
 
 #### **Assess Segmentation and Get Results buttons**
 
@@ -22,7 +23,7 @@ To test if your segmentations that you want to perform would be consistents with
 
 #### **Start Segmentation**
 
-**Write the annotator's name in its specific text box. Select the annotator's degree and revision step (from 0 to 2) in the dropdown label menu. Altough this information can be modified at any time, it is mandatory for saving segmentations.**TODO: activate the function that mandate annotator's name requirements.**  **Please note that the revision step is different than the version since a single user may have multiple segmentation versions for the same revision step and both should not interfere.*
+Write the annotator's name in its specific text box. Select the annotator's degree and revision step (from 0 to 2) in the dropdown label menu. Altough this information can be modified at any time, it is mandatory for saving segmentations.**TODO: activate the function that mandate annotator's name requirements.**  **Please note that the revision step is different than the version since a single user may have multiple segmentation versions for the same revision step and both should not interfere.*
 
 When you are ready to perform manual segmentation and/or correction on new data, you can click on Start Segmentation.
 

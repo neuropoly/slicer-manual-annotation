@@ -1,4 +1,4 @@
-# For developers.
+# For developers
 
 Wish to contribute to the development of this 3D Slicer module/extension? As a teamwork, this file mentions the code guidelines for this project. Please feel free to update this programming code of conduct if relevant. We appreciate your feedback.
 

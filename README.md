@@ -78,6 +78,7 @@ Although it may work on other versions and/or operating system, please note that
 ### Documentation
 TODO (after sufficient development has been made)
 * [SlicerCART Demo Video (June 24th 2024)](https://drive.google.com/drive/u/0/folders/1DClUQDOvTnbYoe68sdhgmVo_GL7vkBKA)
+* Example of workflow that could be implemented (documentation here) with videos examples ([12min30:](https://www.dropbox.com/scl/fi/ddhj5f2rx2ydzy2k7s6b8/slicer-manual-annotation_overview.mov?rlkey=rhgs9usmhqfbfe9tylmk42tlo&st=c5zhnyjs&dl=0) summary; [40min](https://www.dropbox.com/scl/fi/j8e3xuhugjylg3hhxhzm7/20240619_slicer-manual-annotation-detailed_explanations.mov?rlkey=0otcuw4nwjuo8l72qxohir8ry&st=6vu8ob2n&dl=0): detailed).
 
 ### Video tutorials 
 TODO (after sufficient development has been made)

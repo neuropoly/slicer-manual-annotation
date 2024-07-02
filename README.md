@@ -72,6 +72,18 @@ Although it may work on other versions and/or operating system, please note that
         `from slicer.util import pip_install`
         `pip_install("XYZ")` where `XYZ` is replaced by the proper library
 
+> Minimally the following packages are not already available (copy and paste in the 3D Slicer python interactor):
+>
+
+  ```py
+  slicer.util.pip_install('pandas')
+  slicer.util.pip_install('nibabel')
+  slicer.util.pip_install('pynrrd')
+  slicer.util.pip_install('pyyaml')
+  slicer.util.pip_install('slicerio')
+  slicer.util.pip_install('PyQt5')
+  ```
+
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer.
 

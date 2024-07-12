@@ -3,6 +3,7 @@
 import os
 import logging
 import slicer
+import qt
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob

@@ -2,18 +2,15 @@
 # pip install --user package_name
 import os
 import logging
-import qt, slicer
+import slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob
 import re
 import time
-import slicerio # cannot install in slicer
-import nrrd
 from pathlib import Path
 from threading import RLock
 from datetime import datetime
-from bids_validator import BIDSValidator
 import filecmp
 import shutil
 import numpy as np
@@ -33,7 +30,10 @@ REQUIRED_PYTHON_PACKAGES = {
     "nibabel": "nibabel",
     "pandas": "pandas",
     "PyYAML": "yaml",
-    "bids_validator": "bids_validator"
+    "pynrrd": "nrrd",
+    "slicerio": "slicerio",
+    "bids_validator": "bids_validator",
+    "PyQt5": "PyQt5"
 }
 
 def check_and_install_python_packages():
@@ -66,10 +66,14 @@ def check_and_install_python_packages():
 
 check_and_install_python_packages()
 
-import yaml
+from bids_validator import BIDSValidator
 import nibabel as nib
+import nrrd
 import pandas as pd
+import slicerio
+import qt
 from PyQt5 import QtCore
+import yaml
 
 INPUT_FILE_EXTENSION = '*.nii.gz'
 INTERPOLATE_VALUE = 0

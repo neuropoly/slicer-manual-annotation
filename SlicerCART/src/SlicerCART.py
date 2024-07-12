@@ -1,7 +1,6 @@
 # To install a package in slicer python environment, use the following command:
 # pip install --user package_name
 import os
-import importlib
 import logging
 import qt, slicer
 from slicer.ScriptedLoadableModule import *
@@ -24,6 +23,7 @@ import numpy as np
 import vtk
 import random
 import colorsys
+from PyQt5 import QtCore
 
 
 import sys
@@ -97,11 +97,9 @@ class LoadClassificationWindow(qt.QWidget):
       super(LoadClassificationWindow, self).__init__(parent)
 
       self.classificationInformation_df = classificationInformation_df
-
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
-
       self.versionTableView = qt.QTableWidget()
       layout.addWidget(self.versionTableView)
 
@@ -166,7 +164,6 @@ class LoadClassificationWindow(qt.QWidget):
 
    def pushLoad(self):
        selected_version = self.versionDropdown.currentText
-
        selected_version_df = self.classificationInformation_df[self.classificationInformation_df['Classification version']==selected_version].reset_index(drop = True)
 
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
@@ -195,7 +192,6 @@ class ShowSegmentVersionLegendWindow(qt.QWidget):
       super(ShowSegmentVersionLegendWindow, self).__init__(parent)
 
       self.segmentationInformation_df = segmentationInformation_df
-
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
@@ -563,6 +559,8 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
 
 
 class OptionalMethods():
+    pass
+
 
 
 
@@ -580,7 +578,7 @@ class SlicerCART(ScriptedLoadableModule):
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#SEGMENTER">module documentation</a>.
+See more information in <a href="https://github.com/organization/projectname#SEGMENTER_v2">module documentation</a>.
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -1019,6 +1017,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.checkboxWidgets = {}
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+        print(objectName, label)
         checkbox = qt.QCheckBox()
         checkbox.setText(label)
         checkbox.setObjectName(objectName)
@@ -1028,6 +1027,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.ui.ClassificationGridLayout.addWidget(checkbox, row_index, column_index)
         self.checkboxWidgets[objectName] = checkbox
+
 
       return row_index + 1
   

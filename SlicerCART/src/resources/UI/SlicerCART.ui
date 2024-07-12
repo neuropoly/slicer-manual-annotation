@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>883</width>
-    <height>1067</height>
+    <height>1278</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,7 +89,8 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QComboBox" name="dropDownButton_label_select"/>
+              <widget class="QComboBox" name="dropDownButton_label_select">
+              </widget>
              </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="pushButton_Paint">
@@ -99,28 +100,28 @@
               </widget>
              </item>
              <item row="4" column="0">
-              <widget class="QPushButton" name="StartTimerButton">
-               <property name="text">
-                <string>Start</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QLCDNumber" name="lcdNumber"/>
-             </item>
-             <item row="4" column="2">
-              <widget class="QPushButton" name="PauseTimerButton">
-               <property name="text">
-                <string>Pause</string>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
+            <widget class="QPushButton" name="StartTimerButton">
+             <property name="text">
+              <string>Start</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLCDNumber" name="lcdNumber"/>
+           </item>
+           <item row="4" column="2">
+            <widget class="QPushButton" name="PauseTimerButton">
+             <property name="text">
+              <string>Pause</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
              <item row="1" column="2">
               <widget class="QPushButton" name="pushButton_Erase">
                <property name="text">
@@ -131,82 +132,84 @@
             </layout>
            </item>
            <item row="3" column="0">
-            <layout class="QVBoxLayout" name="verticalLayout_7">
-             <item>
-              <widget class="QPushButton" name="SaveSegmentationButton">
-               <property name="statusTip">
-                <string>Saving segmentation</string>
-               </property>
-               <property name="text">
-                <string>Save segmentation</string>
-               </property>
-               <property name="shortcut">
-                <string>Ctrl+S</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="LoadSegmentation">
-               <property name="text">
-                <string>Load segmentation...</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="CompareSegmentVersions">
-               <property name="text">
-                <string>Compare segment versions</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ShowSegmentVersionLegendButton">
-               <property name="text">
-                <string>Show segment version legend</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QPushButton" name="SaveSegmentationButton">
+             <property name="statusTip">
+              <string>Saving segmentation</string>
+             </property>
+             <property name="text">
+              <string>Save segmentation</string>
+             </property>
+             <property name="shortcut">
+              <string>Ctrl+S</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="LoadSegmentation">
+             <property name="text">
+              <string>Load segmentation...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="CompareSegmentVersions">
+             <property name="text">
+              <string>Compare segment versions</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="ShowSegmentVersionLegendButton">
+             <property name="text">
+              <string>Show segment version legend</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
            </item>
            <item row="4" column="0">
             <layout class="QGridLayout" name="gridLayout">
              <item row="0" column="0">
-              <widget class="QLabel" name="ThresholdLabel">
-               <property name="text">
+             <widget class="QLabel" name="ThresholdLabel">
+             <property name="text">
                 <string>Thresholds</string>
                </property>
-              </widget>
+             </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="MinimumLabel">
-               <property name="text">
+             <widget class="QLabel" name="MinimumLabel">
+             <property name="text">
                 <string>Minimum</string>
                </property>
-              </widget>
+             </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QLabel" name="MaximumLabel">
-               <property name="text">
+             <widget class="QLabel"  name="MaximumLabel">
+             <property name="text">
                 <string>Maximum</string>
                </property>
-              </widget>
+             </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QSpinBox" name="LB_HU"/>
+              <widget class="QSpinBox" name="LB_HU">
+              </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="UB_HU"/>
+              <widget class="QSpinBox" name="UB_HU">
+              </widget>
              </item>
              <item row="3" column="0">
               <widget class="QPushButton" name="pushDefaultMin">
-               <property name="text">
+              <property name="text">
                 <string>Default Min. HU</string>
                </property>
               </widget>
              </item>
              <item row="3" column="1">
               <widget class="QPushButton" name="pushDefaultMax">
-               <property name="text">
+              <property name="text">
                 <string>Default Max. HU</string>
                </property>
               </widget>
@@ -214,89 +217,30 @@
             </layout>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="SemiAutomaticPHELabel">
+           <widget class="QLabel"  name="SemiAutomaticPHELabel">
              <property name="text">
-              <string>Semi-automatic PHE Tool</string>
-             </property>
-            </widget>
+                <string>Semi-automatic PHE Tool</string>
+               </property>
+             </widget>
            </item>
            <item row="6" column="0">
-            <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
-             <property name="text">
-              <string>Launch</string>
-             </property>
-            </widget>
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
+               <property name="text">
+                <string>Launch</string>
+               </property>
+              </widget>
            </item>
            <item row="7" column="0">
-            <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
-             <property name="text">
-              <string>Show Result</string>
-             </property>
-            </widget>
+           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
+               <property name="text">
+                <string>Show Result</string>
+               </property>
+              </widget>
            </item>
           </layout>
          </widget>
         </item>
        </layout>
-      </item>
-      <item row="10" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>38</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Classification</string>
-        </property>
-        <property name="collapsed">
-         <bool>true</bool>
-        </property>
-        <layout class="QGridLayout" name="ClassificationGridLayout">
-         <item row="1" column="0">
-          <layout class="QHBoxLayout">
-           <item>
-            <widget class="QPushButton" name="LoadClassification">
-             <property name="text">
-              <string>Load classification...</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="SaveClassificationButton">
-             <property name="text">
-              <string>Save classification</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="0">
-          <widget class="QPushButton" name="pushButton">
-           <property name="text">
-            <string>PushButton</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
-        <property name="text">
-         <string>Case list</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_9">
-         <item row="0" column="0">
-          <layout class="QVBoxLayout" name="verticalLayout_6">
-           <item>
-            <widget class="QListWidget" name="SlicerDirectoryListView"/>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
       </item>
       <item row="0" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -407,7 +351,7 @@
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
+         <item>
            <widget class="QPushButton" name="pushButton_Interpolate">
             <property name="text">
              <string>Interpolate</string>
@@ -452,6 +396,58 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton_3">
+        <property name="text">
+         <string>Case list</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_9">
+         <item row="0" column="0">
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QListWidget" name="SlicerDirectoryListView"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="10" column="0" colspan="2">
+       <widget class="qMRMLCollapsibleButton" name="MRMLCollapsibleButton">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>350</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Classification</string>
+        </property>
+        <property name="collapsed">
+           <bool>true</bool>
+        </property>
+        <layout class="QGridLayout" name="ClassificationGridLayout">
+          <item row="0" column="0">
+          <layout class="QHBoxLayout">
+           <item>
+            <widget class="QPushButton" name="LoadClassification">
+              <property name="text">
+               <string>Load classification...</string>
+              </property>
+             </widget>
+             </item>
+             <item>
+            <widget class="QPushButton" name="SaveClassificationButton">
+              <property name="text">
+               <string>Save classification</string>
+              </property>
+             </widget>
+             </item>
+             </layout>
+          </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>

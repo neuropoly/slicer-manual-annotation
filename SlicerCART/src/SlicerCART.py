@@ -7,35 +7,26 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob
 import re
-import pandas as pd
 import time
 import slicerio # cannot install in slicer
 import nrrd
-import yaml
 from pathlib import Path
 from threading import RLock
 from datetime import datetime
 from bids_validator import BIDSValidator
 import filecmp
 import shutil
-import nibabel as nib
 import numpy as np
 import vtk
 import random
 import colorsys
-from PyQt5 import QtCore
-
-
 import sys
-import os
-
-import sys
-import os
 
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 REQUIRED_PYTHON_PACKAGES = {
     "nibabel": "nibabel",
+    "yaml": "yaml",
     "bids_validator": "bids_validator"
 }
 
@@ -65,6 +56,10 @@ def check_and_install_python_packages():
 
 check_and_install_python_packages()
 
+import yaml
+import nibabel as nib
+import pandas as pd
+from PyQt5 import QtCore
 
 INPUT_FILE_EXTENSION = '*.nii.gz'
 INTERPOLATE_VALUE = 0

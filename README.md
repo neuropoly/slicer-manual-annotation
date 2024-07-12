@@ -67,22 +67,8 @@ Although it may work on other versions and/or operating system, please note that
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
 
 ### Trouble shooting 
+
 * Qt might need to be installed. The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac). 
-* If some modules are missing (`ModuleNotFoundError`), they must be added to the 3D Slicer environment by using the following commands in the Python Console: 
-        `from slicer.util import pip_install`
-        `pip_install("XYZ")` where `XYZ` is replaced by the proper library
-
-> Minimally the following packages are not already available (copy and paste in the 3D Slicer python interactor):
->
-
-  ```py
-  slicer.util.pip_install('pandas')
-  slicer.util.pip_install('nibabel')
-  slicer.util.pip_install('pynrrd')
-  slicer.util.pip_install('pyyaml')
-  slicer.util.pip_install('slicerio')
-  slicer.util.pip_install('PyQt5')
-  ```
 
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer.

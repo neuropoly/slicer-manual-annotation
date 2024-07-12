@@ -22,8 +22,6 @@ import sys
 
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
-# TODO: add a check for the version of the package
-# TODO: use requirements.txt instead
 # TODO: check if the package installed with error
 
 # Dictionary of required python packages and their import names

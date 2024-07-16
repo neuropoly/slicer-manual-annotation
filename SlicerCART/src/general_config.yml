@@ -3,13 +3,16 @@ input_filetype: '*.nii.gz' # '*.nrrd' or '*.nii.gz'
 default_volume_directory: ''
 default_segmentation_directory: ''
 
-modality: 'MRI' # 'CT' or 'MRI'
+modality: 'CT' # 'CT' or 'MRI'
 slice_view_color: 'Red' # 'Red' or 'Yellow' or 'Green'
 
-interpolate_value: 0
+interpolate_value: 1
 
-impose_bids_format: True
+impose_bids_format: False
 
 is_classification_requested: True
 is_segmentation_requested: True
 is_semi_automatic_phe_tool_requested: True
+
+ct_window_width: 85
+ct_window_level: 45

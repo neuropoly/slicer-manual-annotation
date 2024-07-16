@@ -2,34 +2,81 @@
 # pip install --user package_name
 import os
 import logging
-import qt, slicer
-from PyQt5 import QtCore
+import slicer
+import qt
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob
 import re
-import pandas as pd
 import time
-import slicerio # cannot install in slicer
-import nrrd
-import yaml
 from pathlib import Path
 from threading import RLock
 from datetime import datetime
-from bids_validator import BIDSValidator
 import filecmp
 import shutil
-import nib
 import numpy as np
 import vtk
 import random
 import colorsys
+import sys
 
 
-INPUT_FILE_EXTENSION = '*.nii.gz' 
+# TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
+# TODO: check if the package installed with error
+
+# Dictionary of required python packages and their import names
+REQUIRED_PYTHON_PACKAGES = {
+    "nibabel": "nibabel",
+    "pandas": "pandas",
+    "PyYAML": "yaml",
+    "pynrrd": "nrrd",
+    "slicerio": "slicerio",
+    "bids_validator": "bids_validator",
+    "PyQt5": "PyQt5"
+}
+
+def check_and_install_python_packages():
+    missing_packages = []
+    
+    for pip_name, import_name in REQUIRED_PYTHON_PACKAGES.items():
+        try:
+            __import__(import_name)
+        except ImportError:
+            missing_packages.append(pip_name)
+
+    if missing_packages:
+        msg = "SlicerCART module: The following required python packages are missing:"
+        msg += "\n" + "\n".join(missing_packages)
+        msg += "\nWould you like to install them now?"
+        response = qt.QMessageBox.question(slicer.util.mainWindow(), 'Install Extensions', msg,
+                                           qt.QMessageBox.Yes | qt.QMessageBox.No)
+        if response == qt.QMessageBox.Yes:
+            for pip_name in missing_packages:
+                slicer.util.pip_install(pip_name)
+                # Wait for the installation to complete
+                slicer.app.processEvents()
+            qt.QMessageBox.information(slicer.util.mainWindow(), 'Restart Slicer',
+                                       'Slicer will now restart to complete the installation.')
+            slicer.app.restart()
+        else:
+            qt.QMessageBox.warning(slicer.util.mainWindow(), 'Missing Extensions',
+                                   'The SlicerCART module cannot be loaded without the required extensions.')
+
+
+check_and_install_python_packages()
+
+from bids_validator import BIDSValidator
+import nibabel as nib
+import nrrd
+import pandas as pd
+import slicerio
+from PyQt5 import QtCore
+import yaml
+
+INPUT_FILE_EXTENSION = '*.nii.gz'
 INTERPOLATE_VALUE = 0
 
-DEFAULT_VOLUMES_DIRECTORY = '' 
+DEFAULT_VOLUMES_DIRECTORY = ''
 DEFAULT_SEGMENTATION_DIRECTORY = ''
 
 REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
@@ -45,6 +92,11 @@ KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve
 CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "classification_config.yml")
 GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "general_config.yml")
 
+CT_WINDOW_WIDTH = 90
+CT_WINDOW_LEVEL = 45
+
+
+
 TIMER_MUTEX = RLock()
 
 class LoadClassificationWindow(qt.QWidget):
@@ -52,11 +104,9 @@ class LoadClassificationWindow(qt.QWidget):
       super(LoadClassificationWindow, self).__init__(parent)
 
       self.classificationInformation_df = classificationInformation_df
-      
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
-      
       self.versionTableView = qt.QTableWidget()
       layout.addWidget(self.versionTableView)
 
@@ -66,7 +116,7 @@ class LoadClassificationWindow(qt.QWidget):
       versionLabel.setText('Classification version to load: ')
       versionLabel.setStyleSheet("font-weight: bold")
       buttonLayout.addWidget(versionLabel)
-      
+
       self.versionDropdown = qt.QComboBox()
       buttonLayout.addWidget(self.versionDropdown)
 
@@ -79,32 +129,32 @@ class LoadClassificationWindow(qt.QWidget):
 
           self.versionTableView.setRowCount(len(available_versions))
           self.versionTableView.setColumnCount(4)
-          self.versionTableView.horizontalHeader().setStretchLastSection(True) 
-          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch) 
+          self.versionTableView.horizontalHeader().setStretchLastSection(True)
+          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
           for index, row in classificationInformation_df.iterrows():
-                cell = qt.QTableWidgetItem(row['Classification version'])        
-                cell.setFlags(QtCore.Qt.NoItemFlags)   
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))  
-                self.versionTableView.setItem(index, 0, cell) 
+                cell = qt.QTableWidgetItem(row['Classification version'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 0, cell)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Version'))
 
-                cell = qt.QTableWidgetItem(row['Annotator Name']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))       
+                cell = qt.QTableWidgetItem(row['Annotator Name'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                 self.versionTableView.setItem(index, 1, cell)
-                self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator')) 
+                self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator'))
 
-                cell = qt.QTableWidgetItem(row['Annotator degree']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))         
-                self.versionTableView.setItem(index, 2, cell) 
+                cell = qt.QTableWidgetItem(row['Annotator degree'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 2, cell)
                 self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Degree'))
 
-                cell = qt.QTableWidgetItem(row['Date and time'])  
-                cell.setFlags(QtCore.Qt.NoItemFlags)              
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))     
-                self.versionTableView.setItem(index, 3, cell) 
+                cell = qt.QTableWidgetItem(row['Date and time'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 3, cell)
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Date and Time'))
 
       self.loadButton = qt.QPushButton('Load')
@@ -120,8 +170,7 @@ class LoadClassificationWindow(qt.QWidget):
       self.resize(800, 400)
 
    def pushLoad(self):
-       selected_version = self.versionDropdown.currentText 
-
+       selected_version = self.versionDropdown.currentText
        selected_version_df = self.classificationInformation_df[self.classificationInformation_df['Classification version']==selected_version].reset_index(drop = True)
 
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
@@ -129,10 +178,10 @@ class LoadClassificationWindow(qt.QWidget):
                self.segmenter.checkboxWidgets[objectName].setChecked(True)
            elif selected_version_df.at[0, label] == 'No':
                self.segmenter.checkboxWidgets[objectName].setChecked(False)
-       
+
        for i, (comboBoxName, options) in enumerate(self.segmenter.classification_config_yaml["comboboxes"].items()):
           self.segmenter.comboboxWidgets[comboBoxName].setCurrentText(selected_version_df.at[0, comboBoxName.replace("_", " ").capitalize()])
-    
+
        for i, (freeTextBoxObjectName, label) in enumerate(self.segmenter.classification_config_yaml["freetextboxes"].items()):
            saved_text = selected_version_df.at[0, label.capitalize()]
            if str(saved_text) != 'nan':
@@ -150,7 +199,6 @@ class ShowSegmentVersionLegendWindow(qt.QWidget):
       super(ShowSegmentVersionLegendWindow, self).__init__(parent)
 
       self.segmentationInformation_df = segmentationInformation_df
-      
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
@@ -166,8 +214,8 @@ class ShowSegmentVersionLegendWindow(qt.QWidget):
 
           self.versionTableView.setRowCount(len(self.segmenter.colorsSelectedVersionFilePathsForCompareSegmentVersions))
           self.versionTableView.setColumnCount(5)
-          self.versionTableView.horizontalHeader().setStretchLastSection(True) 
-          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch) 
+          self.versionTableView.horizontalHeader().setStretchLastSection(True)
+          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
           for index, row in segmentationInformation_df.iterrows():
                 currentColor = None
@@ -177,31 +225,31 @@ class ShowSegmentVersionLegendWindow(qt.QWidget):
 
                         colorItem = qt.QTableWidgetItem()
                         colorItem.setBackground(qt.QBrush(qt.QColor(currentColor[0], currentColor[1], currentColor[2])))
-                        self.versionTableView.setItem(index, 0, colorItem) 
+                        self.versionTableView.setItem(index, 0, colorItem)
                         self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Color'))
 
-                        cell = qt.QTableWidgetItem(row['Segmentation version'])        
-                        cell.setFlags(QtCore.Qt.NoItemFlags)   
-                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))  
-                        self.versionTableView.setItem(index, 1, cell) 
+                        cell = qt.QTableWidgetItem(row['Segmentation version'])
+                        cell.setFlags(qt.Qt.NoItemFlags)
+                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                        self.versionTableView.setItem(index, 1, cell)
                         self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Version'))
 
-                        cell = qt.QTableWidgetItem(row['Annotator Name']) 
-                        cell.setFlags(QtCore.Qt.NoItemFlags)          
-                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))       
+                        cell = qt.QTableWidgetItem(row['Annotator Name'])
+                        cell.setFlags(qt.Qt.NoItemFlags)
+                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                         self.versionTableView.setItem(index, 2, cell)
-                        self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Annotator')) 
+                        self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Annotator'))
 
-                        cell = qt.QTableWidgetItem(row['Annotator degree']) 
-                        cell.setFlags(QtCore.Qt.NoItemFlags)          
-                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))         
-                        self.versionTableView.setItem(index, 3, cell) 
+                        cell = qt.QTableWidgetItem(row['Annotator degree'])
+                        cell.setFlags(qt.Qt.NoItemFlags)
+                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                        self.versionTableView.setItem(index, 3, cell)
                         self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Degree'))
 
-                        cell = qt.QTableWidgetItem(row['Date and time'])  
-                        cell.setFlags(QtCore.Qt.NoItemFlags)              
-                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))     
-                        self.versionTableView.setItem(index, 4, cell) 
+                        cell = qt.QTableWidgetItem(row['Date and time'])
+                        cell.setFlags(qt.Qt.NoItemFlags)
+                        cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                        self.versionTableView.setItem(index, 4, cell)
                         self.versionTableView.setHorizontalHeaderItem(4, qt.QTableWidgetItem('Date and Time'))
 
       self.cancelButton = qt.QPushButton('Done')
@@ -220,7 +268,7 @@ class CompareSegmentVersionsWindow(qt.QWidget):
       super(CompareSegmentVersionsWindow, self).__init__(parent)
 
       self.segmentationInformation_df = segmentationInformation_df
-      
+
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
@@ -238,7 +286,7 @@ class CompareSegmentVersionsWindow(qt.QWidget):
       labelLabel.setText('Label of interest for comparison ')
       labelLabel.setStyleSheet("font-weight: bold")
       buttonLayout.addWidget(labelLabel)
-      
+
       self.labelDropdown = qt.QComboBox()
       for label in self.segmenter.label_config_yaml['labels']:
           self.labelDropdown.addItem(label['name'])
@@ -253,40 +301,40 @@ class CompareSegmentVersionsWindow(qt.QWidget):
 
           self.versionTableView.setRowCount(len(available_versions))
           self.versionTableView.setColumnCount(5)
-          self.versionTableView.horizontalHeader().setStretchLastSection(True) 
-          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch) 
+          self.versionTableView.horizontalHeader().setStretchLastSection(True)
+          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
           for index, row in segmentationInformation_df.iterrows():
                 checkboxItem = qt.QTableWidgetItem()
-                checkboxItem.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                checkboxItem.setCheckState(QtCore.Qt.Unchecked)   
-                checkboxItem.setForeground(qt.QBrush(qt.QColor(0, 0, 0))) 
-                self.versionTableView.setItem(index, 0, checkboxItem) 
+                checkboxItem.setFlags(qt.Qt.ItemIsUserCheckable | qt.Qt.ItemIsEnabled)
+                checkboxItem.setCheckState(qt.Qt.Unchecked)
+                checkboxItem.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 0, checkboxItem)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Select'))
                 self.versionCheckboxWidgets[index] = checkboxItem
 
-                cell = qt.QTableWidgetItem(row['Segmentation version'])        
-                cell.setFlags(QtCore.Qt.NoItemFlags)   
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))  
-                self.versionTableView.setItem(index, 1, cell) 
+                cell = qt.QTableWidgetItem(row['Segmentation version'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 1, cell)
                 self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Version'))
 
-                cell = qt.QTableWidgetItem(row['Annotator Name']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))       
+                cell = qt.QTableWidgetItem(row['Annotator Name'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                 self.versionTableView.setItem(index, 2, cell)
-                self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Annotator')) 
+                self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Annotator'))
 
-                cell = qt.QTableWidgetItem(row['Annotator degree']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))         
-                self.versionTableView.setItem(index, 3, cell) 
+                cell = qt.QTableWidgetItem(row['Annotator degree'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 3, cell)
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Degree'))
 
-                cell = qt.QTableWidgetItem(row['Date and time'])  
-                cell.setFlags(QtCore.Qt.NoItemFlags)              
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))     
-                self.versionTableView.setItem(index, 4, cell) 
+                cell = qt.QTableWidgetItem(row['Date and time'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 4, cell)
                 self.versionTableView.setHorizontalHeaderItem(4, qt.QTableWidgetItem('Date and Time'))
 
       self.viewSegmentsButton = qt.QPushButton('Compare')
@@ -329,11 +377,11 @@ class LoadSegmentationsWindow(qt.QWidget):
       super(LoadSegmentationsWindow, self).__init__(parent)
 
       self.segmentationInformation_df = segmentationInformation_df
-      
+
       self.segmenter = segmenter
 
       layout = qt.QVBoxLayout()
-      
+
       self.versionTableView = qt.QTableWidget()
       layout.addWidget(self.versionTableView)
 
@@ -343,7 +391,7 @@ class LoadSegmentationsWindow(qt.QWidget):
       versionLabel.setText('Segmentation version to load: ')
       versionLabel.setStyleSheet("font-weight: bold")
       buttonLayout.addWidget(versionLabel)
-      
+
       self.versionDropdown = qt.QComboBox()
       buttonLayout.addWidget(self.versionDropdown)
 
@@ -356,30 +404,30 @@ class LoadSegmentationsWindow(qt.QWidget):
 
           self.versionTableView.setRowCount(len(available_versions))
           self.versionTableView.setColumnCount(4)
-          self.versionTableView.horizontalHeader().setStretchLastSection(True) 
-          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch) 
+          self.versionTableView.horizontalHeader().setStretchLastSection(True)
+          self.versionTableView.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
           for index, row in segmentationInformation_df.iterrows():
-                cell = qt.QTableWidgetItem(row['Segmentation version'])        
-                cell.setFlags(QtCore.Qt.NoItemFlags)   
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))  
-                self.versionTableView.setItem(index, 0, cell) 
+                cell = qt.QTableWidgetItem(row['Segmentation version'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 0, cell)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Version'))
 
-                cell = qt.QTableWidgetItem(row['Annotator Name']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))       
+                cell = qt.QTableWidgetItem(row['Annotator Name'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                 self.versionTableView.setItem(index, 1, cell)
-                self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator')) 
+                self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator'))
 
-                cell = qt.QTableWidgetItem(row['Annotator degree']) 
-                cell.setFlags(QtCore.Qt.NoItemFlags)          
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))         
-                self.versionTableView.setItem(index, 2, cell) 
+                cell = qt.QTableWidgetItem(row['Annotator degree'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.versionTableView.setItem(index, 2, cell)
                 self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Degree'))
 
-                cell = qt.QTableWidgetItem(row['Date and time'])  
-                cell.setFlags(QtCore.Qt.NoItemFlags)              
+                cell = qt.QTableWidgetItem(row['Date and time'])
+                cell.setFlags(qt.Qt.NoItemFlags)
                 cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))     
                 self.versionTableView.setItem(index, 3, cell) 
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Date and Time'))
@@ -515,6 +563,14 @@ class SemiAutoPheToolInstructionsWindow(qt.QWidget):
        self.segmenter.ClearPHESegment()
        self.close()
 
+
+
+class OptionalMethods():
+    pass
+
+
+
+
 class SlicerCART(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -529,7 +585,7 @@ class SlicerCART(ScriptedLoadableModule):
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
 This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#SEGMENTER_V2">module documentation</a>.
+See more information in <a href="https://github.com/organization/projectname#SEGMENTER_v2">module documentation</a>.
 """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -792,6 +848,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global IS_SEGMENTATION_REQUESTED
         global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
+        global CT_WINDOW_WIDTH
+        global CT_WINDOW_LEVEL
 
         INPUT_FILE_EXTENSION = self.general_config_yaml["input_filetype"]
         DEFAULT_VOLUMES_DIRECTORY = self.general_config_yaml["default_volume_directory"]
@@ -807,6 +865,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # then BIDS not mandatory because it is not yet supported 
             # therefore, either .nrrd or .nii.gz accepted 
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+            CT_WINDOW_WIDTH = self.general_config_yaml["ct_window_width"]
+            CT_WINDOW_LEVEL = self.general_config_yaml["ct_window_level"]
+
         elif MODALITY == 'MRI':
             # therefore, .nii.gz required  
             INPUT_FILE_EXTENSION = '*.nii.gz'
@@ -963,6 +1024,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.checkboxWidgets = {}
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+        print(objectName, label)
         checkbox = qt.QCheckBox()
         checkbox.setText(label)
         checkbox.setObjectName(objectName)
@@ -972,6 +1034,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.ui.ClassificationGridLayout.addWidget(checkbox, row_index, column_index)
         self.checkboxWidgets[objectName] = checkbox
+
 
       return row_index + 1
   
@@ -1046,6 +1109,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return # don't load any patient cases
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+
+      if not self.CasesPaths:
+            msg_box = qt.QMessageBox()
+            msg_box.setWindowTitle("No files found")
+            msg_box.setIcon(qt.QMessageBox.Warning)
+            text = "No files found in the selected directory!"
+            text += "\n\nMake sure the configured extension is in the right format."
+            text += "\n\nThen restart the module"
+            msg_box.setText(text)
+            msg_box.exec()
+            return
+
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
       self.ui.SlicerDirectoryListView.clear()
@@ -1546,11 +1621,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           input_path = os.path.basename(case)
           if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
               segm = nib.load(case)
-              segm_data = segm.get_fdata()
+              segm_data_dtype = segm.dataobj.dtype
               print(f'infile: {input_path}, dtype: {segm_data.dtype}')
-              if segm_data.dtype != np.uint8:
+              if segm_data_dtype != np.uint8:
                   segm_data = segm_data.astype(np.uint8)
-                  segm_nii = nib.Nifti1Image(segm_data, segm.affine)
+                  segm.header.set_data_dtype(np.uint8)
+                  segm_nii = nib.Nifti1Image(segm_data, segm.affine, segm.header)
                   nib.save(segm_nii, case)
                   print(f'converted file {input_path} to uint8')
           elif input_path.endswith('seg.nrrd'):

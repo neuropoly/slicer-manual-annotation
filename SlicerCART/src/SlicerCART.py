@@ -70,7 +70,6 @@ import nibabel as nib
 import nrrd
 import pandas as pd
 import slicerio
-import qt
 from PyQt5 import QtCore
 import yaml
 

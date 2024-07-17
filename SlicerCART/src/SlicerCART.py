@@ -31,8 +31,7 @@ REQUIRED_PYTHON_PACKAGES = {
     "PyYAML": "yaml",
     "pynrrd": "nrrd",
     "slicerio": "slicerio",
-    "bids_validator": "bids_validator",
-    "PyQt5": "PyQt5"
+    "bids_validator": "bids_validator"
 }
 
 def check_and_install_python_packages():
@@ -70,7 +69,6 @@ import nibabel as nib
 import nrrd
 import pandas as pd
 import slicerio
-from PyQt5 import QtCore
 import yaml
 
 INPUT_FILE_EXTENSION = '*.nii.gz'

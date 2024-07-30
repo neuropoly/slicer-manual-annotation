@@ -871,6 +871,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             INPUT_FILE_EXTENSION = '*.nii.gz'
             # user can decide whether to impose bids or not
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
+            IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = False
 
 
   def setup(self):
@@ -1006,6 +1007,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.SemiAutomaticPHELabel.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
         self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+
+    if MODALITY == 'MRI':
+        self.ui.ThresholdLabel.setVisible(False)
+        self.ui.MinimumLabel.setVisible(False)
+        self.ui.MaximumLabel.setVisible(False)
+        self.ui.LB_HU.setVisible(False)
+        self.ui.UB_HU.setVisible(False)
+        self.ui.pushDefaultMin.setVisible(False)
+        self.ui.pushDefaultMax.setVisible(False)
     
     for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
 
@@ -1017,6 +1027,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         callback = getattr(self, callback_name)
 
         self.connectShortcut(shortcutKey, button, callback)
+  
+  def set_master_volume_intensity_mask_according_to_modality(self):
+      if MODALITY == 'CT':
+            self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+      elif MODALITY == 'MRI':
+            self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
   
   def setupCheckboxes(self, number_of_columns):
       self.checkboxWidgets = {}
@@ -2233,7 +2249,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
         self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
         #Set if using Editable intensity range (the range is defined below using object.setParameter)
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
 
@@ -2301,7 +2317,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onLB_HU(self):
       try:
         self.LB_HU=self.ui.LB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
       except:
@@ -2310,7 +2326,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onUB_HU(self):
       try:
         self.UB_HU=self.ui.UB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:

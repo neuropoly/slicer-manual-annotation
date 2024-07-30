@@ -389,6 +389,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="CurrentStatus">
+          <property name="text">
+           <string>Segmentation Status : ...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="SelectOutputFolder">
           <property name="text">
            <string>Select output folder</string>

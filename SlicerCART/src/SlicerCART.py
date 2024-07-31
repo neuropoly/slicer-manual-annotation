@@ -97,6 +97,153 @@ CT_WINDOW_LEVEL = 45
 
 TIMER_MUTEX = RLock()
 
+class SlicerCARTConfigurationInitialWindow(qt.QWidget):
+   def __init__(self, segmenter, parent = None):
+      super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+
+      layout = qt.QVBoxLayout()
+
+      self.reuse_configuration_selected_option = 'New configuration'
+      self.reuse_configuration_hbox = qt.QHBoxLayout()
+
+      self.new_config_radio_button = qt.QRadioButton('New configuration', self)
+      self.reuse_config_radio_button = qt.QRadioButton('Reuse configuration', self)
+      self.use_template_config_radio_button = qt.QRadioButton('Use template configuration', self)
+
+      self.reuse_configuration_hbox.addWidget(self.new_config_radio_button)
+      self.reuse_configuration_hbox.addWidget(self.reuse_config_radio_button)
+      self.reuse_configuration_hbox.addWidget(self.use_template_config_radio_button)
+
+      self.new_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('New configuration'))
+      self.reuse_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('Reuse configuration'))
+      self.use_template_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('Use template configuration'))
+
+      layout.addLayout(self.reuse_configuration_hbox) 
+
+      self.next_button = qt.QPushButton('Next')
+      self.next_button.clicked.connect(self.push_next)
+      layout.addWidget(self.next_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure SlicerCART")
+      self.resize(800, 100)
+   
+   def update_selected_reuse_config_option(self, option):
+       self.reuse_configuration_selected_option = option
+   
+   def push_next(self):
+       if self.reuse_configuration_selected_option == 'Reuse configuration':
+           msg = qt.QMessageBox()
+           msg.setWindowTitle('Informative Message')
+           msg.setText('Please select the output folder with the correct configuration. ')
+           msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+           msg.buttonClicked.connect(self.select_output_folder_clicked)
+           msg.exec()
+       elif self.reuse_configuration_selected_option == 'Use template configuration':
+           msg = qt.QMessageBox()
+           msg.setWindowTitle('Informative Message')
+           msg.setText('Please select the _conf folder containing the template configuration files. ')
+           msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+           msg.buttonClicked.connect(self.select_template_folder_clicked)
+           msg.exec()
+       elif self.reuse_configuration_selected_option == 'New configuration':
+           slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option)
+           slicerCARTConfigurationSetupWindow.show()
+           self.segmenter.ui.SelectOutputFolder.setVisible(True)
+           self.close()
+
+   def select_output_folder_clicked(self, button):
+       if button.text == 'OK':
+          self.close()
+          self.segmenter.onSelectOutputFolder()
+          self.segmenter.ui.SelectOutputFolder.setVisible(False)
+          # TODO Delph : read _conf folder of output folder and apply directly the configurations 
+       else:
+          return
+       
+   def select_template_folder_clicked(self, button):
+       if button.text == 'OK':
+          conf_folder_path = 'path' # TODO Delph : select conf folder with file picker (validate _conf name and files present)
+          slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option, conf_folder_path)
+          slicerCARTConfigurationSetupWindow.show()
+          self.segmenter.ui.SelectOutputFolder.setVisible(True)
+          self.close()
+          # TODO Delph : rename conf to _conf and save all configuration files there
+       else:
+          return
+       
+   def push_cancel(self):
+       msg = qt.QMessageBox()
+       msg.setWindowTitle('Informative Message')
+       msg.setText('Using default configurations. To select a different configuration, restart the application. ')
+       msg.exec()
+       self.close()
+
+class SlicerCARTConfigurationSetupWindow(qt.QWidget):
+   def __init__(self, segmenter, reuse_configuration_selected_option, conf_folder_path = None, parent = None):
+      super(SlicerCARTConfigurationSetupWindow, self).__init__(parent)
+
+      # TODO Delph : if conf_folder_path is not None : fill window with template values
+
+      self.segmenter = segmenter
+      self.reuse_configuration_selected_option = reuse_configuration_selected_option
+
+      layout = qt.QVBoxLayout()
+
+      ##########################################
+      # TODO Delph : create buttons
+
+      # task checkboxes : segmentation, classification 
+      # modality combobox
+      # if CT and segmentation : ask for semi automatic PHE tool 
+      # if MRI : ask for bids 
+      # specify initial scan view (sagittal, coronal, axial)
+      # specify interpolate 
+      # if segmentation : configure labels (if CT : configure thresholds)
+      # if classification : configure checkboxes, comboboxes, text fields
+
+      ##########################################
+
+      self.previous_button = qt.QPushButton('Previous')
+      self.previous_button.clicked.connect(self.push_previous)
+      layout.addWidget(self.previous_button)
+      
+      self.apply_button = qt.QPushButton('Apply')
+      self.apply_button.clicked.connect(self.push_apply)
+      layout.addWidget(self.apply_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure SlicerCART")
+      self.resize(800, 400)
+   
+   def push_previous(self):
+       slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+       slicerCART_configuration_initial_window.show()
+       self.close()
+   
+   def push_apply(self):
+       # TODO Delph : write selected configurations to .yml
+
+       self.segmenter.setup_configuration()
+       self.close()
+
+   def push_cancel(self):
+       msg = qt.QMessageBox()
+       msg.setWindowTitle('Informative Message')
+       msg.setText('Using default configurations. To select a different configuration, restart the application. ')
+       msg.exec()
+       self.close()
+
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):
       super(LoadClassificationWindow, self).__init__(parent)
@@ -897,18 +1044,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = SlicerCARTLogic()
-    self.get_label_config_values()
-    self.get_keyboard_shortcuts_config_values()
-    self.get_classification_config_values()
-    self.get_general_config_values()
+
+    slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self)
+    slicerCART_configuration_initial_window.show()
 
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
-
-    self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
-    self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
-    
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -944,19 +1086,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
-    # Display the selected color view at module startup
-    if self.general_config_yaml['slice_view_color'] == "Yellow":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
-    if self.general_config_yaml['slice_view_color'] == "Red":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
-    if self.general_config_yaml['slice_view_color'] == "Green":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
-
-    for label in self.label_config_yaml["labels"]:
-        self.ui.dropDownButton_label_select.addItem(label["name"])
+    self.setup_configuration()
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.disablePauseTimerButton()
@@ -982,51 +1112,74 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
-    # Change the value of the upper and lower bound of the HU
-    self.ui.UB_HU.setValue(self.UB_HU)
-    self.ui.LB_HU.setValue(self.LB_HU)
-    
-    comboboxesStartRow = self.setupCheckboxes(3)
-    freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-    self.setupFreeText(freetextStartRow)
-    
-    # Initialize timers
-    self.timers = []
-    timer_index = 0
-    for label in self.label_config_yaml["labels"]:
-        self.timers.append(Timer(number=timer_index))
-        timer_index = timer_index + 1
-    
     self.MostRecentPausedCasePath = ""
-    
-    if not IS_CLASSIFICATION_REQUESTED:
-        self.ui.MRMLCollapsibleButton.setVisible(False)
-    if not IS_SEGMENTATION_REQUESTED:
-        self.ui.MRMLCollapsibleButton_2.setVisible(False)
-    if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
-        self.ui.SemiAutomaticPHELabel.setVisible(False)
-        self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
-        self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+  
+  def setup_configuration(self):
+        self.get_label_config_values()
+        self.get_keyboard_shortcuts_config_values()
+        self.get_classification_config_values()
+        self.get_general_config_values()
 
-    if MODALITY == 'MRI':
-        self.ui.ThresholdLabel.setVisible(False)
-        self.ui.MinimumLabel.setVisible(False)
-        self.ui.MaximumLabel.setVisible(False)
-        self.ui.LB_HU.setVisible(False)
-        self.ui.UB_HU.setVisible(False)
-        self.ui.pushDefaultMin.setVisible(False)
-        self.ui.pushDefaultMax.setVisible(False)
-    
-    for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
+        self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
+        self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
+        
+        # Change the value of the upper and lower bound of the HU
+        self.ui.UB_HU.setValue(self.UB_HU)
+        self.ui.LB_HU.setValue(self.LB_HU)
 
-        shortcutKey = i.get("shortcut")
-        callback_name = i.get("callback")
-        button_name = i.get("button")
+        comboboxesStartRow = self.setupCheckboxes(3)
+        freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+        self.setupFreeText(freetextStartRow)
+        
+        # Initialize timers
+        self.timers = []
+        timer_index = 0
+        for label in self.label_config_yaml["labels"]:
+            self.timers.append(Timer(number=timer_index))
+            timer_index = timer_index + 1
+        
+        if not IS_CLASSIFICATION_REQUESTED:
+            self.ui.MRMLCollapsibleButton.setVisible(False)
+        if not IS_SEGMENTATION_REQUESTED:
+            self.ui.MRMLCollapsibleButton_2.setVisible(False)
+        if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
+            self.ui.SemiAutomaticPHELabel.setVisible(False)
+            self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
+            self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+        
+        if MODALITY == 'MRI':
+            self.ui.ThresholdLabel.setVisible(False)
+            self.ui.MinimumLabel.setVisible(False)
+            self.ui.MaximumLabel.setVisible(False)
+            self.ui.LB_HU.setVisible(False)
+            self.ui.UB_HU.setVisible(False)
+            self.ui.pushDefaultMin.setVisible(False)
+            self.ui.pushDefaultMax.setVisible(False)
+        
+        for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
 
-        button = getattr(self.ui, button_name)
-        callback = getattr(self, callback_name)
+            shortcutKey = i.get("shortcut")
+            callback_name = i.get("callback")
+            button_name = i.get("button")
 
-        self.connectShortcut(shortcutKey, button, callback)
+            button = getattr(self.ui, button_name)
+            callback = getattr(self, callback_name)
+
+            self.connectShortcut(shortcutKey, button, callback)
+        
+        # Display the selected color view at module startup
+        if self.general_config_yaml['slice_view_color'] == "Yellow":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+        if self.general_config_yaml['slice_view_color'] == "Red":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
+        if self.general_config_yaml['slice_view_color'] == "Green":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
+
+        for label in self.label_config_yaml["labels"]:
+            self.ui.dropDownButton_label_select.addItem(label["name"])
   
   def set_master_volume_intensity_mask_according_to_modality(self):
       if MODALITY == 'CT':

@@ -1,22 +1,22 @@
 labels:
-  - name: "ICH"
-    value: 1
-    color_r: 255
-    color_g: 10
-    color_b: 10
-    lower_bound_HU: 30
-    upper_bound_HU: 90
-  - name: "IVH"
-    value: 2
-    color_r: 230
-    color_g: 230
-    color_b: 70
-    lower_bound_HU: 30
-    upper_bound_HU: 90
-  - name: "PHE"
-    value: 3
-    color_r: 11
-    color_g: 80
-    color_b: 255
-    lower_bound_HU: 5
-    upper_bound_HU: 33
+- color_b: 10
+  color_g: 10
+  color_r: 255
+  lower_bound_HU: 30
+  name: ICH
+  upper_bound_HU: 90
+  value: 1
+- color_b: 70
+  color_g: 230
+  color_r: 230
+  lower_bound_HU: 30
+  name: IVH
+  upper_bound_HU: 90
+  value: 2
+- color_b: 255
+  color_g: 80
+  color_r: 11
+  lower_bound_HU: 5
+  name: PHE
+  upper_bound_HU: 33
+  value: 3

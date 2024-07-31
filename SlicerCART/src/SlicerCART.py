@@ -246,10 +246,26 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout = qt.QVBoxLayout()
 
+      task_button_hbox = qt.QHBoxLayout()
+
+      task_button_hbox_label = qt.QLabel()
+      task_button_hbox_label.setText('Task : ')
+
+      self.segmentation_task_checkbox = qt.QCheckBox()
+      self.segmentation_task_checkbox.setText('Segmentation')
+
+      self.classification_task_checkbox = qt.QCheckBox()
+      self.classification_task_checkbox.setText('Classification')
+
+      task_button_hbox.addWidget(task_button_hbox_label)
+      task_button_hbox.addWidget(self.segmentation_task_checkbox)
+      task_button_hbox.addWidget(self.classification_task_checkbox)
+
+      layout.addLayout(task_button_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # task checkboxes : segmentation, classification 
       # modality combobox
       # if CT and segmentation : ask for semi automatic PHE tool 
       # if MRI : ask for bids 
@@ -282,7 +298,27 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.close()
    
    def push_apply(self):
-       # TODO Delph : write selected configurations to .yml
+       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
+            general_config_yaml = yaml.full_load(file)
+       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+            label_config_yaml = yaml.full_load(file)
+       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
+            keyboard_shortcuts_config_yaml = yaml.full_load(file)
+       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
+            classification_config_yaml = yaml.full_load(file)
+
+       general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
+       general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       # TODO Delph : add further modifications to config files as options added to interface
+
+       with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(general_config_yaml, file)
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(label_config_yaml, file)
+       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(keyboard_shortcuts_config_yaml, file)
+       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(classification_config_yaml, file)
 
        self.segmenter.setup_configuration()
        self.close()

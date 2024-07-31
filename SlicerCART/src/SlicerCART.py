@@ -244,6 +244,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.segmenter = segmenter
       self.reuse_configuration_selected_option = reuse_configuration_selected_option
 
+      self.include_semi_auto_PHE_tool_selected_option = 'Yes' 
+      self.modality_selected = 'CT' 
+      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
+      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
+
       layout = qt.QVBoxLayout()
 
       task_button_hbox = qt.QHBoxLayout()
@@ -254,6 +259,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       self.segmentation_task_checkbox = qt.QCheckBox()
       self.segmentation_task_checkbox.setText('Segmentation')
+      self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
 
       self.classification_task_checkbox = qt.QCheckBox()
       self.classification_task_checkbox.setText('Classification')
@@ -285,11 +291,24 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(modality_hbox)
 
+      self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
+
+      self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
+      self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
+
+      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes')
+      self.include_semi_automatic_PHE_tool_combobox.addItem('No')
+      self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
+
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
+
+      layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # if CT and segmentation : ask for semi automatic PHE tool 
-      # if MRI : ask for bids 
+      # if MRI : ask for bids
       # specify initial scan view (sagittal, coronal, axial)
       # specify interpolate 
       # if segmentation : configure labels (if CT : configure thresholds)
@@ -311,10 +330,28 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       self.setLayout(layout)
       self.setWindowTitle("Configure SlicerCART")
-      self.resize(800, 400)
+      self.resize(800, 200)
+   
+   def segmentation_checkbox_state_changed(self):
+       if self.segmentation_task_checkbox.isChecked() and self.modality_selected == 'CT':
+            self.include_semi_automatic_PHE_tool_label.setVisible(True)
+            self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+       else: 
+            self.include_semi_automatic_PHE_tool_label.setVisible(False)
+            self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+   
+   def update_include_semi_automatic_PHE_tool(self):
+       self.include_semi_auto_PHE_tool_selected_option = self.include_semi_automatic_PHE_tool_combobox.currentText
    
    def update_selected_modality(self, option):
        self.modality_selected = option
+
+       if self.segmentation_task_checkbox.isChecked() and self.modality_selected == 'CT':
+            self.include_semi_automatic_PHE_tool_label.setVisible(True)
+            self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+       else: 
+            self.include_semi_automatic_PHE_tool_label.setVisible(False)
+            self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
    
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
@@ -334,6 +371,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
        general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
        general_config_yaml['modality'] = self.modality_selected
+
+       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
+           general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
+       elif self.include_semi_auto_PHE_tool_selected_option == 'No':
+           general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
+
        # TODO Delph : add further modifications to config files as options added to interface
 
        with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   

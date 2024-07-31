@@ -85,10 +85,24 @@ IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
 
 MODALITY = 'CT'
 
-LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
-KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "keyboard_shortcuts_config.yml")
-CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "classification_config.yml")
-GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "general_config.yml")
+VERIFY_COMPATIBILITY = True
+
+LABEL_CONFIG_FILENAME = "label_config.yml"
+KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
+CLASSIFICATION_CONFIG_FILENAME = "classification_config.yml"
+GENERAL_CONFIG_FILENAME = "general_config.yml"
+
+LABEL_CONFIG_COPY_FILENAME = LABEL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME = KEYBOARD_SHORTCUTS_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+CLASSIFICATION_CONFIG_COPY_FILENAME = CLASSIFICATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+GENERAL_CONFIG_COPY_FILENAME = GENERAL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+
+LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), LABEL_CONFIG_FILENAME)
+KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), KEYBOARD_SHORTCUTS_CONFIG_FILENAME)
+CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CLASSIFICATION_CONFIG_FILENAME)
+GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), GENERAL_CONFIG_FILENAME)
+
+CONF_FOLDER_NAME = '_conf'
 
 CT_WINDOW_WIDTH = 90
 CT_WINDOW_LEVEL = 45
@@ -105,20 +119,22 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
 
       layout = qt.QVBoxLayout()
 
-      self.reuse_configuration_selected_option = 'New configuration'
       self.reuse_configuration_hbox = qt.QHBoxLayout()
 
       self.new_config_radio_button = qt.QRadioButton('New configuration', self)
-      self.reuse_config_radio_button = qt.QRadioButton('Reuse configuration', self)
+      self.reuse_config_radio_button = qt.QRadioButton('Continue from existing output folder', self)
       self.use_template_config_radio_button = qt.QRadioButton('Use template configuration', self)
 
       self.reuse_configuration_hbox.addWidget(self.new_config_radio_button)
       self.reuse_configuration_hbox.addWidget(self.reuse_config_radio_button)
       self.reuse_configuration_hbox.addWidget(self.use_template_config_radio_button)
 
-      self.new_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('New configuration'))
-      self.reuse_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('Reuse configuration'))
-      self.use_template_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option('Use template configuration'))
+      self.new_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.new_config_radio_button.text))
+      self.reuse_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.reuse_config_radio_button.text))
+      self.use_template_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.use_template_config_radio_button.text))
+
+      self.new_config_radio_button.setChecked(True) # par défaut
+      self.reuse_configuration_selected_option = self.new_config_radio_button.text
 
       layout.addLayout(self.reuse_configuration_hbox) 
 
@@ -138,21 +154,21 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
        self.reuse_configuration_selected_option = option
    
    def push_next(self):
-       if self.reuse_configuration_selected_option == 'Reuse configuration':
+       if self.reuse_configuration_selected_option == self.reuse_config_radio_button.text:
            msg = qt.QMessageBox()
            msg.setWindowTitle('Informative Message')
-           msg.setText('Please select the output folder with the correct configuration. ')
+           msg.setText('Please select the working output directory. ')
            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
            msg.buttonClicked.connect(self.select_output_folder_clicked)
            msg.exec()
-       elif self.reuse_configuration_selected_option == 'Use template configuration':
+       elif self.reuse_configuration_selected_option == self.use_template_config_radio_button.text:
            msg = qt.QMessageBox()
            msg.setWindowTitle('Informative Message')
            msg.setText('Please select the _conf folder containing the template configuration files. ')
            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
            msg.buttonClicked.connect(self.select_template_folder_clicked)
            msg.exec()
-       elif self.reuse_configuration_selected_option == 'New configuration':
+       elif self.reuse_configuration_selected_option == self.new_config_radio_button.text:
            slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option)
            slicerCARTConfigurationSetupWindow.show()
            self.segmenter.ui.SelectOutputFolder.setVisible(True)
@@ -160,13 +176,43 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
 
    def select_output_folder_clicked(self, button):
        if button.text == 'OK':
-          self.close()
+          global VERIFY_COMPATIBILITY
+          VERIFY_COMPATIBILITY = False
           self.segmenter.onSelectOutputFolder()
+          VERIFY_COMPATIBILITY = True
           self.segmenter.ui.SelectOutputFolder.setVisible(False)
-          # TODO Delph : read _conf folder of output folder and apply directly the configurations 
+          if (os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
+                # use this configuration directly
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH)
+                
+                self.segmenter.setup_configuration()
+                self.close()
+          else:
+                msg = qt.QMessageBox()
+                msg.setWindowTitle('Informative Message')
+                msg.setText('The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
+                msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+                msg.buttonClicked.connect(self.error_msg_for_output_folder_selection_clicked)
+                msg.exec()
+          
        else:
+          slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+          slicerCART_configuration_initial_window.show()
+          self.close()
           return
        
+   def error_msg_for_output_folder_selection_clicked(self, button):
+        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+        slicerCART_configuration_initial_window.show()
+        self.close()
+   
    def select_template_folder_clicked(self, button):
        if button.text == 'OK':
           conf_folder_path = 'path' # TODO Delph : select conf folder with file picker (validate _conf name and files present)
@@ -174,8 +220,10 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
           slicerCARTConfigurationSetupWindow.show()
           self.segmenter.ui.SelectOutputFolder.setVisible(True)
           self.close()
-          # TODO Delph : rename conf to _conf and save all configuration files there
        else:
+          slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+          slicerCART_configuration_initial_window.show()
+          self.close()
           return
        
    def push_cancel(self):
@@ -183,6 +231,8 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
        msg.setWindowTitle('Informative Message')
        msg.setText('Using default configurations. To select a different configuration, restart the application. ')
        msg.exec()
+
+       self.segmenter.setup_configuration()
        self.close()
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
@@ -242,6 +292,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        msg.setWindowTitle('Informative Message')
        msg.setText('Using default configurations. To select a different configuration, restart the application. ')
        msg.exec()
+
+       self.segmenter.setup_configuration()
        self.close()
 
 class LoadClassificationWindow(qt.QWidget):
@@ -1085,8 +1137,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.ShowSegmentVersionLegendButton.connect('clicked(bool)', self.onPush_ShowSegmentVersionLegendButton)
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
-
-    self.setup_configuration()
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.disablePauseTimerButton()
@@ -2025,17 +2075,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   def verifyConfigCompatibilities(self):
       if self.outputFolder is not None:
-        folder_for_config_files = 'conf'
-        path_to_saved_config_files = f'{self.outputFolder}{os.sep}{folder_for_config_files}'
+        path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
 
         if os.path.exists(path_to_saved_config_files) == False:
             os.makedirs(path_to_saved_config_files)
 
-        label_config_copy_filename = 'lc_c--do-not-modify.yml'
-        path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{label_config_copy_filename}'
-
-        classification_config_copy_filename = 'cbc_c--do-not-modify.yml'
-        path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{classification_config_copy_filename}'
+        path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{LABEL_CONFIG_COPY_FILENAME}'
+        path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}'
+        path_to_keyboard_shortcuts_config_copy = f'{path_to_saved_config_files}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}'
+        path_to_general_config_copy = f'{path_to_saved_config_files}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}'
 
         content_of_output_folder = os.listdir(self.outputFolder)
         if '.DS_Store' in content_of_output_folder:
@@ -2075,14 +2123,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, path_to_keyboard_shortcuts_config_copy)
         elif len(content_of_output_folder) == 1:
             shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, path_to_keyboard_shortcuts_config_copy)
   
   def onSelectOutputFolder(self):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
-      self.verifyConfigCompatibilities()
+      if VERIFY_COMPATIBILITY: 
+          self.verifyConfigCompatibilities()
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

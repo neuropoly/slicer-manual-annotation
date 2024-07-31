@@ -248,6 +248,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.modality_selected = 'CT' 
       self.include_semi_automatic_PHE_tool_label = qt.QLabel()
       self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
+      self.bids_selected = 'Yes'
+      self.bids_hbox_label = qt.QLabel()
+      self.bids_combobox = qt.QComboBox()
 
       layout = qt.QVBoxLayout()
 
@@ -305,10 +308,24 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
 
+      bids_hbox = qt.QHBoxLayout()
+
+      self.bids_hbox_label.setText('Impose BIDS ? ')
+      self.bids_hbox_label.setStyleSheet("font-weight: bold")
+      bids_hbox.addWidget(self.bids_hbox_label)
+
+      self.bids_combobox.addItem('Yes')
+      self.bids_combobox.addItem('No')
+
+      self.bids_combobox.currentIndexChanged.connect(self.update_bids)
+      bids_hbox.addWidget(self.bids_combobox)
+
+      layout.addLayout(bids_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # if MRI : ask for bids
+      # specify file extension to be used
       # specify initial scan view (sagittal, coronal, axial)
       # specify interpolate 
       # if segmentation : configure labels (if CT : configure thresholds)
@@ -340,6 +357,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
    
+   def update_bids(self):
+       self.bids_selected = self.bids_combobox.currentText
+   
    def update_include_semi_automatic_PHE_tool(self):
        self.include_semi_auto_PHE_tool_selected_option = self.include_semi_automatic_PHE_tool_combobox.currentText
    
@@ -352,6 +372,13 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else: 
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+       
+       if self.modality_selected == 'MRI':
+            self.bids_hbox_label.setVisible(True)
+            self.bids_combobox.setVisible(True)
+       else:
+            self.bids_hbox_label.setVisible(False)
+            self.bids_combobox.setVisible(False)
    
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
@@ -376,6 +403,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
        elif self.include_semi_auto_PHE_tool_selected_option == 'No':
            general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
+    
+       if self.bids_selected == 'Yes':
+           general_config_yaml['impose_bids_format'] = True
+       elif self.bids_selected == 'No':
+           general_config_yaml['impose_bids_format'] = False
 
        # TODO Delph : add further modifications to config files as options added to interface
 

@@ -250,6 +250,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       task_button_hbox_label = qt.QLabel()
       task_button_hbox_label.setText('Task : ')
+      task_button_hbox_label.setStyleSheet("font-weight: bold")
 
       self.segmentation_task_checkbox = qt.QCheckBox()
       self.segmentation_task_checkbox.setText('Segmentation')
@@ -263,10 +264,30 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(task_button_hbox)
 
+      modality_hbox = qt.QHBoxLayout()
+
+      modality_hbox_label = qt.QLabel()
+      modality_hbox_label.setText('Modality : ')
+      modality_hbox_label.setStyleSheet("font-weight: bold")
+
+      self.ct_modality_radio_button = qt.QRadioButton('CT', self)
+      self.mri_modality_radio_button = qt.QRadioButton('MRI', self)
+
+      modality_hbox.addWidget(modality_hbox_label)
+      modality_hbox.addWidget(self.ct_modality_radio_button)
+      modality_hbox.addWidget(self.mri_modality_radio_button)
+
+      self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
+      self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
+
+      self.ct_modality_radio_button.setChecked(True) # par défaut
+      self.modality_selected = self.ct_modality_radio_button.text
+
+      layout.addLayout(modality_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # modality combobox
       # if CT and segmentation : ask for semi automatic PHE tool 
       # if MRI : ask for bids 
       # specify initial scan view (sagittal, coronal, axial)
@@ -292,6 +313,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.setWindowTitle("Configure SlicerCART")
       self.resize(800, 400)
    
+   def update_selected_modality(self, option):
+       self.modality_selected = option
+   
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
        slicerCART_configuration_initial_window.show()
@@ -309,6 +333,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
        general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       general_config_yaml['modality'] = self.modality_selected
        # TODO Delph : add further modifications to config files as options added to interface
 
        with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   

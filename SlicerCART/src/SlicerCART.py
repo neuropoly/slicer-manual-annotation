@@ -340,10 +340,28 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(file_extension_hbox)
 
+      initial_view_hbox = qt.QHBoxLayout()
+
+      self.initial_view_label = qt.QLabel()
+      self.initial_view_label.setText('Initial View : ')
+      self.initial_view_label.setStyleSheet("font-weight: bold")
+      initial_view_hbox.addWidget(self.initial_view_label)
+
+      self.initial_view_combobox = qt.QComboBox()
+      self.initial_view_combobox.addItem('Red (axial)')
+      self.initial_view_combobox.addItem('Yellow (sagittal)')
+      self.initial_view_combobox.addItem('Green (coronal)')
+
+      self.initial_view_selected = 'Red (axial)'
+
+      self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
+      initial_view_hbox.addWidget(self.initial_view_combobox)
+
+      layout.addLayout(initial_view_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # specify initial scan view (sagittal, coronal, axial)
       # specify interpolate 
       # if segmentation : configure labels (if CT : configure thresholds)
       # if classification : configure checkboxes, comboboxes, text fields
@@ -373,6 +391,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else: 
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+   
+   def update_initial_view(self):
+       self.initial_view_selected = self.initial_view_combobox.currentText
    
    def update_file_extension(self):
        self.file_extension_selected = self.file_extension_combobox.currentText
@@ -430,6 +451,13 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            general_config_yaml['impose_bids_format'] = False
     
        general_config_yaml['input_filetype'] = self.file_extension_selected
+       
+       if 'Red' in self.initial_view_selected:
+           general_config_yaml['slice_view_color'] = 'Red'
+       elif 'Yellow' in self.initial_view_selected:
+           general_config_yaml['slice_view_color'] = 'Yellow'
+       elif 'Green' in self.initial_view_selected:
+           general_config_yaml['slice_view_color'] = 'Green'
 
        # TODO Delph : add further modifications to config files as options added to interface
 

@@ -803,6 +803,10 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
       self.cancelButton.clicked.connect(self.pushCancel)
       layout.addWidget(self.cancelButton)
 
+      self.reference_label = qt.QLabel()
+      self.reference_label.setText('Volbers, B., Staykov, D., Wagner, I., Dörfler, A., Saake, M., Schwab, S., & Bardutzky, J. (2011). Semi-automatic \n volumetric assessment of perihemorrhagic edema with computed tomography. European journal of neurology, \n 18(11), 1323–1328. https://doi.org/10.1111/j.1468-1331.2011.03395.x')
+      layout.addWidget(self.reference_label)
+
       self.setLayout(layout)
       self.setWindowTitle("Semi-automatic PHE Tool")
       self.resize(400, 200)

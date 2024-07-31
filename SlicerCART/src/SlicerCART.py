@@ -322,10 +322,27 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(bids_hbox)
 
+      file_extension_hbox = qt.QHBoxLayout()
+
+      self.file_extension_label = qt.QLabel()
+      self.file_extension_label.setText('Input File Extension : ')
+      self.file_extension_label.setStyleSheet("font-weight: bold")
+      file_extension_hbox.addWidget(self.file_extension_label)
+
+      self.file_extension_combobox = qt.QComboBox()
+      self.file_extension_combobox.addItem('*.nii.gz')
+      self.file_extension_combobox.addItem('*.nrrd')
+
+      self.file_extension_selected = '*.nii.gz'
+
+      self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
+      file_extension_hbox.addWidget(self.file_extension_combobox)
+
+      layout.addLayout(file_extension_hbox)
+
       ##########################################
       # TODO Delph : create buttons
 
-      # specify file extension to be used
       # specify initial scan view (sagittal, coronal, axial)
       # specify interpolate 
       # if segmentation : configure labels (if CT : configure thresholds)
@@ -356,6 +373,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else: 
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+   
+   def update_file_extension(self):
+       self.file_extension_selected = self.file_extension_combobox.currentText
    
    def update_bids(self):
        self.bids_selected = self.bids_combobox.currentText
@@ -408,6 +428,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            general_config_yaml['impose_bids_format'] = True
        elif self.bids_selected == 'No':
            general_config_yaml['impose_bids_format'] = False
+    
+       general_config_yaml['input_filetype'] = self.file_extension_selected
 
        # TODO Delph : add further modifications to config files as options added to interface
 

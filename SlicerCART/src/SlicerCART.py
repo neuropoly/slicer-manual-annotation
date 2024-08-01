@@ -251,6 +251,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.bids_selected = 'Yes'
       self.bids_hbox_label = qt.QLabel()
       self.bids_combobox = qt.QComboBox()
+      self.ct_window_level_label = qt.QLabel()
+      self.ct_window_level_selected = '45'
+      self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
+      self.ct_window_width_label = qt.QLabel()
+      self.ct_window_width_selected = '85'
+      self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
 
       layout = qt.QVBoxLayout()
 
@@ -377,10 +383,35 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(interpolate_hbox)
 
+      ct_window_level_hbox = qt.QHBoxLayout()
+
+      self.ct_window_level_label.setText('Window Level : ')
+      self.ct_window_level_label.setStyleSheet("font-weight: bold")
+      ct_window_level_hbox.addWidget(self.ct_window_level_label)
+
+      onlyInt = qt.QIntValidator()
+      self.ct_window_level_line_edit.setValidator(onlyInt)
+      self.ct_window_level_line_edit.textChanged.connect(self.update_ct_window_level)
+      ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
+
+      layout.addLayout(ct_window_level_hbox)
+
+      ct_window_width_hbox = qt.QHBoxLayout()
+
+      self.ct_window_width_label.setText('Window Width : ')
+      self.ct_window_width_label.setStyleSheet("font-weight: bold")
+      ct_window_width_hbox.addWidget(self.ct_window_width_label)
+
+      onlyInt = qt.QIntValidator()
+      self.ct_window_width_line_edit.setValidator(onlyInt)
+      self.ct_window_width_line_edit.textChanged.connect(self.update_ct_window_width)
+      ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
+
+      layout.addLayout(ct_window_width_hbox)
+
       ##########################################
       # TODO Delph : create buttons
  
-      # if CT : window level and window width 
       # if segmentation : configure labels (if CT : configure thresholds)
       # if classification : configure checkboxes, comboboxes, text fields
       # configure keyboard shortcuts
@@ -411,6 +442,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
    
+   def update_ct_window_width(self):
+       self.ct_window_width_selected = self.ct_window_width_line_edit.text
+   
+   def update_ct_window_level(self):
+       self.ct_window_level_selected = self.ct_window_level_line_edit.text
+   
    def update_interpolate(self):
        self.interpolate_selected = self.interpolate_combobox.currentText
    
@@ -429,19 +466,29 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def update_selected_modality(self, option):
        self.modality_selected = option
 
-       if self.segmentation_task_checkbox.isChecked() and self.modality_selected == 'CT':
-            self.include_semi_automatic_PHE_tool_label.setVisible(True)
-            self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
-       else: 
-            self.include_semi_automatic_PHE_tool_label.setVisible(False)
-            self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
-       
-       if self.modality_selected == 'MRI':
-            self.bids_hbox_label.setVisible(True)
-            self.bids_combobox.setVisible(True)
-       else:
+       if self.modality_selected == 'CT':
             self.bids_hbox_label.setVisible(False)
             self.bids_combobox.setVisible(False)
+
+            self.ct_window_level_label.setVisible(True)
+            self.ct_window_level_line_edit.setVisible(True)
+            self.ct_window_width_label.setVisible(True)
+            self.ct_window_width_line_edit.setVisible(True)
+
+            if self.segmentation_task_checkbox.isChecked():
+                self.include_semi_automatic_PHE_tool_label.setVisible(True)
+                self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+            else:
+                self.include_semi_automatic_PHE_tool_label.setVisible(False)
+                self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+       else:
+            self.bids_hbox_label.setVisible(True)
+            self.bids_combobox.setVisible(True)
+
+            self.ct_window_level_label.setVisible(False)
+            self.ct_window_level_line_edit.setVisible(False)
+            self.ct_window_width_label.setVisible(False)
+            self.ct_window_width_line_edit.setVisible(False)
    
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
@@ -485,6 +532,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            general_config_yaml['slice_view_color'] = 'Yellow'
        elif 'Green' in self.initial_view_selected:
            general_config_yaml['slice_view_color'] = 'Green'
+    
+       general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
+       general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
 
        # TODO Delph : add further modifications to config files as options added to interface
 
@@ -1652,8 +1702,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
       self.newSegmentation()
 
@@ -2499,8 +2549,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor

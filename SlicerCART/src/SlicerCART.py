@@ -359,10 +359,27 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(initial_view_hbox)
 
+      interpolate_hbox = qt.QHBoxLayout()
+
+      self.interpolate_label = qt.QLabel()
+      self.interpolate_label.setText('Interpolate Image? ')
+      self.interpolate_label.setStyleSheet("font-weight: bold")
+      interpolate_hbox.addWidget(self.interpolate_label)
+
+      self.interpolate_combobox = qt.QComboBox()
+      self.interpolate_combobox.addItem('No')
+      self.interpolate_combobox.addItem('Yes')
+
+      self.interpolate_selected = 'No'
+
+      self.interpolate_combobox.currentIndexChanged.connect(self.update_interpolate)
+      interpolate_hbox.addWidget(self.interpolate_combobox)
+
+      layout.addLayout(interpolate_hbox)
+
       ##########################################
       # TODO Delph : create buttons
-
-      # specify interpolate 
+ 
       # if segmentation : configure labels (if CT : configure thresholds)
       # if classification : configure checkboxes, comboboxes, text fields
 
@@ -391,6 +408,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else: 
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+   
+   def update_interpolate(self):
+       self.interpolate_selected = self.interpolate_combobox.currentText
    
    def update_initial_view(self):
        self.initial_view_selected = self.initial_view_combobox.currentText
@@ -451,6 +471,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            general_config_yaml['impose_bids_format'] = False
     
        general_config_yaml['input_filetype'] = self.file_extension_selected
+
+       if self.interpolate_selected == 'Yes':
+           general_config_yaml['interpolate_value'] = 1
+       elif self.interpolate_selected == 'No':
+           general_config_yaml['interpolate_value'] = 0
        
        if 'Red' in self.initial_view_selected:
            general_config_yaml['slice_view_color'] = 'Red'

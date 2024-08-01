@@ -244,18 +244,18 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.segmenter = segmenter
       self.reuse_configuration_selected_option = reuse_configuration_selected_option
 
-      self.include_semi_auto_PHE_tool_selected_option = 'Yes' 
-      self.modality_selected = 'CT' 
+      self.include_semi_auto_PHE_tool_selected_option = 'Yes' # TODO remove hardcoded value, take from config
+      self.modality_selected = 'CT' # TODO remove hardcoded value, take from config
       self.include_semi_automatic_PHE_tool_label = qt.QLabel()
       self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
-      self.bids_selected = 'Yes'
+      self.bids_selected = 'Yes' # TODO remove hardcoded value, take from config
       self.bids_hbox_label = qt.QLabel()
       self.bids_combobox = qt.QComboBox()
       self.ct_window_level_label = qt.QLabel()
-      self.ct_window_level_selected = '45'
+      self.ct_window_level_selected = '45' # TODO remove hardcoded value, take from config
       self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
       self.ct_window_width_label = qt.QLabel()
-      self.ct_window_width_selected = '85'
+      self.ct_window_width_selected = '85' # TODO remove hardcoded value, take from config
       self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
 
       layout = qt.QVBoxLayout()
@@ -266,10 +266,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       task_button_hbox_label.setText('Task : ')
       task_button_hbox_label.setStyleSheet("font-weight: bold")
 
+      # TODO add value, take from config
       self.segmentation_task_checkbox = qt.QCheckBox()
       self.segmentation_task_checkbox.setText('Segmentation')
       self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
 
+      # TODO add value, take from config
       self.classification_task_checkbox = qt.QCheckBox()
       self.classification_task_checkbox.setText('Classification')
 
@@ -295,8 +297,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
       self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
 
-      self.ct_modality_radio_button.setChecked(True) # par défaut
-      self.modality_selected = self.ct_modality_radio_button.text
+      self.ct_modality_radio_button.setChecked(True) # TODO remove hardcoded value, take from config
+      self.modality_selected = self.ct_modality_radio_button.text # TODO remove hardcoded value, take from config
 
       layout.addLayout(modality_hbox)
 
@@ -305,7 +307,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
       self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
 
-      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes')
+      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') # TODO remove hardcoded value, take from config
       self.include_semi_automatic_PHE_tool_combobox.addItem('No')
       self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
 
@@ -320,7 +322,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.bids_hbox_label.setStyleSheet("font-weight: bold")
       bids_hbox.addWidget(self.bids_hbox_label)
 
-      self.bids_combobox.addItem('Yes')
+      self.bids_combobox.addItem('Yes') # TODO remove hardcoded value, take from config
       self.bids_combobox.addItem('No')
 
       self.bids_combobox.currentIndexChanged.connect(self.update_bids)
@@ -336,10 +338,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       file_extension_hbox.addWidget(self.file_extension_label)
 
       self.file_extension_combobox = qt.QComboBox()
-      self.file_extension_combobox.addItem('*.nii.gz')
+      self.file_extension_combobox.addItem('*.nii.gz') # TODO remove hardcoded value, take from config
       self.file_extension_combobox.addItem('*.nrrd')
 
-      self.file_extension_selected = '*.nii.gz'
+      self.file_extension_selected = '*.nii.gz' # TODO remove hardcoded value, take from config
 
       self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
       file_extension_hbox.addWidget(self.file_extension_combobox)
@@ -354,11 +356,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       initial_view_hbox.addWidget(self.initial_view_label)
 
       self.initial_view_combobox = qt.QComboBox()
-      self.initial_view_combobox.addItem('Red (axial)')
+      self.initial_view_combobox.addItem('Red (axial)') # TODO remove hardcoded value, take from config
       self.initial_view_combobox.addItem('Yellow (sagittal)')
       self.initial_view_combobox.addItem('Green (coronal)')
 
-      self.initial_view_selected = 'Red (axial)'
+      self.initial_view_selected = 'Red (axial)' # TODO remove hardcoded value, take from config
 
       self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
       initial_view_hbox.addWidget(self.initial_view_combobox)
@@ -373,10 +375,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       interpolate_hbox.addWidget(self.interpolate_label)
 
       self.interpolate_combobox = qt.QComboBox()
-      self.interpolate_combobox.addItem('No')
+      self.interpolate_combobox.addItem('No') # TODO remove hardcoded value, take from config
       self.interpolate_combobox.addItem('Yes')
 
-      self.interpolate_selected = 'No'
+      self.interpolate_selected = 'No' # TODO remove hardcoded value, take from config
 
       self.interpolate_combobox.currentIndexChanged.connect(self.update_interpolate)
       interpolate_hbox.addWidget(self.interpolate_combobox)
@@ -416,7 +418,122 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       # if classification : configure checkboxes, comboboxes, text fields
       # configure keyboard shortcuts
 
+      # TODO Delph : load default values from configuration files instead of hardcoded here 
+      # TODO Delph : for template, select conf file and simply copy content here and data will then be automatically loaded 
+      # TODO Delph : if new configuration, force empty output folder upon selection 
+      # TODO Delph : if template configuration, BE MORE FLEXIBLE (issue #30) allow selection of existing outputFolder with config 
+      # only if the configuration changed superficially (impose_bids : true to false only; not input file ext;
+      #  is_classif || is_segment : true to false only; is_semi_auto : any; not modality; slice_view : any; window: any)
+      # ks : any
+      # labels : any HU range; any color; append at end ; no modif name || value 
+      # classif : append only (AND WORK MUST BE DONE TO REORG PREV DATA TO HAVE EMPTY FIELDS i.e. no mismatch of columns and data in .csv)
+
       ##########################################
+
+      toggle_fill_ks_hbox = qt.QHBoxLayout()
+
+      toggle_fill_ks_label = qt.QLabel()
+      toggle_fill_ks_label.setText('Toggle Fill Keyboard Shortcut : ')
+      toggle_fill_ks_label.setStyleSheet("font-weight: bold")
+      toggle_fill_ks_hbox.addWidget(toggle_fill_ks_label)
+
+      self.toggle_fill_ks_selected = 'f' # TODO remove hardcoded value, take from config
+      self.toggle_fill_ks_line_edit = qt.QLineEdit(self.toggle_fill_ks_selected)
+      self.toggle_fill_ks_line_edit.setMaxLength(1)
+      self.toggle_fill_ks_line_edit.textChanged.connect(self.update_toggle_fill_ks)
+      toggle_fill_ks_hbox.addWidget(self.toggle_fill_ks_line_edit)
+
+      layout.addLayout(toggle_fill_ks_hbox)
+
+      toggle_visibility_ks_hbox = qt.QHBoxLayout()
+
+      toggle_visibility_ks_label = qt.QLabel()
+      toggle_visibility_ks_label.setText('Toggle Visibility Keyboard Shortcut : ')
+      toggle_visibility_ks_label.setStyleSheet("font-weight: bold")
+      toggle_visibility_ks_hbox.addWidget(toggle_visibility_ks_label)
+
+      self.toggle_visibility_ks_selected = 'v' # TODO remove hardcoded value, take from config
+      self.toggle_visibility_ks_line_edit = qt.QLineEdit(self.toggle_visibility_ks_selected)
+      self.toggle_visibility_ks_line_edit.setMaxLength(1)
+      self.toggle_visibility_ks_line_edit.textChanged.connect(self.update_toggle_visibility_ks)
+      toggle_visibility_ks_hbox.addWidget(self.toggle_visibility_ks_line_edit)
+
+      layout.addLayout(toggle_visibility_ks_hbox)
+
+      undo_ks_hbox = qt.QHBoxLayout()
+
+      undo_ks_label = qt.QLabel()
+      undo_ks_label.setText('Undo Keyboard Shortcut : ')
+      undo_ks_label.setStyleSheet("font-weight: bold")
+      undo_ks_hbox.addWidget(undo_ks_label)
+
+      self.undo_ks_selected = 'z' # TODO remove hardcoded value, take from config
+      self.undo_ks_line_edit = qt.QLineEdit(self.undo_ks_selected)
+      self.undo_ks_line_edit.setMaxLength(1)
+      self.undo_ks_line_edit.textChanged.connect(self.update_undo_ks)
+      undo_ks_hbox.addWidget(self.undo_ks_line_edit)
+
+      layout.addLayout(undo_ks_hbox)
+
+      save_seg_ks_hbox = qt.QHBoxLayout()
+
+      save_seg_ks_label = qt.QLabel()
+      save_seg_ks_label.setText('Save Segmentation Keyboard Shortcut : ')
+      save_seg_ks_label.setStyleSheet("font-weight: bold")
+      save_seg_ks_hbox.addWidget(save_seg_ks_label)
+
+      self.save_seg_ks_selected = 's' # TODO remove hardcoded value, take from config
+      self.save_seg_ks_line_edit = qt.QLineEdit(self.save_seg_ks_selected)
+      self.save_seg_ks_line_edit.setMaxLength(1)
+      self.save_seg_ks_line_edit.textChanged.connect(self.update_save_seg_ks)
+      save_seg_ks_hbox.addWidget(self.save_seg_ks_line_edit)
+
+      layout.addLayout(save_seg_ks_hbox)
+
+      smooth_ks_hbox = qt.QHBoxLayout()
+
+      smooth_ks_label = qt.QLabel()
+      smooth_ks_label.setText('Smooth Margins Keyboard Shortcut : ')
+      smooth_ks_label.setStyleSheet("font-weight: bold")
+      smooth_ks_hbox.addWidget(smooth_ks_label)
+
+      self.smooth_ks_selected = 'l' # TODO remove hardcoded value, take from config
+      self.smooth_ks_line_edit = qt.QLineEdit(self.smooth_ks_selected)
+      self.smooth_ks_line_edit.setMaxLength(1)
+      self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
+      smooth_ks_hbox.addWidget(self.smooth_ks_line_edit)
+
+      layout.addLayout(smooth_ks_hbox)
+
+      remove_small_holes_ks_hbox = qt.QHBoxLayout()
+
+      remove_small_holes_ks_label = qt.QLabel()
+      remove_small_holes_ks_label.setText('Remove Small Holes Keyboard Shortcut : ')
+      remove_small_holes_ks_label.setStyleSheet("font-weight: bold")
+      remove_small_holes_ks_hbox.addWidget(remove_small_holes_ks_label)
+
+      self.remove_small_holes_ks_selected = 'o' # TODO remove hardcoded value, take from config
+      self.remove_small_holes_ks_line_edit = qt.QLineEdit(self.remove_small_holes_ks_selected)
+      self.remove_small_holes_ks_line_edit.setMaxLength(1)
+      self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
+      remove_small_holes_ks_hbox.addWidget(self.remove_small_holes_ks_line_edit)
+
+      layout.addLayout(remove_small_holes_ks_hbox)
+
+      interpolate_ks_hbox = qt.QHBoxLayout()
+
+      interpolate_ks_label = qt.QLabel()
+      interpolate_ks_label.setText('Interpolate Image Keyboard Shortcut : ')
+      interpolate_ks_label.setStyleSheet("font-weight: bold")
+      interpolate_ks_hbox.addWidget(interpolate_ks_label)
+
+      self.interpolate_ks_selected = 'i' # TODO remove hardcoded value, take from config
+      self.interpolate_ks_line_edit = qt.QLineEdit(self.interpolate_ks_selected)
+      self.interpolate_ks_line_edit.setMaxLength(1)
+      self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
+      interpolate_ks_hbox.addWidget(self.interpolate_ks_line_edit)
+
+      layout.addLayout(interpolate_ks_hbox)
 
       self.previous_button = qt.QPushButton('Previous')
       self.previous_button.clicked.connect(self.push_previous)
@@ -441,6 +558,27 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else: 
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+   
+   def update_interpolate_ks(self):
+       self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
+   
+   def update_remove_small_holes_ks(self):
+       self.remove_small_holes_ks_selected = self.remove_small_holes_ks_line_edit.text
+   
+   def update_smooth_ks(self):
+       self.smooth_ks_selected = self.smooth_ks_line_edit.text
+
+   def update_save_seg_ks(self):
+       self.save_seg_ks_selected = self.save_seg_ks_line_edit.text
+   
+   def update_undo_ks(self):
+       self.undo_ks_selected = self.undo_ks_line_edit.text
+   
+   def update_toggle_visibility_ks(self):
+       self.toggle_visibility_ks_selected = self.toggle_visibility_ks_line_edit.text
+   
+   def update_toggle_fill_ks(self):
+       self.toggle_fill_ks_selected = self.toggle_fill_ks_line_edit.text
    
    def update_ct_window_width(self):
        self.ct_window_width_selected = self.ct_window_width_line_edit.text
@@ -535,6 +673,14 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     
        general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
        general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
+
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
+       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
 
        # TODO Delph : add further modifications to config files as options added to interface
 

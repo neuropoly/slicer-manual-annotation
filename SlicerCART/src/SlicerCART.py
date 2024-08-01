@@ -380,8 +380,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       ##########################################
       # TODO Delph : create buttons
  
+      # if CT : window level and window width 
       # if segmentation : configure labels (if CT : configure thresholds)
       # if classification : configure checkboxes, comboboxes, text fields
+      # configure keyboard shortcuts
 
       ##########################################
 

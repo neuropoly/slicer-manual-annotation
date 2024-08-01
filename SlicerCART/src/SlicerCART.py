@@ -19,6 +19,8 @@ import vtk
 import random
 import colorsys
 import sys
+from functools import partial
+import copy
 
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
@@ -413,10 +415,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       ##########################################
       # TODO Delph : create buttons
- 
-      # if segmentation : configure labels (if CT : configure thresholds)
+
       # if classification : configure checkboxes, comboboxes, text fields
-      # configure keyboard shortcuts
 
       # TODO Delph : load default values from configuration files instead of hardcoded here 
       # TODO Delph : for template, select conf file and simply copy content here and data will then be automatically loaded 
@@ -535,6 +535,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(interpolate_ks_hbox)
 
+      self.configure_labels_button = qt.QPushButton('Configure Labels...')
+      self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
+      self.configure_labels_button.clicked.connect(self.push_configure_labels)
+      layout.addWidget(self.configure_labels_button)
+
       self.previous_button = qt.QPushButton('Previous')
       self.previous_button.clicked.connect(self.push_previous)
       layout.addWidget(self.previous_button)
@@ -552,10 +557,18 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.resize(800, 200)
    
    def segmentation_checkbox_state_changed(self):
-       if self.segmentation_task_checkbox.isChecked() and self.modality_selected == 'CT':
-            self.include_semi_automatic_PHE_tool_label.setVisible(True)
-            self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+       if self.segmentation_task_checkbox.isChecked():
+            self.configure_labels_button.setVisible(True)
+
+            if self.modality_selected == 'CT':
+                self.include_semi_automatic_PHE_tool_label.setVisible(True)
+                self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+            else:
+                self.include_semi_automatic_PHE_tool_label.setVisible(False)
+                self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
        else: 
+            self.configure_labels_button.setVisible(False)
+
             self.include_semi_automatic_PHE_tool_label.setVisible(False)
             self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
    
@@ -628,6 +641,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_width_label.setVisible(False)
             self.ct_window_width_line_edit.setVisible(False)
    
+   def push_configure_labels(self):
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected)
+       configureLabelsWindow.show()
+   
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
        slicerCART_configuration_initial_window.show()
@@ -636,12 +653,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def push_apply(self):
        with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
             general_config_yaml = yaml.full_load(file)
-       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-            label_config_yaml = yaml.full_load(file)
        with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
             keyboard_shortcuts_config_yaml = yaml.full_load(file)
-       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
-            classification_config_yaml = yaml.full_load(file)
 
        general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
        general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
@@ -686,12 +699,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(general_config_yaml, file)
-       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(label_config_yaml, file)
        with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(keyboard_shortcuts_config_yaml, file)
-       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(classification_config_yaml, file)
 
        self.segmenter.setup_configuration()
        self.close()
@@ -703,6 +712,307 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        msg.exec()
 
        self.segmenter.setup_configuration()
+       self.close()
+
+class ConfigureLabelsWindow(qt.QWidget):
+   def __init__(self, segmenter, modality, parent = None):
+      super(ConfigureLabelsWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.modality = modality
+
+      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+            label_config_yaml = yaml.full_load(file)
+
+      layout = qt.QVBoxLayout()
+
+      self.label_table_view = qt.QTableWidget()
+      layout.addWidget(self.label_table_view)
+
+      self.versionCheckboxWidgets = {}
+
+      if len(label_config_yaml['labels']) > 0:
+          number_of_available_labels = len(label_config_yaml['labels'])
+
+          self.label_table_view.setRowCount(number_of_available_labels)
+          if self.modality == 'MRI':
+                self.label_table_view.setColumnCount(5) # edit button, remove button, name, value, color
+          elif self.modality == 'CT':
+                self.label_table_view.setColumnCount(7) # edit button, remove button, name, value, color, range HU min, range HU max
+          self.label_table_view.horizontalHeader().setStretchLastSection(True)
+          self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, label in enumerate(label_config_yaml['labels']): 
+                # TODO Delph LIVE : QIntValidator not working???
+                edit_button = qt.QPushButton('Edit')
+                edit_button.clicked.connect(lambda state, label = label: self.push_edit_button(label))
+                edit_button_hbox = qt.QHBoxLayout()
+                edit_button_hbox.addWidget(edit_button)
+                edit_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                edit_button_hbox.setContentsMargins(0, 0, 0, 0)
+                edit_button_widget = qt.QWidget()
+                edit_button_widget.setLayout(edit_button_hbox)
+                self.label_table_view.setCellWidget(index, 0, edit_button_widget)
+                self.label_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, label = label: self.push_remove_button(label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.label_table_view.setCellWidget(index, 1, remove_button_widget)
+                self.label_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem(''))
+
+                cell = qt.QTableWidgetItem(label['name'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.label_table_view.setItem(index, 2, cell)
+                self.label_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Name'))
+
+                cell = qt.QTableWidgetItem(str(label['value']))
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.label_table_view.setItem(index, 3, cell)
+                self.label_table_view.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Value'))
+
+                cell = qt.QTableWidgetItem('')
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setBackground(qt.QBrush(qt.QColor(label['color_r'], label['color_g'], label['color_b'])))
+                self.label_table_view.setItem(index, 4, cell)
+                self.label_table_view.setHorizontalHeaderItem(4, qt.QTableWidgetItem('Colour'))
+
+                if self.modality == 'CT':
+                    cell = qt.QTableWidgetItem(str(label['lower_bound_HU']))
+                    cell.setFlags(qt.Qt.NoItemFlags)
+                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    self.label_table_view.setItem(index, 5, cell)
+                    self.label_table_view.setHorizontalHeaderItem(5, qt.QTableWidgetItem('Min. HU'))
+
+                    cell = qt.QTableWidgetItem(str(label['upper_bound_HU']))
+                    cell.setFlags(qt.Qt.NoItemFlags)
+                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    self.label_table_view.setItem(index, 6, cell)
+                    self.label_table_view.setHorizontalHeaderItem(6, qt.QTableWidgetItem('Max. HU'))
+
+      self.add_label_button = qt.QPushButton('Add Label')
+      self.add_label_button.clicked.connect(self.push_add_label)
+      layout.addWidget(self.add_label_button)
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Labels")
+      self.resize(800, 200)
+
+   def push_edit_button(self, label):
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, label)
+       configureSingleLabelWindow.show()
+
+   def push_remove_button(self, label):
+       self.close()
+
+       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+            label_config_yaml = yaml.full_load(file)
+       
+       value_removed = -1
+       for l in label_config_yaml['labels']:
+           if l['name'] == label['name']:
+               value_removed = l['value']
+               label_config_yaml['labels'].remove(l)
+    
+       for l in label_config_yaml['labels']:
+           if l['value'] > value_removed and value_removed != -1:
+               l['value'] = l['value'] - 1
+
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(label_config_yaml, file)
+        
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow.show()
+
+
+   
+   def push_add_label(self):
+       self.close()
+
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality)
+       configureSingleLabelWindow.show()
+   
+   def push_save(self):
+       self.close()
+
+   def push_cancel(self):
+       self.close()
+
+class ConfigureSingleLabelWindow(qt.QWidget):
+   def __init__(self, segmenter, modality, label = None, parent = None):
+      super(ConfigureSingleLabelWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.modality = modality
+      self.initial_label = label
+
+      layout = qt.QVBoxLayout()
+
+      name_hbox = qt.QHBoxLayout()
+
+      name_label = qt.QLabel('Name : ')
+      name_label.setStyleSheet("font-weight: bold")
+      name_hbox.addWidget(name_label)
+
+      self.name_line_edit = qt.QLineEdit('')
+      name_hbox.addWidget(self.name_line_edit)
+      
+      layout.addLayout(name_hbox)
+
+      value_hbox = qt.QHBoxLayout()
+
+      value_label = qt.QLabel('Value : ')
+      value_label.setStyleSheet("font-weight: bold")
+      value_hbox.addWidget(value_label)
+
+      self.value_line_edit = qt.QLineEdit('')
+      self.value_line_edit.setValidator(qt.QIntValidator())
+      self.value_line_edit.setReadOnly(True) # To be changed at resolution of Issue #28
+      value_hbox.addWidget(self.value_line_edit)
+      
+      layout.addLayout(value_hbox)
+
+      color_hbox = qt.QHBoxLayout()
+
+      color_label = qt.QLabel('Colour : ')
+      color_label.setStyleSheet("font-weight: bold")
+      color_hbox.addWidget(color_label)
+
+      self.color_r_line_edit = qt.QLineEdit('R')
+      colorValidator = qt.QIntValidator()
+      colorValidator.setRange(0, 255)
+      self.color_r_line_edit.setValidator(colorValidator)
+      self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_r_line_edit)
+
+      self.color_g_line_edit = qt.QLineEdit('G')
+      self.color_g_line_edit.setValidator(colorValidator)
+      self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_g_line_edit)
+
+      self.color_b_line_edit = qt.QLineEdit('B')
+      self.color_b_line_edit.setValidator(colorValidator)
+      self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_b_line_edit)
+
+      self.color_display = qt.QLabel('        ')
+      color_hbox.addWidget(self.color_display)
+
+      layout.addLayout(color_hbox)
+
+      if self.modality == 'CT':
+            min_hu_hbox = qt.QHBoxLayout()
+
+            min_hu_label = qt.QLabel('Min. HU : ')
+            min_hu_label.setStyleSheet("font-weight: bold")
+            min_hu_hbox.addWidget(min_hu_label)
+
+            self.min_hu_line_edit = qt.QLineEdit('')
+            self.min_hu_line_edit.setValidator(qt.QIntValidator())
+            min_hu_hbox.addWidget(self.min_hu_line_edit)
+            
+            layout.addLayout(min_hu_hbox)
+
+            max_hu_hbox = qt.QHBoxLayout()
+
+            max_hu_label = qt.QLabel('Max. HU : ')
+            max_hu_label.setStyleSheet("font-weight: bold")
+            max_hu_hbox.addWidget(max_hu_label)
+
+            self.max_hu_line_edit = qt.QLineEdit('')
+            self.max_hu_line_edit.setValidator(qt.QIntValidator())
+            max_hu_hbox.addWidget(self.max_hu_line_edit)
+            
+            layout.addLayout(max_hu_hbox)
+
+      if self.initial_label is not None:
+          self.name_line_edit.setText(self.initial_label['name'])
+          self.name_line_edit.setReadOnly(True)
+          self.value_line_edit.setText(self.initial_label['value'])
+          self.color_r_line_edit.setText(label['color_r'])
+          self.color_g_line_edit.setText(label['color_g'])
+          self.color_b_line_edit.setText(label['color_b'])
+          self.color_line_edit_changed()
+
+          if self.modality == 'CT':
+              self.min_hu_line_edit.setText(self.initial_label['lower_bound_HU'])
+              self.max_hu_line_edit.setText(self.initial_label['upper_bound_HU'])
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Label")
+      self.resize(400, 200)
+   
+   def color_line_edit_changed(self):
+       # (R, G, B)
+       color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
+       self.color_display.setStyleSheet(f"background-color:rgb{color}")
+   
+   def push_save(self):
+       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+            label_config_yaml = yaml.full_load(file)
+    
+       current_label_name = self.name_line_edit.text
+    
+       label_found = False
+       for label in label_config_yaml['labels']:
+           if label['name'] == current_label_name:
+               # edit 
+               label_found = True
+               label['color_r'] = int(self.color_r_line_edit.text)
+               label['color_g'] = int(self.color_g_line_edit.text)
+               label['color_b'] = int(self.color_b_line_edit.text)
+
+               if self.modality == 'CT':
+                   label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+                   label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+               
+       if label_found == False:
+           # append
+           new_label = copy.deepcopy(label_config_yaml['labels'][0])
+           new_label['name'] = self.name_line_edit.text
+           new_label['value'] = len(label_config_yaml['labels']) + 1
+           new_label['color_r'] = int(self.color_r_line_edit.text)
+           new_label['color_g'] = int(self.color_g_line_edit.text)
+           new_label['color_b'] = int(self.color_b_line_edit.text)
+
+           if self.modality == 'CT':
+                new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+                new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+           label_config_yaml['labels'].append(new_label)
+        
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(label_config_yaml, file)
+        
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow.show()
+       self.close() 
+       
+   def push_cancel(self):
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow.show()
        self.close()
 
 class LoadClassificationWindow(qt.QWidget):

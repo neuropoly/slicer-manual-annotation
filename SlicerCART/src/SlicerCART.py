@@ -215,13 +215,29 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         slicerCART_configuration_initial_window.show()
         self.close()
    
+   # TODO Delph : validate that the onSelectOutputFile verifyCompatibility is required??? evaluate use cases
    def select_template_folder_clicked(self, button):
        if button.text == 'OK':
-          conf_folder_path = 'path' # TODO Delph : select conf folder with file picker (validate _conf name and files present)
-          slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option, conf_folder_path)
-          slicerCARTConfigurationSetupWindow.show()
-          self.segmenter.ui.SelectOutputFolder.setVisible(True)
-          self.close()
+          conf_folder_path = qt.QFileDialog.getExistingDirectory(None,"Open a folder", '', qt.QFileDialog.ShowDirsOnly)
+          if (os.path.split(conf_folder_path)[1] == CONF_FOLDER_NAME and
+              os.path.exists(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
+              os.path.exists(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
+              os.path.exists(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
+              os.path.exists(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
+                 
+              slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option, conf_folder_path)
+              slicerCARTConfigurationSetupWindow.show()
+              self.segmenter.ui.SelectOutputFolder.setVisible(True)
+              self.close()
+
+          else:
+              msg = qt.QMessageBox()
+              msg.setWindowTitle('Informative Message')
+              msg.setText('The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
+              msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+              msg.buttonClicked.connect(self.error_msg_for_output_folder_selection_clicked)
+              msg.exec()
+              
        else:
           slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
           slicerCART_configuration_initial_window.show()
@@ -241,24 +257,21 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def __init__(self, segmenter, reuse_configuration_selected_option, conf_folder_path = None, parent = None):
       super(SlicerCARTConfigurationSetupWindow, self).__init__(parent)
 
-      # TODO Delph : if conf_folder_path is not None : fill window with template values
+      if conf_folder_path is not None:
+          shutil.copy(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH) 
+
+      with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
+            self.general_config_yaml = yaml.full_load(file)
+      with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
+            self.keyboard_shortcuts_config_yaml = yaml.full_load(file)
+    
+      self.set_default_values()
 
       self.segmenter = segmenter
       self.reuse_configuration_selected_option = reuse_configuration_selected_option
-
-      self.include_semi_auto_PHE_tool_selected_option = 'Yes' # TODO remove hardcoded value, take from config
-      self.modality_selected = 'CT' # TODO remove hardcoded value, take from config
-      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
-      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
-      self.bids_selected = 'Yes' # TODO remove hardcoded value, take from config
-      self.bids_hbox_label = qt.QLabel()
-      self.bids_combobox = qt.QComboBox()
-      self.ct_window_level_label = qt.QLabel()
-      self.ct_window_level_selected = '45' # TODO remove hardcoded value, take from config
-      self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
-      self.ct_window_width_label = qt.QLabel()
-      self.ct_window_width_selected = '85' # TODO remove hardcoded value, take from config
-      self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
 
       layout = qt.QVBoxLayout()
 
@@ -268,12 +281,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       task_button_hbox_label.setText('Task : ')
       task_button_hbox_label.setStyleSheet("font-weight: bold")
 
-      # TODO add value, take from config
       self.segmentation_task_checkbox = qt.QCheckBox()
       self.segmentation_task_checkbox.setText('Segmentation')
-      self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
 
-      # TODO add value, take from config
       self.classification_task_checkbox = qt.QCheckBox()
       self.classification_task_checkbox.setText('Classification')
 
@@ -296,22 +306,17 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       modality_hbox.addWidget(self.ct_modality_radio_button)
       modality_hbox.addWidget(self.mri_modality_radio_button)
 
-      self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
-      self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
-
-      self.ct_modality_radio_button.setChecked(True) # TODO remove hardcoded value, take from config
-      self.modality_selected = self.ct_modality_radio_button.text # TODO remove hardcoded value, take from config
-
       layout.addLayout(modality_hbox)
 
       self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
-
+      
+      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
       self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
       self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
 
-      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') # TODO remove hardcoded value, take from config
+      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
+      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') 
       self.include_semi_automatic_PHE_tool_combobox.addItem('No')
-      self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
 
       self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
       self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
@@ -320,14 +325,15 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       bids_hbox = qt.QHBoxLayout()
 
+      self.bids_hbox_label = qt.QLabel()
       self.bids_hbox_label.setText('Impose BIDS ? ')
       self.bids_hbox_label.setStyleSheet("font-weight: bold")
       bids_hbox.addWidget(self.bids_hbox_label)
 
-      self.bids_combobox.addItem('Yes') # TODO remove hardcoded value, take from config
+      self.bids_combobox = qt.QComboBox()
+      self.bids_combobox.addItem('Yes') 
       self.bids_combobox.addItem('No')
 
-      self.bids_combobox.currentIndexChanged.connect(self.update_bids)
       bids_hbox.addWidget(self.bids_combobox)
 
       layout.addLayout(bids_hbox)
@@ -340,12 +346,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       file_extension_hbox.addWidget(self.file_extension_label)
 
       self.file_extension_combobox = qt.QComboBox()
-      self.file_extension_combobox.addItem('*.nii.gz') # TODO remove hardcoded value, take from config
+      self.file_extension_combobox.addItem('*.nii.gz') 
       self.file_extension_combobox.addItem('*.nrrd')
 
-      self.file_extension_selected = '*.nii.gz' # TODO remove hardcoded value, take from config
-
-      self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
       file_extension_hbox.addWidget(self.file_extension_combobox)
 
       layout.addLayout(file_extension_hbox)
@@ -358,13 +361,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       initial_view_hbox.addWidget(self.initial_view_label)
 
       self.initial_view_combobox = qt.QComboBox()
-      self.initial_view_combobox.addItem('Red (axial)') # TODO remove hardcoded value, take from config
+      self.initial_view_combobox.addItem('Red (axial)')
       self.initial_view_combobox.addItem('Yellow (sagittal)')
       self.initial_view_combobox.addItem('Green (coronal)')
 
-      self.initial_view_selected = 'Red (axial)' # TODO remove hardcoded value, take from config
-
-      self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
       initial_view_hbox.addWidget(self.initial_view_combobox)
 
       layout.addLayout(initial_view_hbox)
@@ -377,38 +377,37 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       interpolate_hbox.addWidget(self.interpolate_label)
 
       self.interpolate_combobox = qt.QComboBox()
-      self.interpolate_combobox.addItem('No') # TODO remove hardcoded value, take from config
+      self.interpolate_combobox.addItem('No') 
       self.interpolate_combobox.addItem('Yes')
 
-      self.interpolate_selected = 'No' # TODO remove hardcoded value, take from config
-
-      self.interpolate_combobox.currentIndexChanged.connect(self.update_interpolate)
       interpolate_hbox.addWidget(self.interpolate_combobox)
 
       layout.addLayout(interpolate_hbox)
 
       ct_window_level_hbox = qt.QHBoxLayout()
 
+      self.ct_window_level_label = qt.QLabel()
       self.ct_window_level_label.setText('Window Level : ')
       self.ct_window_level_label.setStyleSheet("font-weight: bold")
       ct_window_level_hbox.addWidget(self.ct_window_level_label)
 
+      self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
       onlyInt = qt.QIntValidator()
       self.ct_window_level_line_edit.setValidator(onlyInt)
-      self.ct_window_level_line_edit.textChanged.connect(self.update_ct_window_level)
       ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
 
       layout.addLayout(ct_window_level_hbox)
 
       ct_window_width_hbox = qt.QHBoxLayout()
 
+      self.ct_window_width_label = qt.QLabel()
       self.ct_window_width_label.setText('Window Width : ')
       self.ct_window_width_label.setStyleSheet("font-weight: bold")
       ct_window_width_hbox.addWidget(self.ct_window_width_label)
-
+      
+      self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
       onlyInt = qt.QIntValidator()
       self.ct_window_width_line_edit.setValidator(onlyInt)
-      self.ct_window_width_line_edit.textChanged.connect(self.update_ct_window_width)
       ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
 
       layout.addLayout(ct_window_width_hbox)
@@ -418,8 +417,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       # if classification : configure checkboxes, comboboxes, text fields
 
-      # TODO Delph : load default values from configuration files instead of hardcoded here 
-      # TODO Delph : for template, select conf file and simply copy content here and data will then be automatically loaded 
       # TODO Delph : if new configuration, force empty output folder upon selection 
       # TODO Delph : if template configuration, BE MORE FLEXIBLE (issue #30) allow selection of existing outputFolder with config 
       # only if the configuration changed superficially (impose_bids : true to false only; not input file ext;
@@ -437,10 +434,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       toggle_fill_ks_label.setStyleSheet("font-weight: bold")
       toggle_fill_ks_hbox.addWidget(toggle_fill_ks_label)
 
-      self.toggle_fill_ks_selected = 'f' # TODO remove hardcoded value, take from config
       self.toggle_fill_ks_line_edit = qt.QLineEdit(self.toggle_fill_ks_selected)
       self.toggle_fill_ks_line_edit.setMaxLength(1)
-      self.toggle_fill_ks_line_edit.textChanged.connect(self.update_toggle_fill_ks)
       toggle_fill_ks_hbox.addWidget(self.toggle_fill_ks_line_edit)
 
       layout.addLayout(toggle_fill_ks_hbox)
@@ -452,10 +447,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       toggle_visibility_ks_label.setStyleSheet("font-weight: bold")
       toggle_visibility_ks_hbox.addWidget(toggle_visibility_ks_label)
 
-      self.toggle_visibility_ks_selected = 'v' # TODO remove hardcoded value, take from config
       self.toggle_visibility_ks_line_edit = qt.QLineEdit(self.toggle_visibility_ks_selected)
       self.toggle_visibility_ks_line_edit.setMaxLength(1)
-      self.toggle_visibility_ks_line_edit.textChanged.connect(self.update_toggle_visibility_ks)
       toggle_visibility_ks_hbox.addWidget(self.toggle_visibility_ks_line_edit)
 
       layout.addLayout(toggle_visibility_ks_hbox)
@@ -467,10 +460,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       undo_ks_label.setStyleSheet("font-weight: bold")
       undo_ks_hbox.addWidget(undo_ks_label)
 
-      self.undo_ks_selected = 'z' # TODO remove hardcoded value, take from config
       self.undo_ks_line_edit = qt.QLineEdit(self.undo_ks_selected)
       self.undo_ks_line_edit.setMaxLength(1)
-      self.undo_ks_line_edit.textChanged.connect(self.update_undo_ks)
       undo_ks_hbox.addWidget(self.undo_ks_line_edit)
 
       layout.addLayout(undo_ks_hbox)
@@ -482,10 +473,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       save_seg_ks_label.setStyleSheet("font-weight: bold")
       save_seg_ks_hbox.addWidget(save_seg_ks_label)
 
-      self.save_seg_ks_selected = 's' # TODO remove hardcoded value, take from config
       self.save_seg_ks_line_edit = qt.QLineEdit(self.save_seg_ks_selected)
       self.save_seg_ks_line_edit.setMaxLength(1)
-      self.save_seg_ks_line_edit.textChanged.connect(self.update_save_seg_ks)
       save_seg_ks_hbox.addWidget(self.save_seg_ks_line_edit)
 
       layout.addLayout(save_seg_ks_hbox)
@@ -497,10 +486,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       smooth_ks_label.setStyleSheet("font-weight: bold")
       smooth_ks_hbox.addWidget(smooth_ks_label)
 
-      self.smooth_ks_selected = 'l' # TODO remove hardcoded value, take from config
       self.smooth_ks_line_edit = qt.QLineEdit(self.smooth_ks_selected)
       self.smooth_ks_line_edit.setMaxLength(1)
-      self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
       smooth_ks_hbox.addWidget(self.smooth_ks_line_edit)
 
       layout.addLayout(smooth_ks_hbox)
@@ -512,10 +499,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       remove_small_holes_ks_label.setStyleSheet("font-weight: bold")
       remove_small_holes_ks_hbox.addWidget(remove_small_holes_ks_label)
 
-      self.remove_small_holes_ks_selected = 'o' # TODO remove hardcoded value, take from config
       self.remove_small_holes_ks_line_edit = qt.QLineEdit(self.remove_small_holes_ks_selected)
       self.remove_small_holes_ks_line_edit.setMaxLength(1)
-      self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
       remove_small_holes_ks_hbox.addWidget(self.remove_small_holes_ks_line_edit)
 
       layout.addLayout(remove_small_holes_ks_hbox)
@@ -527,35 +512,125 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       interpolate_ks_label.setStyleSheet("font-weight: bold")
       interpolate_ks_hbox.addWidget(interpolate_ks_label)
 
-      self.interpolate_ks_selected = 'i' # TODO remove hardcoded value, take from config
       self.interpolate_ks_line_edit = qt.QLineEdit(self.interpolate_ks_selected)
       self.interpolate_ks_line_edit.setMaxLength(1)
-      self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
       interpolate_ks_hbox.addWidget(self.interpolate_ks_line_edit)
 
       layout.addLayout(interpolate_ks_hbox)
 
       self.configure_labels_button = qt.QPushButton('Configure Labels...')
       self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
-      self.configure_labels_button.clicked.connect(self.push_configure_labels)
       layout.addWidget(self.configure_labels_button)
 
       self.previous_button = qt.QPushButton('Previous')
-      self.previous_button.clicked.connect(self.push_previous)
       layout.addWidget(self.previous_button)
       
       self.apply_button = qt.QPushButton('Apply')
-      self.apply_button.clicked.connect(self.push_apply)
       layout.addWidget(self.apply_button)
 
       self.cancel_button = qt.QPushButton('Cancel')
-      self.cancel_button.clicked.connect(self.push_cancel)
       layout.addWidget(self.cancel_button)
+
+      self.populate_default_values()
+      self.connect_buttons_to_callbacks()
 
       self.setLayout(layout)
       self.setWindowTitle("Configure SlicerCART")
       self.resize(800, 200)
    
+   def connect_buttons_to_callbacks(self):
+       self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
+       self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
+       self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
+       self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
+       self.bids_combobox.currentIndexChanged.connect(self.update_bids)
+       self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
+       self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
+       self.interpolate_combobox.currentIndexChanged.connect(self.update_interpolate)
+       self.ct_window_level_line_edit.textChanged.connect(self.update_ct_window_level)
+       self.ct_window_width_line_edit.textChanged.connect(self.update_ct_window_width)
+       self.toggle_fill_ks_line_edit.textChanged.connect(self.update_toggle_fill_ks)
+       self.toggle_visibility_ks_line_edit.textChanged.connect(self.update_toggle_visibility_ks)
+       self.undo_ks_line_edit.textChanged.connect(self.update_undo_ks)
+       self.save_seg_ks_line_edit.textChanged.connect(self.update_save_seg_ks)
+       self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
+       self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
+       self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
+       self.configure_labels_button.clicked.connect(self.push_configure_labels)
+       self.previous_button.clicked.connect(self.push_previous)
+       self.apply_button.clicked.connect(self.push_apply)
+       self.cancel_button.clicked.connect(self.push_cancel)
+   
+   def populate_default_values(self):
+       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
+           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(0)
+       else:
+           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
+    
+       
+       if self.modality_selected == 'CT':
+           self.ct_modality_radio_button.setChecked(True)
+       elif self.modality_selected == 'MRI':
+           self.mri_modality_radio_button.setChecked(True)
+
+       if self.bids_selected:
+           self.bids_combobox.setCurrentIndex(0)
+       else:
+           self.bids_combobox.setCurrentIndex(1)
+    
+       if 'Red' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(0)
+       elif 'Yellow' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(1)
+       elif 'Green' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(2)
+    
+       if self.file_extension_selected == '*.nii.gz':
+           self.file_extension_combobox.setCurrentIndex(0)
+       elif self.file_extension_selected == '*.nrrd':
+           self.file_extension_combobox.setCurrentIndex(1)
+
+       self.interpolate_combobox.setCurrentIndex(self.interpolate_selected)
+
+       self.segmentation_task_checkbox.setChecked(self.segmentation_selected)
+       self.classification_task_checkbox.setChecked(self.segmentation_selected)
+
+       self.segmentation_checkbox_state_changed()
+
+   def set_default_values(self):
+       self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
+       self.classification_selected = self.general_config_yaml['is_classification_requested']
+
+       if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
+            self.include_semi_auto_PHE_tool_selected_option = 'Yes'
+       else:
+            self.include_semi_auto_PHE_tool_selected_option = 'No'
+
+       self.modality_selected = self.general_config_yaml['modality']
+
+       self.bids_selected = self.general_config_yaml['impose_bids_format'] 
+
+       self.ct_window_level_selected = self.general_config_yaml['ct_window_level'] 
+       self.ct_window_width_selected = self.general_config_yaml['ct_window_width']  
+       self.file_extension_selected = self.general_config_yaml['input_filetype'] 
+
+       if self.general_config_yaml['slice_view_color'] == 'Red':
+           self.initial_view_selected = 'Red (axial)'
+       elif self.general_config_yaml['slice_view_color'] == 'Yellow':
+           self.initial_view_selected = 'Yellow (sagittal)'
+       elif self.general_config_yaml['slice_view_color'] == 'Green':
+           self.initial_view_selected = 'Green (coronal)'
+
+       self.interpolate_selected = self.general_config_yaml['interpolate_value'] 
+
+       self.toggle_fill_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] 
+       self.toggle_visibility_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] 
+       self.undo_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] 
+       self.save_seg_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] 
+       self.smooth_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] 
+       self.remove_small_holes_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] 
+       self.interpolate_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
+
    def segmentation_checkbox_state_changed(self):
        if self.segmentation_task_checkbox.isChecked():
             self.configure_labels_button.setVisible(True)
@@ -600,7 +675,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.ct_window_level_selected = self.ct_window_level_line_edit.text
    
    def update_interpolate(self):
-       self.interpolate_selected = self.interpolate_combobox.currentText
+       if self.interpolate_combobox.currentText == 'Yes':
+           self.interpolate_selected = 1
+       else:
+           self.interpolate_selected = 0
    
    def update_initial_view(self):
        self.initial_view_selected = self.initial_view_combobox.currentText
@@ -651,56 +729,46 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.close()
    
    def push_apply(self):
-       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
-            general_config_yaml = yaml.full_load(file)
-       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
-            keyboard_shortcuts_config_yaml = yaml.full_load(file)
-
-       general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
-       general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
-       general_config_yaml['modality'] = self.modality_selected
+       self.general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
+       self.general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       self.general_config_yaml['modality'] = self.modality_selected
 
        if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
-           general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
+           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
        elif self.include_semi_auto_PHE_tool_selected_option == 'No':
-           general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
+           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
     
        if self.bids_selected == 'Yes':
-           general_config_yaml['impose_bids_format'] = True
+           self.general_config_yaml['impose_bids_format'] = True
        elif self.bids_selected == 'No':
-           general_config_yaml['impose_bids_format'] = False
+           self.general_config_yaml['impose_bids_format'] = False
     
-       general_config_yaml['input_filetype'] = self.file_extension_selected
+       self.general_config_yaml['input_filetype'] = self.file_extension_selected
 
-       if self.interpolate_selected == 'Yes':
-           general_config_yaml['interpolate_value'] = 1
-       elif self.interpolate_selected == 'No':
-           general_config_yaml['interpolate_value'] = 0
+       self.general_config_yaml['interpolate_value'] = self.interpolate_selected
        
        if 'Red' in self.initial_view_selected:
-           general_config_yaml['slice_view_color'] = 'Red'
+           self.general_config_yaml['slice_view_color'] = 'Red'
        elif 'Yellow' in self.initial_view_selected:
-           general_config_yaml['slice_view_color'] = 'Yellow'
+           self.general_config_yaml['slice_view_color'] = 'Yellow'
        elif 'Green' in self.initial_view_selected:
-           general_config_yaml['slice_view_color'] = 'Green'
+           self.general_config_yaml['slice_view_color'] = 'Green'
     
-       general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
-       general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
+       self.general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
+       self.general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
 
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
-       keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
-
-       # TODO Delph : add further modifications to config files as options added to interface
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
 
        with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(general_config_yaml, file)
+            yaml.safe_dump(self.general_config_yaml, file)
        with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(keyboard_shortcuts_config_yaml, file)
+            yaml.safe_dump(self.keyboard_shortcuts_config_yaml, file)
 
        self.segmenter.setup_configuration()
        self.close()

@@ -593,7 +593,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.interpolate_combobox.setCurrentIndex(self.interpolate_selected)
 
        self.segmentation_task_checkbox.setChecked(self.segmentation_selected)
-       self.classification_task_checkbox.setChecked(self.segmentation_selected)
+       self.classification_task_checkbox.setChecked(self.classification_selected)
 
        self.segmentation_checkbox_state_changed()
 
@@ -632,20 +632,19 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.interpolate_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
 
    def segmentation_checkbox_state_changed(self):
+       self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
+
        if self.segmentation_task_checkbox.isChecked():
-            self.configure_labels_button.setVisible(True)
+            self.configure_labels_button.setEnabled(True)
 
             if self.modality_selected == 'CT':
-                self.include_semi_automatic_PHE_tool_label.setVisible(True)
-                self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
+                self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
             else:
-                self.include_semi_automatic_PHE_tool_label.setVisible(False)
-                self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+                self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
        else: 
-            self.configure_labels_button.setVisible(False)
+            self.configure_labels_button.setEnabled(False)
 
-            self.include_semi_automatic_PHE_tool_label.setVisible(False)
-            self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
    
    def update_interpolate_ks(self):
        self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
@@ -696,28 +695,19 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.modality_selected = option
 
        if self.modality_selected == 'CT':
-            self.bids_hbox_label.setVisible(False)
-            self.bids_combobox.setVisible(False)
+            self.bids_combobox.setEnabled(False)
 
-            self.ct_window_level_label.setVisible(True)
-            self.ct_window_level_line_edit.setVisible(True)
-            self.ct_window_width_label.setVisible(True)
-            self.ct_window_width_line_edit.setVisible(True)
+            self.ct_window_level_line_edit.setEnabled(True)
+            self.ct_window_width_line_edit.setEnabled(True)
 
-            if self.segmentation_task_checkbox.isChecked():
-                self.include_semi_automatic_PHE_tool_label.setVisible(True)
-                self.include_semi_automatic_PHE_tool_combobox.setVisible(True)
-            else:
-                self.include_semi_automatic_PHE_tool_label.setVisible(False)
-                self.include_semi_automatic_PHE_tool_combobox.setVisible(False)
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(self.segmentation_selected)
        else:
-            self.bids_hbox_label.setVisible(True)
-            self.bids_combobox.setVisible(True)
+            self.bids_combobox.setEnabled(True)
 
-            self.ct_window_level_label.setVisible(False)
-            self.ct_window_level_line_edit.setVisible(False)
-            self.ct_window_width_label.setVisible(False)
-            self.ct_window_width_line_edit.setVisible(False)
+            self.ct_window_level_line_edit.setEnabled(False)
+            self.ct_window_width_line_edit.setEnabled(False)
+
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
    
    def push_configure_labels(self):
        configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected)
@@ -781,6 +771,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        self.segmenter.setup_configuration()
        self.close()
+
+# TODO Delph LIVE : if cancel label edit, should put the initial labels back... not save to file
 
 class ConfigureLabelsWindow(qt.QWidget):
    def __init__(self, segmenter, modality, parent = None):
@@ -882,6 +874,8 @@ class ConfigureLabelsWindow(qt.QWidget):
       self.resize(800, 200)
 
    def push_edit_button(self, label):
+       self.close()
+
        configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, label)
        configureSingleLabelWindow.show()
 
@@ -950,7 +944,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
       self.value_line_edit = qt.QLineEdit('')
       self.value_line_edit.setValidator(qt.QIntValidator())
-      self.value_line_edit.setReadOnly(True) # To be changed at resolution of Issue #28
+      self.value_line_edit.setEnabled(False) # To be changed at resolution of Issue #28
       value_hbox.addWidget(self.value_line_edit)
       
       layout.addLayout(value_hbox)
@@ -1010,7 +1004,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
       if self.initial_label is not None:
           self.name_line_edit.setText(self.initial_label['name'])
-          self.name_line_edit.setReadOnly(True)
+          self.name_line_edit.setEnabled(False)
           self.value_line_edit.setText(self.initial_label['value'])
           self.color_r_line_edit.setText(label['color_r'])
           self.color_g_line_edit.setText(label['color_g'])

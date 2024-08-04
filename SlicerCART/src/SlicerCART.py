@@ -215,7 +215,6 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         slicerCART_configuration_initial_window.show()
         self.close()
    
-   # TODO Delph : validate that the onSelectOutputFile verifyCompatibility is required??? evaluate use cases
    def select_template_folder_clicked(self, button):
        if button.text == 'OK':
           conf_folder_path = qt.QFileDialog.getExistingDirectory(None,"Open a folder", '', qt.QFileDialog.ShowDirsOnly)
@@ -415,14 +414,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       # TODO Delph : create buttons
 
       # if classification : configure checkboxes, comboboxes, text fields
-
-      # TODO Delph : if new configuration, force empty output folder upon selection 
-      # TODO Delph : if template configuration, BE MORE FLEXIBLE (issue #30) allow selection of existing outputFolder with config 
-      # only if the configuration changed superficially (impose_bids : true to false only; not input file ext;
-      #  is_classif || is_segment : true to false only; is_semi_auto : any; not modality; slice_view : any; window: any)
-      # ks : any
-      # labels : any HU range; any color; append at end ; no modif name || value 
-      # classif : append only (AND WORK MUST BE DONE TO REORG PREV DATA TO HAVE EMPTY FIELDS i.e. no mismatch of columns and data in .csv)
 
       ##########################################
 

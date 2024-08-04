@@ -87,7 +87,7 @@ IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
 
 MODALITY = 'CT'
 
-VERIFY_COMPATIBILITY = True
+REQUIRE_EMPTY = True
 
 LABEL_CONFIG_FILENAME = "label_config.yml"
 KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
@@ -171,17 +171,17 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
            msg.buttonClicked.connect(self.select_template_folder_clicked)
            msg.exec()
        elif self.reuse_configuration_selected_option == self.new_config_radio_button.text:
-           slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option)
+           slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter)
            slicerCARTConfigurationSetupWindow.show()
            self.segmenter.ui.SelectOutputFolder.setVisible(True)
            self.close()
 
    def select_output_folder_clicked(self, button):
        if button.text == 'OK':
-          global VERIFY_COMPATIBILITY
-          VERIFY_COMPATIBILITY = False
+          global REQUIRE_EMPTY
+          REQUIRE_EMPTY = False
           self.segmenter.onSelectOutputFolder()
-          VERIFY_COMPATIBILITY = True
+          REQUIRE_EMPTY = True
           self.segmenter.ui.SelectOutputFolder.setVisible(False)
           if (os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
              os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
@@ -225,7 +225,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
               os.path.exists(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
               os.path.exists(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
                  
-              slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, self.reuse_configuration_selected_option, conf_folder_path)
+              slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, conf_folder_path)
               slicerCARTConfigurationSetupWindow.show()
               self.segmenter.ui.SelectOutputFolder.setVisible(True)
               self.close()
@@ -254,7 +254,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
        self.close()
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
-   def __init__(self, segmenter, reuse_configuration_selected_option, conf_folder_path = None, parent = None):
+   def __init__(self, segmenter, conf_folder_path = None, parent = None):
       super(SlicerCARTConfigurationSetupWindow, self).__init__(parent)
 
       if conf_folder_path is not None:
@@ -271,7 +271,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.set_default_values()
 
       self.segmenter = segmenter
-      self.reuse_configuration_selected_option = reuse_configuration_selected_option
 
       layout = qt.QVBoxLayout()
 
@@ -2848,59 +2847,33 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  def verifyConfigCompatibilities(self):
+  def verifyEmpty(self):
       if self.outputFolder is not None:
-        path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
-
-        if os.path.exists(path_to_saved_config_files) == False:
-            os.makedirs(path_to_saved_config_files)
-
-        path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{LABEL_CONFIG_COPY_FILENAME}'
-        path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}'
-        path_to_keyboard_shortcuts_config_copy = f'{path_to_saved_config_files}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}'
-        path_to_general_config_copy = f'{path_to_saved_config_files}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}'
 
         content_of_output_folder = os.listdir(self.outputFolder)
         if '.DS_Store' in content_of_output_folder:
             content_of_output_folder.remove('.DS_Store')
-
-        if os.path.exists(path_to_label_config_copy):
-            is_label_config_compatible = filecmp.cmp(path_to_label_config_copy, LABEL_CONFIG_FILE_PATH)
-            if is_label_config_compatible == False:
-                msg = qt.QMessageBox()
-                msg.setIcon(qt.QMessageBox.Critical)
-                msg.setText("ERROR : Incompatible Label Configuration")
-                msg.setInformativeText('The label_config.yml file has changed since the initial segmentation. ')
-                msg.setWindowTitle("ERROR : Incompatible Label Configuration")
-                msg.exec()
-
-                self.outputFolder = None
-
-        if os.path.exists(path_to_classification_config_copy):
-            is_classification_config_compatible = filecmp.cmp(path_to_classification_config_copy, CLASSIFICATION_CONFIG_FILE_PATH)
-            if is_classification_config_compatible == False:
-                msg = qt.QMessageBox()
-                msg.setIcon(qt.QMessageBox.Critical)
-                msg.setText("ERROR : Incompatible Classification Configuration")
-                msg.setInformativeText('The classification_config.yml file has changed since the initial classification annotation. ')
-                msg.setWindowTitle("ERROR : Incompatible Classification Configuration")
-                msg.exec()
-
-                self.outputFolder = None
         
-        if len(content_of_output_folder) > 1 and os.path.exists(path_to_label_config_copy) == False and os.path.exists(path_to_classification_config_copy) == False:
-            msg = qt.QMessageBox()
-            msg.setIcon(qt.QMessageBox.Warning)
-            msg.setText("WARNING : Possible Incompatible Configuration")
-            msg.setInformativeText('The output folder is not empty. No configuration files have been saved. Possible configuration incompatibility. Proceed with caution. Otherwise, choose an empty output folder. ')
-            msg.setWindowTitle("WARNING : Possible Incompatible Configuration")
-            msg.exec()
+        if len(content_of_output_folder) > 0:
+            self.outputFolder = None
 
-            shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
-            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
-            shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
-            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, path_to_keyboard_shortcuts_config_copy)
-        elif len(content_of_output_folder) == 1:
+            msg = qt.QMessageBox()
+            msg.setIcon(qt.QMessageBox.Critical)
+            msg.setText("Error : The output folder must be empty ")
+            msg.setInformativeText('Given that there is a new configuration of SlicerCART, the output folder must be empty. ')
+            msg.setWindowTitle("ERROR : The output folder must be empty ")
+            msg.exec()
+        else:
+            path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
+
+            if os.path.exists(path_to_saved_config_files) == False:
+                os.makedirs(path_to_saved_config_files)
+
+            path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{LABEL_CONFIG_COPY_FILENAME}'
+            path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}'
+            path_to_keyboard_shortcuts_config_copy = f'{path_to_saved_config_files}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}'
+            path_to_general_config_copy = f'{path_to_saved_config_files}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}'
+
             shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
             shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
@@ -2909,8 +2882,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectOutputFolder(self):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
-      if VERIFY_COMPATIBILITY: 
-          self.verifyConfigCompatibilities()
+      if REQUIRE_EMPTY: 
+          self.verifyEmpty()
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

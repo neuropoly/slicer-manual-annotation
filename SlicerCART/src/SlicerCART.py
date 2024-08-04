@@ -771,18 +771,18 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        self.segmenter.setup_configuration()
        self.close()
-
-# TODO Delph LIVE : if cancel label edit, should put the initial labels back... not save to file
-
 class ConfigureLabelsWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, parent = None):
+   def __init__(self, segmenter, modality, label_config_yaml = None, parent = None):
       super(ConfigureLabelsWindow, self).__init__(parent)
 
       self.segmenter = segmenter
       self.modality = modality
 
-      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-            label_config_yaml = yaml.full_load(file)
+      if label_config_yaml is None:
+            with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+                    self.label_config_yaml = yaml.full_load(file)
+      else:
+          self.label_config_yaml = label_config_yaml
 
       layout = qt.QVBoxLayout()
 
@@ -791,8 +791,8 @@ class ConfigureLabelsWindow(qt.QWidget):
 
       self.versionCheckboxWidgets = {}
 
-      if len(label_config_yaml['labels']) > 0:
-          number_of_available_labels = len(label_config_yaml['labels'])
+      if len(self.label_config_yaml['labels']) > 0:
+          number_of_available_labels = len(self.label_config_yaml['labels'])
 
           self.label_table_view.setRowCount(number_of_available_labels)
           if self.modality == 'MRI':
@@ -802,7 +802,7 @@ class ConfigureLabelsWindow(qt.QWidget):
           self.label_table_view.horizontalHeader().setStretchLastSection(True)
           self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
-          for index, label in enumerate(label_config_yaml['labels']): 
+          for index, label in enumerate(self.label_config_yaml['labels']): 
                 # TODO Delph LIVE : QIntValidator not working???
                 edit_button = qt.QPushButton('Edit')
                 edit_button.clicked.connect(lambda state, label = label: self.push_edit_button(label))
@@ -876,52 +876,48 @@ class ConfigureLabelsWindow(qt.QWidget):
    def push_edit_button(self, label):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, label)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.label_config_yaml, label)
        configureSingleLabelWindow.show()
 
    def push_remove_button(self, label):
        self.close()
-
-       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-            label_config_yaml = yaml.full_load(file)
        
        value_removed = -1
-       for l in label_config_yaml['labels']:
+       for l in self.label_config_yaml['labels']:
            if l['name'] == label['name']:
                value_removed = l['value']
-               label_config_yaml['labels'].remove(l)
+               self.label_config_yaml['labels'].remove(l)
     
-       for l in label_config_yaml['labels']:
+       for l in self.label_config_yaml['labels']:
            if l['value'] > value_removed and value_removed != -1:
                l['value'] = l['value'] - 1
-
-       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
-           yaml.safe_dump(label_config_yaml, file)
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
        configureLabelsWindow.show()
 
-
-   
    def push_add_label(self):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.label_config_yaml)
        configureSingleLabelWindow.show()
    
    def push_save(self):
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(self.label_config_yaml, file)
+
        self.close()
 
    def push_cancel(self):
        self.close()
 
 class ConfigureSingleLabelWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, label = None, parent = None):
+   def __init__(self, segmenter, modality, label_config_yaml, label = None, parent = None):
       super(ConfigureSingleLabelWindow, self).__init__(parent)
 
       self.segmenter = segmenter
       self.modality = modality
       self.initial_label = label
+      self.label_config_yaml = label_config_yaml
 
       layout = qt.QVBoxLayout()
 
@@ -1033,13 +1029,10 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        self.color_display.setStyleSheet(f"background-color:rgb{color}")
    
    def push_save(self):
-       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-            label_config_yaml = yaml.full_load(file)
-    
        current_label_name = self.name_line_edit.text
     
        label_found = False
-       for label in label_config_yaml['labels']:
+       for label in self.label_config_yaml['labels']:
            if label['name'] == current_label_name:
                # edit 
                label_found = True
@@ -1053,9 +1046,9 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                
        if label_found == False:
            # append
-           new_label = copy.deepcopy(label_config_yaml['labels'][0])
+           new_label = copy.deepcopy(self.label_config_yaml['labels'][0])
            new_label['name'] = self.name_line_edit.text
-           new_label['value'] = len(label_config_yaml['labels']) + 1
+           new_label['value'] = len(self.label_config_yaml['labels']) + 1
            new_label['color_r'] = int(self.color_r_line_edit.text)
            new_label['color_g'] = int(self.color_g_line_edit.text)
            new_label['color_b'] = int(self.color_b_line_edit.text)
@@ -1063,17 +1056,14 @@ class ConfigureSingleLabelWindow(qt.QWidget):
            if self.modality == 'CT':
                 new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
-           label_config_yaml['labels'].append(new_label)
+           self.label_config_yaml['labels'].append(new_label)
         
-       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
-           yaml.safe_dump(label_config_yaml, file)
-        
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
        configureLabelsWindow.show()
        self.close() 
        
    def push_cancel(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
        configureLabelsWindow.show()
        self.close()
 

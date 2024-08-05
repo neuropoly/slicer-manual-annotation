@@ -2838,8 +2838,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  def verifyEmpty(self):
-      if self.outputFolder is not None:
+  def verify_empty(self):
+      if self.outputFolder is not None and os.path.exists(self.outputFolder):
 
         content_of_output_folder = os.listdir(self.outputFolder)
         if '.DS_Store' in content_of_output_folder:
@@ -2874,7 +2874,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
       if REQUIRE_EMPTY: 
-          self.verifyEmpty()
+          self.verify_empty()
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

@@ -404,7 +404,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       ct_window_width_hbox.addWidget(self.ct_window_width_label)
       
       self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
-      onlyInt = qt.QIntValidator()
       self.ct_window_width_line_edit.setValidator(onlyInt)
       ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
 
@@ -414,6 +413,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       # TODO Delph : create buttons
 
       # if classification : configure checkboxes, comboboxes, text fields
+      # create but for QIntValidator not working anywhere in the file
 
       ##########################################
 
@@ -793,7 +793,6 @@ class ConfigureLabelsWindow(qt.QWidget):
           self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
           for index, label in enumerate(self.label_config_yaml['labels']): 
-                # TODO Delph LIVE : QIntValidator not working???
                 edit_button = qt.QPushButton('Edit')
                 edit_button.clicked.connect(lambda state, label = label: self.push_edit_button(label))
                 edit_button_hbox = qt.QHBoxLayout()

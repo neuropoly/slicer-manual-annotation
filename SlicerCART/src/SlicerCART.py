@@ -850,18 +850,18 @@ class ConfigureClassificationWindow(qt.QWidget):
                 self.combobox_table_view.setItem(index, 1, cell)
                 self.combobox_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
 
-                options_string = ''
+                combobox = qt.QComboBox()
                 for i, (name, label) in enumerate(combo_box_options.items()):
-                    if options_string == '':
-                        options_string = label
-                    else:
-                        options_string = options_string + '\n' + label
+                    combobox.addItem(label)
 
-                cell = qt.QTableWidgetItem(options_string)
-                cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
-                self.combobox_table_view.setItem(index, 2, cell)
-                self.combobox_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Options'))
+                combobox_hbox = qt.QHBoxLayout()
+                combobox_hbox.addWidget(combobox)
+                combobox_hbox.setAlignment(qt.Qt.AlignCenter)
+                combobox_hbox.setContentsMargins(0, 0, 0, 0)
+                widget = qt.QWidget()
+                widget.setLayout(combobox_hbox)
+                self.combobox_table_view.setCellWidget(index, 2, widget)
+                self.combobox_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem(''))
 
       self.add_combobox_button = qt.QPushButton('Add Drop Down')
       self.add_combobox_button.clicked.connect(self.push_add_combobox)
@@ -877,7 +877,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
       self.setLayout(layout)
       self.setWindowTitle("Configure Classification")
-      self.resize(400, 600)
+      self.resize(500, 600)
 
    def push_remove_combobox_button(self, combo_box_name):
        self.close()

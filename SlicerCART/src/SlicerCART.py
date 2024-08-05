@@ -512,6 +512,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
       layout.addWidget(self.configure_labels_button)
 
+      self.configure_classification_button = qt.QPushButton('Configure Classification...')
+      self.configure_classification_button.setStyleSheet("background-color : yellowgreen")
+      layout.addWidget(self.configure_classification_button)
+
       self.previous_button = qt.QPushButton('Previous')
       layout.addWidget(self.previous_button)
       
@@ -530,6 +534,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    
    def connect_buttons_to_callbacks(self):
        self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
+       self.classification_task_checkbox.stateChanged.connect(self.classification_checkbox_state_changed)
        self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
        self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
        self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
@@ -547,6 +552,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
        self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
        self.configure_labels_button.clicked.connect(self.push_configure_labels)
+       self.configure_classification_button.clicked.connect(self.push_configure_classification)
        self.previous_button.clicked.connect(self.push_previous)
        self.apply_button.clicked.connect(self.push_apply)
        self.cancel_button.clicked.connect(self.push_cancel)
@@ -621,19 +627,20 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.remove_small_holes_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] 
        self.interpolate_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
 
+   def classification_checkbox_state_changed(self):
+       self.classification_selected = self.classification_task_checkbox.isChecked()
+       self.configure_classification_button.setEnabled(self.classification_selected)
+   
    def segmentation_checkbox_state_changed(self):
        self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
+       self.configure_labels_button.setEnabled(self.segmentation_selected)
 
        if self.segmentation_task_checkbox.isChecked():
-            self.configure_labels_button.setEnabled(True)
-
             if self.modality_selected == 'CT':
                 self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
             else:
                 self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
        else: 
-            self.configure_labels_button.setEnabled(False)
-
             self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
    
    def update_interpolate_ks(self):
@@ -702,6 +709,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def push_configure_labels(self):
        configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected)
        configureLabelsWindow.show()
+
+   def push_configure_classification(self):
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter)
+       configureClassificationWindow.show()
    
    def push_previous(self):
        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
@@ -761,6 +772,151 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        self.segmenter.setup_configuration()
        self.close()
+
+class ConfigureClassificationWindow(qt.QWidget):
+   def __init__(self, segmenter, classification_config_yaml = None, parent = None):
+      super(ConfigureClassificationWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+
+      if classification_config_yaml is None:
+            with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
+                    self.classification_config_yaml = yaml.full_load(file)
+      else:
+          self.classification_config_yaml = classification_config_yaml
+
+      layout = qt.QVBoxLayout()
+
+      self.checkbox_table_view = qt.QTableWidget()
+      layout.addWidget(self.checkbox_table_view)
+
+      if len(self.classification_config_yaml['checkboxes']) > 0:
+          number_of_checkboxes = len(self.classification_config_yaml['checkboxes'])
+
+          self.checkbox_table_view.setRowCount(number_of_checkboxes)
+          self.checkbox_table_view.setColumnCount(2)
+          self.checkbox_table_view.horizontalHeader().setStretchLastSection(True)
+          self.checkbox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, checkbox_label = checkbox_label: self.push_remove_checkbox_button(checkbox_label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.checkbox_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.checkbox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                cell = qt.QTableWidgetItem(checkbox_label)
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.checkbox_table_view.setItem(index, 1, cell)
+                self.checkbox_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+      self.add_checkbox_button = qt.QPushButton('Add Checkbox')
+      self.add_checkbox_button.clicked.connect(self.push_add_checkbox)
+      layout.addWidget(self.add_checkbox_button)
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Classification")
+      self.resize(800, 200)
+
+   def push_remove_checkbox_button(self, checkbox_label):
+       self.close()
+       
+       for i, (object_name, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+           if label == checkbox_label:
+               object_name_to_remove = object_name
+       
+       self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow.show()
+
+   def push_add_checkbox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'checkbox')
+       configureSingleClassificationItemWindow.show()
+   
+   def push_save(self):
+       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(self.classification_config_yaml, file)
+
+       self.close()
+
+   def push_cancel(self):
+       self.close()
+
+class ConfigureSingleClassificationItemWindow(qt.QWidget):
+   def __init__(self, segmenter, classification_config_yaml, item_added, parent = None):
+      super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.classification_config_yaml = classification_config_yaml
+      self.item_added = item_added
+
+      layout = qt.QVBoxLayout()
+
+      name_hbox = qt.QHBoxLayout()
+
+      name_label = qt.QLabel('Item Name : ')
+      name_label.setStyleSheet("font-weight: bold")
+      name_hbox.addWidget(name_label)
+
+      self.name_line_edit = qt.QLineEdit('')
+      name_hbox.addWidget(self.name_line_edit)
+      
+      layout.addLayout(name_hbox)
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Classification Item")
+      self.resize(400, 200)
+   
+   def push_save(self):
+       current_label_name = self.name_line_edit.text
+       object_name = current_label_name.replace(' ', '_')
+
+       if self.item_added == 'checkbox':
+            label_found = False
+            for i, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+                if label == current_label_name:
+                    label_found = True
+                    
+            if label_found == False:
+                # append
+                self.classification_config_yaml['checkboxes'].update({object_name : current_label_name})
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow.show()
+       self.close() 
+       
+   def push_cancel(self):
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow.show()
+       self.close()
+
+# TODO Delph : for both classification and label configuration, handle the case when the list is empty
+
 class ConfigureLabelsWindow(qt.QWidget):
    def __init__(self, segmenter, modality, label_config_yaml = None, parent = None):
       super(ConfigureLabelsWindow, self).__init__(parent)
@@ -779,12 +935,10 @@ class ConfigureLabelsWindow(qt.QWidget):
       self.label_table_view = qt.QTableWidget()
       layout.addWidget(self.label_table_view)
 
-      self.versionCheckboxWidgets = {}
-
       if len(self.label_config_yaml['labels']) > 0:
-          number_of_available_labels = len(self.label_config_yaml['labels'])
+          number_of_labels = len(self.label_config_yaml['labels'])
 
-          self.label_table_view.setRowCount(number_of_available_labels)
+          self.label_table_view.setRowCount(number_of_labels)
           if self.modality == 'MRI':
                 self.label_table_view.setColumnCount(5) # edit button, remove button, name, value, color
           elif self.modality == 'CT':

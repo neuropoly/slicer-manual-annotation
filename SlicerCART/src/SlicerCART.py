@@ -830,7 +830,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
       self.setLayout(layout)
       self.setWindowTitle("Configure Classification")
-      self.resize(800, 200)
+      self.resize(300, 600)
 
    def push_remove_checkbox_button(self, checkbox_label):
        self.close()
@@ -890,7 +890,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
 
       self.setLayout(layout)
       self.setWindowTitle("Configure Classification Item")
-      self.resize(400, 200)
+      self.resize(200, 100)
    
    def push_save(self):
        current_label_name = self.name_line_edit.text
@@ -914,8 +914,6 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()
        self.close()
-
-# TODO Delph : for both classification and label configuration, handle the case when the list is empty
 
 class ConfigureLabelsWindow(qt.QWidget):
    def __init__(self, segmenter, modality, label_config_yaml = None, parent = None):
@@ -1045,11 +1043,22 @@ class ConfigureLabelsWindow(qt.QWidget):
        configureSingleLabelWindow.show()
    
    def push_save(self):
-       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
-           yaml.safe_dump(self.label_config_yaml, file)
+       if len(self.label_config_yaml['labels']) == 0:
+            msg = qt.QMessageBox()
+            msg.setWindowTitle('ERROR : Label list is empty')
+            msg.setText('The label list cannot be empty. Using the previous label configuration. ')
+            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+            msg.buttonClicked.connect(self.push_error_label_list_empty)
+            msg.exec()
+       else:
+            with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+                yaml.safe_dump(self.label_config_yaml, file)
 
-       self.close()
+            self.close()
 
+   def push_error_label_list_empty(self):
+       self.push_cancel()
+   
    def push_cancel(self):
        self.close()
 
@@ -2157,6 +2166,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   def setupCheckboxes(self, number_of_columns):
       self.checkboxWidgets = {}
+
+      row_index = 0
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
         print(objectName, label)

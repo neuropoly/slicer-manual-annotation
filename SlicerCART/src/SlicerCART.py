@@ -412,7 +412,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       ##########################################
       # TODO Delph : create buttons
 
-      # if classification : configure text fields
+      # add button to edit configuration and allow only certain modifications (see previous commit and issue #30)
       # create bug for QIntValidator not working anywhere in the file
 
       ##########################################
@@ -867,6 +867,39 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.add_combobox_button.clicked.connect(self.push_add_combobox)
       layout.addWidget(self.add_combobox_button)
 
+      self.freetext_table_view = qt.QTableWidget()
+      layout.addWidget(self.freetext_table_view)
+
+      if len(self.classification_config_yaml['freetextboxes']) > 0:
+          number_of_freetextboxes = len(self.classification_config_yaml['freetextboxes'])
+
+          self.freetext_table_view.setRowCount(number_of_freetextboxes)
+          self.freetext_table_view.setColumnCount(2)
+          self.freetext_table_view.horizontalHeader().setStretchLastSection(True)
+          self.freetext_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (objectName, freetextbox_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, freetextbox_label = freetextbox_label: self.push_remove_freetextbox_button(freetextbox_label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.freetext_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.freetext_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                cell = qt.QTableWidgetItem(freetextbox_label)
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.freetext_table_view.setItem(index, 1, cell)
+                self.freetext_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+      self.add_freetextbox_button = qt.QPushButton('Add Text Field')
+      self.add_freetextbox_button.clicked.connect(self.push_add_freetextbox)
+      layout.addWidget(self.add_freetextbox_button)
+
       self.save_button = qt.QPushButton('Save')
       self.save_button.clicked.connect(self.push_save)
       layout.addWidget(self.save_button)
@@ -889,15 +922,39 @@ class ConfigureClassificationWindow(qt.QWidget):
    
    def push_remove_checkbox_button(self, checkbox_label):
        self.close()
-       
+
+       object_name_to_remove = None
+
        for i, (object_name, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
            if label == checkbox_label:
                object_name_to_remove = object_name
        
-       self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
+       if object_name_to_remove is not None:
+            self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
         
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()
+
+   def push_remove_freetextbox_button(self, freetextbox_label):
+       self.close()
+
+       object_name_to_remove = None
+       
+       for i, (object_name, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+           if label == freetextbox_label:
+               object_name_to_remove = object_name
+       
+       if object_name_to_remove is not None:
+            self.classification_config_yaml['freetextboxes'].pop(object_name_to_remove, None)
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow.show()
+
+   def push_add_freetextbox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'freetextbox')
+       configureSingleClassificationItemWindow.show()
 
    def push_add_combobox(self):
        self.close()
@@ -1003,6 +1060,15 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                 if item_found == False:
                     # append
                     self.classification_config_yaml['comboboxes'].update({object_name : options_dict})
+       elif self.item_added == 'freetextbox':
+            label_found = False
+            for i, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+                if label == current_label_name:
+                    label_found = True
+                    
+            if label_found == False:
+                # append
+                self.classification_config_yaml['freetextboxes'].update({object_name : current_label_name})
         
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()

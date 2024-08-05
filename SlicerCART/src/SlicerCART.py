@@ -412,7 +412,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       ##########################################
       # TODO Delph : create buttons
 
-      # if classification : configure comboboxes, text fields
+      # if classification : configure text fields
       # create bug for QIntValidator not working anywhere in the file
 
       ##########################################
@@ -820,6 +820,53 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.add_checkbox_button.clicked.connect(self.push_add_checkbox)
       layout.addWidget(self.add_checkbox_button)
 
+      self.combobox_table_view = qt.QTableWidget()
+      layout.addWidget(self.combobox_table_view)
+
+      if len(self.classification_config_yaml['comboboxes']) > 0:
+          number_of_comboboxes = len(self.classification_config_yaml['comboboxes'])
+
+          self.combobox_table_view.setRowCount(number_of_comboboxes)
+          self.combobox_table_view.setColumnCount(3)
+          self.combobox_table_view.horizontalHeader().setStretchLastSection(True)
+          self.combobox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+          self.combobox_table_view.verticalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (combo_box_name, combo_box_options) in enumerate(self.classification_config_yaml["comboboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, combo_box_name = combo_box_name: self.push_remove_combobox_button(combo_box_name))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.combobox_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.combobox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                cell = qt.QTableWidgetItem(combo_box_name.replace('_', ' ').capitalize())
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.combobox_table_view.setItem(index, 1, cell)
+                self.combobox_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+                options_string = ''
+                for i, (name, label) in enumerate(combo_box_options.items()):
+                    if options_string == '':
+                        options_string = label
+                    else:
+                        options_string = options_string + '\n' + label
+
+                cell = qt.QTableWidgetItem(options_string)
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.combobox_table_view.setItem(index, 2, cell)
+                self.combobox_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Options'))
+
+      self.add_combobox_button = qt.QPushButton('Add Drop Down')
+      self.add_combobox_button.clicked.connect(self.push_add_combobox)
+      layout.addWidget(self.add_combobox_button)
+
       self.save_button = qt.QPushButton('Save')
       self.save_button.clicked.connect(self.push_save)
       layout.addWidget(self.save_button)
@@ -830,8 +877,16 @@ class ConfigureClassificationWindow(qt.QWidget):
 
       self.setLayout(layout)
       self.setWindowTitle("Configure Classification")
-      self.resize(300, 600)
+      self.resize(400, 600)
 
+   def push_remove_combobox_button(self, combo_box_name):
+       self.close()
+
+       self.classification_config_yaml['comboboxes'].pop(combo_box_name, None)
+
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow.show()
+   
    def push_remove_checkbox_button(self, checkbox_label):
        self.close()
        
@@ -844,6 +899,12 @@ class ConfigureClassificationWindow(qt.QWidget):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()
 
+   def push_add_combobox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'combobox')
+       configureSingleClassificationItemWindow.show()
+   
    def push_add_checkbox(self):
        self.close()
 
@@ -880,6 +941,21 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
       
       layout.addLayout(name_hbox)
 
+      if self.item_added == 'combobox':
+          options_hbox = qt.QHBoxLayout()
+
+          options_label = qt.QLabel('Options : ')
+          options_label.setStyleSheet("font-weight: bold")
+          options_hbox.addWidget(options_label)
+
+          self.options_combobox = qt.QComboBox()
+          self.options_combobox.setEditable(True)
+
+          options_hbox.addWidget(self.options_combobox)
+
+          layout.addLayout(options_hbox)
+
+
       self.save_button = qt.QPushButton('Save')
       self.save_button.clicked.connect(self.push_save)
       layout.addWidget(self.save_button)
@@ -905,11 +981,36 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
             if label_found == False:
                 # append
                 self.classification_config_yaml['checkboxes'].update({object_name : current_label_name})
+       elif self.item_added == 'combobox':
+            if self.options_combobox.count == 0:
+                msg = qt.QMessageBox()
+                msg.setWindowTitle('ERROR : No Drop Down Options Defined')
+                msg.setText('At least one drop down option must be defined. The previous classification configuration will be used. ')
+                msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+                msg.buttonClicked.connect(self.push_error_no_dropdown_option_defined)
+                msg.exec()
+            else:
+                options_dict = {}
+                combobox_option_items = [self.options_combobox.itemText(i) for i in range(self.options_combobox.count)]
+                for option in combobox_option_items:
+                    options_dict.update({option.replace(' ', '_') : option})
+
+                item_found = False
+                for i, (combobox_name, _) in enumerate(self.classification_config_yaml['comboboxes'].items()):
+                    if combobox_name == object_name:
+                        item_found = True
+
+                if item_found == False:
+                    # append
+                    self.classification_config_yaml['comboboxes'].update({object_name : options_dict})
         
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()
        self.close() 
        
+   def push_error_no_dropdown_option_defined(self):
+       self.push_cancel()
+   
    def push_cancel(self):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
        configureClassificationWindow.show()

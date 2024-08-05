@@ -412,8 +412,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       ##########################################
       # TODO Delph : create buttons
 
-      # if classification : configure checkboxes, comboboxes, text fields
-      # create but for QIntValidator not working anywhere in the file
+      # if classification : configure comboboxes, text fields
+      # create bug for QIntValidator not working anywhere in the file
 
       ##########################################
 

@@ -85,6 +85,7 @@ IS_CLASSIFICATION_REQUESTED = True
 IS_SEGMENTATION_REQUESTED = True
 IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
 IS_MOUSE_SHORTCUTS_REQUESTED = False
+IS_KEYBOARD_SHORTCUTS_REQUESTED = True
 
 MODALITY = 'CT'
 
@@ -426,12 +427,23 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       ##########################################
 
+      keyboard_shortcuts_hbox = qt.QHBoxLayout()
+
+      keyboard_shortcuts_label = qt.QLabel('Use Custom Keyboard Shortcuts? ')
+      keyboard_shortcuts_label.setStyleSheet("font-weight: bold")
+      keyboard_shortcuts_hbox.addWidget(keyboard_shortcuts_label)
+
+      self.keyboard_shortcuts_checkbox = qt.QCheckBox()
+      keyboard_shortcuts_hbox.addWidget(self.keyboard_shortcuts_checkbox)
+
+      layout.addLayout(keyboard_shortcuts_hbox)
+
       toggle_fill_ks_hbox = qt.QHBoxLayout()
 
-      toggle_fill_ks_label = qt.QLabel()
-      toggle_fill_ks_label.setText('Toggle Fill Keyboard Shortcut : ')
-      toggle_fill_ks_label.setStyleSheet("font-weight: bold")
-      toggle_fill_ks_hbox.addWidget(toggle_fill_ks_label)
+      self.toggle_fill_ks_label = qt.QLabel()
+      self.toggle_fill_ks_label.setText('Toggle Fill Keyboard Shortcut : ')
+      self.toggle_fill_ks_label.setStyleSheet("font-style: italic")
+      toggle_fill_ks_hbox.addWidget(self.toggle_fill_ks_label)
 
       self.toggle_fill_ks_line_edit = qt.QLineEdit(self.toggle_fill_ks_selected)
       self.toggle_fill_ks_line_edit.setMaxLength(1)
@@ -441,10 +453,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       toggle_visibility_ks_hbox = qt.QHBoxLayout()
 
-      toggle_visibility_ks_label = qt.QLabel()
-      toggle_visibility_ks_label.setText('Toggle Visibility Keyboard Shortcut : ')
-      toggle_visibility_ks_label.setStyleSheet("font-weight: bold")
-      toggle_visibility_ks_hbox.addWidget(toggle_visibility_ks_label)
+      self.toggle_visibility_ks_label = qt.QLabel()
+      self.toggle_visibility_ks_label.setText('Toggle Visibility Keyboard Shortcut : ')
+      self.toggle_visibility_ks_label.setStyleSheet("font-style: italic")
+      toggle_visibility_ks_hbox.addWidget(self.toggle_visibility_ks_label)
 
       self.toggle_visibility_ks_line_edit = qt.QLineEdit(self.toggle_visibility_ks_selected)
       self.toggle_visibility_ks_line_edit.setMaxLength(1)
@@ -454,10 +466,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       undo_ks_hbox = qt.QHBoxLayout()
 
-      undo_ks_label = qt.QLabel()
-      undo_ks_label.setText('Undo Keyboard Shortcut : ')
-      undo_ks_label.setStyleSheet("font-weight: bold")
-      undo_ks_hbox.addWidget(undo_ks_label)
+      self.undo_ks_label = qt.QLabel()
+      self.undo_ks_label.setText('Undo Keyboard Shortcut : ')
+      self.undo_ks_label.setStyleSheet("font-style: italic")
+      undo_ks_hbox.addWidget(self.undo_ks_label)
 
       self.undo_ks_line_edit = qt.QLineEdit(self.undo_ks_selected)
       self.undo_ks_line_edit.setMaxLength(1)
@@ -467,10 +479,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       save_seg_ks_hbox = qt.QHBoxLayout()
 
-      save_seg_ks_label = qt.QLabel()
-      save_seg_ks_label.setText('Save Segmentation Keyboard Shortcut : ')
-      save_seg_ks_label.setStyleSheet("font-weight: bold")
-      save_seg_ks_hbox.addWidget(save_seg_ks_label)
+      self.save_seg_ks_label = qt.QLabel()
+      self.save_seg_ks_label.setText('Save Segmentation Keyboard Shortcut : ')
+      self.save_seg_ks_label.setStyleSheet("font-style: italic")
+      save_seg_ks_hbox.addWidget(self.save_seg_ks_label)
 
       self.save_seg_ks_line_edit = qt.QLineEdit(self.save_seg_ks_selected)
       self.save_seg_ks_line_edit.setMaxLength(1)
@@ -480,10 +492,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       smooth_ks_hbox = qt.QHBoxLayout()
 
-      smooth_ks_label = qt.QLabel()
-      smooth_ks_label.setText('Smooth Margins Keyboard Shortcut : ')
-      smooth_ks_label.setStyleSheet("font-weight: bold")
-      smooth_ks_hbox.addWidget(smooth_ks_label)
+      self.smooth_ks_label = qt.QLabel()
+      self.smooth_ks_label.setText('Smooth Margins Keyboard Shortcut : ')
+      self.smooth_ks_label.setStyleSheet("font-style: italic")
+      smooth_ks_hbox.addWidget(self.smooth_ks_label)
 
       self.smooth_ks_line_edit = qt.QLineEdit(self.smooth_ks_selected)
       self.smooth_ks_line_edit.setMaxLength(1)
@@ -493,10 +505,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       remove_small_holes_ks_hbox = qt.QHBoxLayout()
 
-      remove_small_holes_ks_label = qt.QLabel()
-      remove_small_holes_ks_label.setText('Remove Small Holes Keyboard Shortcut : ')
-      remove_small_holes_ks_label.setStyleSheet("font-weight: bold")
-      remove_small_holes_ks_hbox.addWidget(remove_small_holes_ks_label)
+      self.remove_small_holes_ks_label = qt.QLabel()
+      self.remove_small_holes_ks_label.setText('Remove Small Holes Keyboard Shortcut : ')
+      self.remove_small_holes_ks_label.setStyleSheet("font-style: italic")
+      remove_small_holes_ks_hbox.addWidget(self.remove_small_holes_ks_label)
 
       self.remove_small_holes_ks_line_edit = qt.QLineEdit(self.remove_small_holes_ks_selected)
       self.remove_small_holes_ks_line_edit.setMaxLength(1)
@@ -506,10 +518,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       interpolate_ks_hbox = qt.QHBoxLayout()
 
-      interpolate_ks_label = qt.QLabel()
-      interpolate_ks_label.setText('Interpolate Image Keyboard Shortcut : ')
-      interpolate_ks_label.setStyleSheet("font-weight: bold")
-      interpolate_ks_hbox.addWidget(interpolate_ks_label)
+      self.interpolate_ks_label = qt.QLabel()
+      self.interpolate_ks_label.setText('Interpolate Image Keyboard Shortcut : ')
+      self.interpolate_ks_label.setStyleSheet("font-style: italic")
+      interpolate_ks_hbox.addWidget(self.interpolate_ks_label)
 
       self.interpolate_ks_line_edit = qt.QLineEdit(self.interpolate_ks_selected)
       self.interpolate_ks_line_edit.setMaxLength(1)
@@ -555,6 +567,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def connect_buttons_to_callbacks(self):
        self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
        self.classification_task_checkbox.stateChanged.connect(self.classification_checkbox_state_changed)
+       self.keyboard_shortcuts_checkbox.stateChanged.connect(self.keyboard_shortcuts_checkbox_state_changed)
        self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
        self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
        self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
@@ -611,13 +624,16 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.segmentation_task_checkbox.setChecked(self.segmentation_selected)
        self.classification_task_checkbox.setChecked(self.classification_selected)
        self.mouse_shortcuts_checkbox.setChecked(self.mouse_shortcuts_selected)
+       self.keyboard_shortcuts_checkbox.setChecked(self.keyboard_shortcuts_selected)
 
        self.segmentation_checkbox_state_changed()
+       self.keyboard_shortcuts_checkbox_state_changed()
 
    def set_default_values(self):
        self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
        self.classification_selected = self.general_config_yaml['is_classification_requested']
        self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
+       self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
 
        if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
             self.include_semi_auto_PHE_tool_selected_option = 'Yes'
@@ -652,6 +668,24 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def classification_checkbox_state_changed(self):
        self.classification_selected = self.classification_task_checkbox.isChecked()
        self.configure_classification_button.setEnabled(self.classification_selected)
+
+   def keyboard_shortcuts_checkbox_state_changed(self):
+       self.keyboard_shortcuts_selected = self.keyboard_shortcuts_checkbox.isChecked()
+
+       self.toggle_fill_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_fill_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_visibility_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_visibility_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.undo_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.undo_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.save_seg_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.save_seg_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.smooth_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.smooth_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.remove_small_holes_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.remove_small_holes_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.interpolate_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.interpolate_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
    
    def segmentation_checkbox_state_changed(self):
        self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
@@ -745,6 +779,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
        self.general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
        self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
+       self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
        self.general_config_yaml['modality'] = self.modality_selected
 
        if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
@@ -2146,6 +2181,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global IS_CLASSIFICATION_REQUESTED
         global IS_SEGMENTATION_REQUESTED
         global IS_MOUSE_SHORTCUTS_REQUESTED
+        global IS_KEYBOARD_SHORTCUTS_REQUESTED
         global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
         global CT_WINDOW_WIDTH
@@ -2159,6 +2195,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         IS_CLASSIFICATION_REQUESTED = self.general_config_yaml["is_classification_requested"]
         IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
         IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
+        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.general_config_yaml["is_keyboard_shortcuts_requested"]
         IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.general_config_yaml["is_semi_automatic_phe_tool_requested"]
         INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
 
@@ -2325,17 +2362,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.UB_HU.setVisible(False)
             self.ui.pushDefaultMin.setVisible(False)
             self.ui.pushDefaultMax.setVisible(False)
-        
-        for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
 
-            shortcutKey = i.get("shortcut")
-            callback_name = i.get("callback")
-            button_name = i.get("button")
+        if self.general_config_yaml['is_keyboard_shortcuts_requested']:
+            for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
 
-            button = getattr(self.ui, button_name)
-            callback = getattr(self, callback_name)
+                shortcutKey = i.get("shortcut")
+                callback_name = i.get("callback")
+                button_name = i.get("button")
 
-            self.connectShortcut(shortcutKey, button, callback)
+                button = getattr(self.ui, button_name)
+                callback = getattr(self, callback_name)
+
+                self.connectShortcut(shortcutKey, button, callback)
         
         # Display the selected color view at module startup
         if self.general_config_yaml['slice_view_color'] == "Yellow":

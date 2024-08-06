@@ -414,6 +414,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       # add button to edit configuration and allow only certain modifications (see previous commit and issue #30)
       # create bug for QIntValidator not working anywhere in the file
+      # create pull request for issue #30, issue #3, and issue #27 at the same time 
 
       ##########################################
 

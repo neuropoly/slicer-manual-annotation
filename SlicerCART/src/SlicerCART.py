@@ -413,6 +413,13 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       # TODO Delph : create buttons
 
       # add button to edit configuration and allow only certain modifications (see previous commit and issue #30)
+      # TODO Delph : if template configuration, BE MORE FLEXIBLE (issue #30) allow selection of existing outputFolder with config 
+      # only if the configuration changed superficially (impose_bids : true to false only; not input file ext;
+      #  is_classif || is_segment : true to false only; is_semi_auto : any; not modality; slice_view : any; window: any)
+      # ks : any
+      # labels : any HU range; any color; append at end ; no modif name || value 
+      # classif : append only (AND WORK MUST BE DONE TO REORG PREV DATA TO HAVE EMPTY FIELDS i.e. no mismatch of columns and data in .csv)
+        
       # create bug for QIntValidator not working anywhere in the file
       # create pull request for issue #30, issue #3, and issue #27 at the same time 
 

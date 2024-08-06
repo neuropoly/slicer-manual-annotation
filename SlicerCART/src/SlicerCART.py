@@ -84,6 +84,7 @@ REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
 IS_CLASSIFICATION_REQUESTED = True
 IS_SEGMENTATION_REQUESTED = True
 IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
+IS_MOUSE_SHORTCUTS_REQUESTED = False
 
 MODALITY = 'CT'
 
@@ -516,6 +517,17 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(interpolate_ks_hbox)
 
+      mouse_shortcuts_hbox = qt.QHBoxLayout()
+
+      mouse_shortcuts_label = qt.QLabel('Use Custom Mouse Shortcuts? ')
+      mouse_shortcuts_label.setStyleSheet("font-weight: bold")
+      mouse_shortcuts_hbox.addWidget(mouse_shortcuts_label)
+
+      self.mouse_shortcuts_checkbox = qt.QCheckBox()
+      mouse_shortcuts_hbox.addWidget(self.mouse_shortcuts_checkbox)
+
+      layout.addLayout(mouse_shortcuts_hbox)
+
       self.configure_labels_button = qt.QPushButton('Configure Labels...')
       self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
       layout.addWidget(self.configure_labels_button)
@@ -598,12 +610,14 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
        self.segmentation_task_checkbox.setChecked(self.segmentation_selected)
        self.classification_task_checkbox.setChecked(self.classification_selected)
+       self.mouse_shortcuts_checkbox.setChecked(self.mouse_shortcuts_selected)
 
        self.segmentation_checkbox_state_changed()
 
    def set_default_values(self):
        self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
        self.classification_selected = self.general_config_yaml['is_classification_requested']
+       self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
 
        if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
             self.include_semi_auto_PHE_tool_selected_option = 'Yes'
@@ -730,6 +744,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def push_apply(self):
        self.general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
        self.general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
        self.general_config_yaml['modality'] = self.modality_selected
 
        if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
@@ -2106,21 +2121,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-
-    # MB
-    self.interactor1 = slicer.app.layoutManager().sliceWidget(
-            'Yellow').sliceView().interactor()
-    self.interactor2 = slicer.app.layoutManager().sliceWidget(
-        'Red').sliceView().interactor()
-
-    # Apply the custom interactor style
-    styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
-    self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
-    self.interactor1.SetInteractorStyle(self.styleYellow)
-
-    styleRed = slicer.app.layoutManager().sliceWidget('Red')
-    self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
-    self.interactor2.SetInteractorStyle(self.styleRed)
   
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
@@ -2145,6 +2145,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global MODALITY
         global IS_CLASSIFICATION_REQUESTED
         global IS_SEGMENTATION_REQUESTED
+        global IS_MOUSE_SHORTCUTS_REQUESTED
         global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
         global CT_WINDOW_WIDTH
@@ -2157,6 +2158,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         MODALITY = self.general_config_yaml["modality"]
         IS_CLASSIFICATION_REQUESTED = self.general_config_yaml["is_classification_requested"]
         IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
+        IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
         IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.general_config_yaml["is_semi_automatic_phe_tool_requested"]
         INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
 
@@ -2271,6 +2273,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.get_keyboard_shortcuts_config_values()
         self.get_classification_config_values()
         self.get_general_config_values()
+
+        if IS_MOUSE_SHORTCUTS_REQUESTED:
+            # MB
+            self.interactor1 = slicer.app.layoutManager().sliceWidget(
+                    'Yellow').sliceView().interactor()
+            self.interactor2 = slicer.app.layoutManager().sliceWidget(
+                'Red').sliceView().interactor()
+
+            # Apply the custom interactor style
+            styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
+            self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
+            self.interactor1.SetInteractorStyle(self.styleYellow)
+
+            styleRed = slicer.app.layoutManager().sliceWidget('Red')
+            self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
+            self.interactor2.SetInteractorStyle(self.styleRed)
 
         self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
         self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]

@@ -1612,7 +1612,7 @@ class LoadClassificationWindow(qt.QWidget):
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
            if selected_version_df.at[0, label] == 'Yes':
                self.segmenter.checkboxWidgets[objectName].setChecked(True)
-           elif selected_version_df.at[0, label] == 'No' or selected_version_df.at[0, label] == '':
+           elif selected_version_df.at[0, label] == 'No' or str(selected_version_df.at[0, label]) == 'nan':
                self.segmenter.checkboxWidgets[objectName].setChecked(False)
 
        for i, (comboBoxName, options) in enumerate(self.segmenter.classification_config_yaml["comboboxes"].items()):
@@ -3071,42 +3071,84 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         
   
   def getClassificationInformation(self):
+      self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
+                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
+      header = None
+      if os.path.exists(self.outputClassificationInformationFile) and os.path.isfile(self.outputClassificationInformationFile):
+            with open(self.outputClassificationInformationFile, 'r') as f:
+                header = f.readlines()[0]
+    
       label_string = ""
       data_string = ""
-      for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = "No"
-          if self.checkboxWidgets[objectName].isChecked():
-              data = "Yes"
-          
-          data_string = data_string + data
-      
-      for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
-          label = comboBoxName.replace("_", " ").capitalize()
 
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
+      if header is not None:
+            label_string = header.split('time,')[1]
 
-          data = self.comboboxWidgets[comboBoxName].currentText
-          data_string = data_string + data
-      
-      for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
-          data_string = data_string + data
+            labels = label_string.split(',')
+
+            number_of_checkboxes = len(self.classification_config_yaml["checkboxes"].items())
+            number_of_comboboxes = len(self.classification_config_yaml["comboboxes"].items())
+            number_of_freetextboxes = len(self.classification_config_yaml["freetextboxes"].items())
+
+            for i, label in enumerate(labels):
+                data = ""
+                if '\n' in label:
+                    label = label.replace('\n', '')
+                if 0 <= i < number_of_checkboxes:
+                    for _, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                        if label == checkbox_label:
+                            data = "No"
+                            if self.checkboxWidgets[objectName].isChecked():
+                                data = "Yes"
+                elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
+                    for _, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                        combobox_label = comboBoxName.replace("_", " ").capitalize()
+                        if label == combobox_label:
+                            data = self.comboboxWidgets[comboBoxName].currentText
+                elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
+                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                        if label == free_text_label:
+                            data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+
+                if i > 0:
+                    data_string = data_string + ","
+                data_string = data_string + data
+
+      else:
+            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = "No"
+                if self.checkboxWidgets[objectName].isChecked():
+                    data = "Yes"
+                
+                data_string = data_string + data
+            
+            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                label = comboBoxName.replace("_", " ").capitalize()
+
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+
+                data = self.comboboxWidgets[comboBoxName].currentText
+                data_string = data_string + data
+            
+            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+                data_string = data_string + data
 
       return label_string, data_string
   
@@ -3398,17 +3440,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SaveSegmentationButton.setEnabled(True)
           self.ui.SaveClassificationButton.setEnabled(True)
           
-          self.updateCurrentOutputPathAndCurrentVolumeFilename()
+          if self.CurrentFolder is not None:
+                self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
-          self.update_case_list_colors()
+                self.update_case_list_colors()
 
-          self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-          self.update_current_segmentation_status()
+                self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+                self.update_current_segmentation_status()
 
-          self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+                self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
 
   def update_case_list_colors(self):
-      if self.outputFolder is None:
+      if self.outputFolder is None or self.CurrentFolder is None:
           return
       
       segmentation_information_path = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'

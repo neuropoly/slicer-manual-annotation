@@ -2349,6 +2349,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Interpolate.connect('clicked(bool)', self.onPushButton_Interpolate)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
+    self.ui.Annotator_name.textChanged.connect(self.on_annotator_name_changed)
     self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
     self.ui.LassoPaintButton.connect('clicked(bool)', self.onPushLassoPaint)
     self.ui.pushButton_ToggleVisibility.connect('clicked(bool)', self.onPushButton_ToggleVisibility)
@@ -2498,7 +2499,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       row_index = 0
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-        print(objectName, label)
+        #print(objectName, label)
         checkbox = qt.QCheckBox()
         checkbox.setText(label)
         checkbox.setObjectName(objectName)
@@ -2644,6 +2645,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.update_current_segmentation_status()
+
+  def update_current_segmentation_status(self):
+      current_color = self.ui.SlicerDirectoryListView.currentItem().foreground().color()
+      if current_color == qt.QColor('black'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Not done')
+      elif current_color == qt.QColor('orange'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Done by another annotator')
+      elif current_color == qt.QColor('green'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Done by this annotator')
       
   def getCurrentTableItem(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -2661,6 +2672,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       self.loadPatient()
+      self.update_current_segmentation_status()
       
       # ----- ANW Addition ----- : Reset timer when change case, also reset button status
       self.resetTimer()
@@ -2730,6 +2742,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_NewMask(self):
       self.newSegments()
 
+  def on_annotator_name_changed(self):
+      self.update_case_list_colors()
+      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.update_current_segmentation_status()
+  
   def onPushButton_Interpolate(self):
       global INTERPOLATE_VALUE
       INTERPOLATE_VALUE = 1 - INTERPOLATE_VALUE # toggle
@@ -3169,6 +3186,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       self.cast_segmentation_to_uint8()
 
+      self.update_case_list_colors()
+
   def qualityControlOfLabels(self):
       is_valid = True 
 
@@ -3381,8 +3400,60 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           
           self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
+          self.update_case_list_colors()
+
+          self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+          self.update_current_segmentation_status()
+
           self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
 
+  def update_case_list_colors(self):
+      if self.outputFolder is None:
+          return
+      
+      segmentation_information_path = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
+      segmentation_information_df = None
+      if os.path.exists(segmentation_information_path):
+          segmentation_information_df = pd.read_csv(segmentation_information_path)
+
+          self.ui.SlicerDirectoryListView.clear()
+          for case in self.Cases:
+            case_id = case.split('.')[0]
+            item = qt.QListWidgetItem(case_id)
+ 
+            currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
+            if currentCaseSegmentationStatus == 0:
+                item.setForeground(qt.QColor('black'))
+            elif currentCaseSegmentationStatus == 1:
+                item.setForeground(qt.QColor('orange'))
+            elif currentCaseSegmentationStatus == 2:
+                item.setForeground(qt.QColor('green'))
+            
+            self.ui.SlicerDirectoryListView.addItem(item)
+      else:
+          return
+  
+  def get_segmentation_status(self, case, segmentation_information_df):
+      self.annotator_name = self.ui.Annotator_name.text
+
+      found_case = 0
+      if self.annotator_name is None:
+            msg = qt.QMessageBox()
+            msg.setIcon(qt.QMessageBox.Warning)
+            msg.setText("No annotator name defined")
+            msg.setInformativeText('The annotator name is empty, therefore, the case list colors are not updated. ')
+            msg.setWindowTitle("No annotator name defined")
+            msg.exec()
+
+      else:
+            for _, row in segmentation_information_df.iterrows():
+                if row['Volume filename'] == case and row['Annotator Name'] == self.annotator_name:
+                    return 2
+                elif row['Volume filename'] == case:
+                    found_case = 1
+          
+      return found_case
+          
   def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
       if msg_warnig_delete_segm_node_button.text == 'OK':
         srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]

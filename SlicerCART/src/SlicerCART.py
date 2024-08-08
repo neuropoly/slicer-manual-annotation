@@ -1514,7 +1514,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                
        if label_found == False:
            # append
-           new_label = copy.deepcopy(self.label_config_yaml['labels'][0])
+           new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255, 'lower_bound_HU': 30, 'name': 'ICH', 'upper_bound_HU': 90, 'value': 1}
            new_label['name'] = self.name_line_edit.text
            new_label['value'] = len(self.label_config_yaml['labels']) + 1
            new_label['color_r'] = int(self.color_r_line_edit.text)

@@ -2483,7 +2483,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if self.general_config_yaml['slice_view_color'] == "Green":
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
-
+            
+        self.ui.dropDownButton_label_select.clear()
         for label in self.label_config_yaml["labels"]:
             self.ui.dropDownButton_label_select.addItem(label["name"])
   

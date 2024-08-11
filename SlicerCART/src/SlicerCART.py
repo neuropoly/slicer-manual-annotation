@@ -255,8 +255,10 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
        self.close()
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
-   def __init__(self, segmenter, conf_folder_path = None, parent = None):
+   def __init__(self, segmenter, conf_folder_path = None, edit_conf = False, parent = None):
       super(SlicerCARTConfigurationSetupWindow, self).__init__(parent)
+
+      self.edit_conf = edit_conf
 
       if conf_folder_path is not None:
           shutil.copy(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
@@ -411,22 +413,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(ct_window_width_hbox)
 
-      ##########################################
-      # TODO Delph : create buttons
-
-      # add button to edit configuration and allow only certain modifications (see previous commit and issue #30)
-      # TODO Delph : if template configuration, BE MORE FLEXIBLE (issue #30) allow selection of existing outputFolder with config 
-      # only if the configuration changed superficially (impose_bids : true to false only; not input file ext;
-      #  is_classif || is_segment : true to false only; is_semi_auto : any; not modality; slice_view : any; window: any)
-      # ks : any
-      # labels : any HU range; any color; append at end ; no modif name || value 
-      # classif : append only (AND WORK MUST BE DONE TO REORG PREV DATA TO HAVE EMPTY FIELDS i.e. no mismatch of columns and data in .csv)
-        
-      # create bug for QIntValidator not working anywhere in the file
-      # create pull request for issue #30, issue #3, and issue #27 at the same time 
-
-      ##########################################
-
       keyboard_shortcuts_hbox = qt.QHBoxLayout()
 
       keyboard_shortcuts_label = qt.QLabel('Use Custom Keyboard Shortcuts? ')
@@ -569,12 +555,25 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       layout.addWidget(self.cancel_button)
 
       self.connect_buttons_to_callbacks()
-      self.populate_default_values()
 
+      if self.edit_conf:
+          self.disableWidgetsForEditConfiguration()
 
       self.setLayout(layout)
       self.setWindowTitle("Configure SlicerCART")
       self.resize(800, 200)
+    
+   def disableWidgetsForEditConfiguration(self):
+       self.classification_task_checkbox.setEnabled(False)
+       self.segmentation_task_checkbox.setEnabled(False)
+
+       if self.bids_selected == False:
+           self.bids_combobox.setEnabled(False)
+    
+       self.file_extension_combobox.setEnabled(False)
+       self.ct_modality_radio_button.setEnabled(False)
+       self.mri_modality_radio_button.setEnabled(False)
+       self.previous_button.setVisible(False)
    
    def connect_buttons_to_callbacks(self):
        self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
@@ -779,11 +778,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
    
    def push_configure_labels(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected, self.edit_conf)
        configureLabelsWindow.show()
 
    def push_configure_classification(self):
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf)
        configureClassificationWindow.show()
    
    def push_previous(self):
@@ -837,22 +836,31 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             yaml.safe_dump(self.keyboard_shortcuts_config_yaml, file)
 
        self.segmenter.setup_configuration()
+       
+       if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
+            shutil.copy(LABEL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}')
+            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
+
        self.close()
 
    def push_cancel(self):
-       msg = qt.QMessageBox()
-       msg.setWindowTitle('Informative Message')
-       msg.setText('Using default configurations. To select a different configuration, restart the application. ')
-       msg.exec()
+       if self.edit_conf == False:
+            msg = qt.QMessageBox()
+            msg.setWindowTitle('Informative Message')
+            msg.setText('Using default configurations. To select a different configuration, restart the application. ')
+            msg.exec()
 
        self.segmenter.setup_configuration()
        self.close()
 
 class ConfigureClassificationWindow(qt.QWidget):
-   def __init__(self, segmenter, classification_config_yaml = None, parent = None):
+   def __init__(self, segmenter, edit_conf, classification_config_yaml = None, parent = None):
       super(ConfigureClassificationWindow, self).__init__(parent)
 
       self.segmenter = segmenter
+      self.edit_conf = edit_conf
 
       if classification_config_yaml is None:
             with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
@@ -884,6 +892,9 @@ class ConfigureClassificationWindow(qt.QWidget):
                 remove_button_widget.setLayout(remove_button_hbox)
                 self.checkbox_table_view.setCellWidget(index, 0, remove_button_widget)
                 self.checkbox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
 
                 cell = qt.QTableWidgetItem(checkbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
@@ -918,6 +929,9 @@ class ConfigureClassificationWindow(qt.QWidget):
                 remove_button_widget.setLayout(remove_button_hbox)
                 self.combobox_table_view.setCellWidget(index, 0, remove_button_widget)
                 self.combobox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
 
                 cell = qt.QTableWidgetItem(combo_box_name.replace('_', ' ').capitalize())
                 cell.setFlags(qt.Qt.NoItemFlags)
@@ -965,6 +979,9 @@ class ConfigureClassificationWindow(qt.QWidget):
                 self.freetext_table_view.setCellWidget(index, 0, remove_button_widget)
                 self.freetext_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
 
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
+
                 cell = qt.QTableWidgetItem(freetextbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
                 cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
@@ -992,7 +1009,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
        self.classification_config_yaml['comboboxes'].pop(combo_box_name, None)
 
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
        configureClassificationWindow.show()
    
    def push_remove_checkbox_button(self, checkbox_label):
@@ -1007,7 +1024,7 @@ class ConfigureClassificationWindow(qt.QWidget):
        if object_name_to_remove is not None:
             self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
        configureClassificationWindow.show()
 
    def push_remove_freetextbox_button(self, freetextbox_label):
@@ -1022,43 +1039,110 @@ class ConfigureClassificationWindow(qt.QWidget):
        if object_name_to_remove is not None:
             self.classification_config_yaml['freetextboxes'].pop(object_name_to_remove, None)
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
        configureClassificationWindow.show()
 
    def push_add_freetextbox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'freetextbox')
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'freetextbox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
 
    def push_add_combobox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'combobox')
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'combobox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
    
    def push_add_checkbox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'checkbox')
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'checkbox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
    
    def push_save(self):
        with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
            yaml.safe_dump(self.classification_config_yaml, file)
+    
+       if self.edit_conf:
+            if self.segmenter.outputFolder is not None and os.path.exists(self.segmenter.outputFolder):
+                list_of_paths_to_classification_information_files = sorted(glob(f'{self.segmenter.outputFolder}{os.sep}**{os.sep}*ClassificationInformation.csv', recursive = True))
+                
+                for path in list_of_paths_to_classification_information_files:
+                    with open(path, 'r+') as file:
+                        lines = file.readlines()
 
+                        indices_to_populate_with_empty = []
+                        total_number_of_items_in_new_setup = len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml['comboboxes'].items()) + len(self.classification_config_yaml['freetextboxes'].items())
+
+                        for i in range(len(lines)):
+                            if i == 0:
+                                header = lines[0]
+
+                                header_items = header.split(',')
+
+                                header_item_counter = 6 # start of the classification items
+                                new_header = header_items[0] + ',' + header_items[1] + ',' + header_items[2] + ',' + header_items[3] + ',' + header_items[4] + ',' + header_items[5] 
+                                
+                                for j, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+                                    if header_items[header_item_counter] == label:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6)
+                                    new_header = new_header + ',' + label
+                                
+                                for j, (combo_box_name, _) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                                    name = combo_box_name.replace('_', ' ').capitalize()
+                                    if header_items[header_item_counter] == name:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()))
+                                    new_header = new_header + ',' + name
+
+                                for j, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+                                    if header_item_counter < len(header_items) and '\n' in header_items[header_item_counter]:
+                                        header_items[header_item_counter] = header_items[header_item_counter].split('\n')[0]
+                
+                                    if header_item_counter < len(header_items) and header_items[header_item_counter] == label:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml["comboboxes"].items()))
+                                    new_header = new_header + ',' + label
+                                lines[0] = new_header 
+                            else:
+                                line = '\n' + lines[i]
+
+                                line_items = line.split(',')
+
+                                item_counter = 6 # start of the classification items
+                                new_line = line_items[0] + ',' + line_items[1] + ',' + line_items[2] + ',' + line_items[3] + ',' + line_items[4] + ',' + line_items[5] 
+                                
+                                for j in range(6, total_number_of_items_in_new_setup + 6):
+                                    if j in indices_to_populate_with_empty:
+                                        new_line = new_line + ','
+                                    else:
+                                        if '\n' in line_items[item_counter]:
+                                            line_items[item_counter] = line_items[item_counter].replace('\n', '')
+                                        new_line = new_line + ',' + line_items[item_counter]
+                                        item_counter = item_counter + 1
+                                lines[i] = new_line 
+                        file.truncate(0)
+                        file.seek(0)
+                        file.writelines(lines)
+           
        self.close()
 
    def push_cancel(self):
        self.close()
 
 class ConfigureSingleClassificationItemWindow(qt.QWidget):
-   def __init__(self, segmenter, classification_config_yaml, item_added, parent = None):
+   def __init__(self, segmenter, classification_config_yaml, item_added, edit_conf, parent = None):
       super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
 
       self.segmenter = segmenter
       self.classification_config_yaml = classification_config_yaml
       self.item_added = item_added
+      self.edit_conf = edit_conf
 
       layout = qt.QVBoxLayout()
 
@@ -1112,7 +1196,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                     
             if label_found == False:
                 # append
-                self.classification_config_yaml['checkboxes'].update({object_name : current_label_name})
+                self.classification_config_yaml['checkboxes'].update({object_name : current_label_name.capitalize()})
        elif self.item_added == 'combobox':
             if self.options_combobox.count == 0:
                 msg = qt.QMessageBox()
@@ -1143,9 +1227,9 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                     
             if label_found == False:
                 # append
-                self.classification_config_yaml['freetextboxes'].update({object_name : current_label_name})
+                self.classification_config_yaml['freetextboxes'].update({object_name : current_label_name.capitalize()})
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
        configureClassificationWindow.show()
        self.close() 
        
@@ -1153,16 +1237,17 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        self.push_cancel()
    
    def push_cancel(self):
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
        configureClassificationWindow.show()
        self.close()
 
 class ConfigureLabelsWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, label_config_yaml = None, parent = None):
+   def __init__(self, segmenter, modality, edit_conf, label_config_yaml = None, parent = None):
       super(ConfigureLabelsWindow, self).__init__(parent)
 
       self.segmenter = segmenter
       self.modality = modality
+      self.edit_conf = edit_conf
 
       if label_config_yaml is None:
             with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
@@ -1208,6 +1293,9 @@ class ConfigureLabelsWindow(qt.QWidget):
                 remove_button_widget.setLayout(remove_button_hbox)
                 self.label_table_view.setCellWidget(index, 1, remove_button_widget)
                 self.label_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
 
                 cell = qt.QTableWidgetItem(label['name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
@@ -1259,7 +1347,7 @@ class ConfigureLabelsWindow(qt.QWidget):
    def push_edit_button(self, label):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.label_config_yaml, label)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml, label)
        configureSingleLabelWindow.show()
 
    def push_remove_button(self, label):
@@ -1275,13 +1363,13 @@ class ConfigureLabelsWindow(qt.QWidget):
            if l['value'] > value_removed and value_removed != -1:
                l['value'] = l['value'] - 1
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureLabelsWindow.show()
 
    def push_add_label(self):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.label_config_yaml)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureSingleLabelWindow.show()
    
    def push_save(self):
@@ -1305,13 +1393,14 @@ class ConfigureLabelsWindow(qt.QWidget):
        self.close()
 
 class ConfigureSingleLabelWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, label_config_yaml, label = None, parent = None):
+   def __init__(self, segmenter, modality, edit_conf, label_config_yaml, label = None, parent = None):
       super(ConfigureSingleLabelWindow, self).__init__(parent)
 
       self.segmenter = segmenter
       self.modality = modality
       self.initial_label = label
       self.label_config_yaml = label_config_yaml
+      self.edit_conf = edit_conf
 
       layout = qt.QVBoxLayout()
 
@@ -1440,7 +1529,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                
        if label_found == False:
            # append
-           new_label = copy.deepcopy(self.label_config_yaml['labels'][0])
+           new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255, 'lower_bound_HU': 30, 'name': 'ICH', 'upper_bound_HU': 90, 'value': 1}
            new_label['name'] = self.name_line_edit.text
            new_label['value'] = len(self.label_config_yaml['labels']) + 1
            new_label['color_r'] = int(self.color_r_line_edit.text)
@@ -1452,12 +1541,12 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
            self.label_config_yaml['labels'].append(new_label)
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureLabelsWindow.show()
        self.close() 
        
    def push_cancel(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureLabelsWindow.show()
        self.close()
 
@@ -1538,7 +1627,7 @@ class LoadClassificationWindow(qt.QWidget):
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
            if selected_version_df.at[0, label] == 'Yes':
                self.segmenter.checkboxWidgets[objectName].setChecked(True)
-           elif selected_version_df.at[0, label] == 'No':
+           elif selected_version_df.at[0, label] == 'No' or str(selected_version_df.at[0, label]) == 'nan':
                self.segmenter.checkboxWidgets[objectName].setChecked(False)
 
        for i, (comboBoxName, options) in enumerate(self.segmenter.classification_config_yaml["comboboxes"].items()):
@@ -2267,6 +2356,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
+    self.ui.EditConfiguration.connect('clicked(bool)', self.onEditConfiguration)
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
@@ -2277,6 +2367,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Interpolate.connect('clicked(bool)', self.onPushButton_Interpolate)
     self.ui.Previous.connect('clicked(bool)', self.onPreviousButton)
     self.ui.Next.connect('clicked(bool)', self.onNextButton)
+    self.ui.Annotator_name.textChanged.connect(self.on_annotator_name_changed)
     self.ui.pushButton_Paint.connect('clicked(bool)', self.onPushButton_Paint)
     self.ui.LassoPaintButton.connect('clicked(bool)', self.onPushLassoPaint)
     self.ui.pushButton_ToggleVisibility.connect('clicked(bool)', self.onPushButton_ToggleVisibility)
@@ -2355,6 +2446,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.UB_HU.setValue(self.UB_HU)
         self.ui.LB_HU.setValue(self.LB_HU)
 
+        # clear classification widgets
+        for i in reversed(range(self.ui.ClassificationGridLayout.count())): 
+            if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+                self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+
         comboboxesStartRow = self.setupCheckboxes(3)
         freetextStartRow = self.setupComboboxes(comboboxesStartRow)
         self.setupFreeText(freetextStartRow)
@@ -2412,7 +2508,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if self.general_config_yaml['slice_view_color'] == "Green":
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
-
+            
+        self.ui.dropDownButton_label_select.clear()
         for label in self.label_config_yaml["labels"]:
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
@@ -2428,7 +2525,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       row_index = 0
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-        print(objectName, label)
+        #print(objectName, label)
         checkbox = qt.QCheckBox()
         checkbox.setText(label)
         checkbox.setObjectName(objectName)
@@ -2502,11 +2599,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
 
+  def onEditConfiguration(self):
+      slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
+      slicerCARTConfigurationSetupWindow.show()
+
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
-
-      if not self.CurrentFolder: return
-        
+      
+      if not self.CurrentFolder:
+          return
+      
       file_structure_valid = True
       if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
@@ -2572,6 +2674,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.update_current_segmentation_status()
+
+  def update_current_segmentation_status(self):
+      current_color = self.ui.SlicerDirectoryListView.currentItem().foreground().color()
+      if current_color == qt.QColor('black'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Not done')
+      elif current_color == qt.QColor('orange'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Done by another annotator')
+      elif current_color == qt.QColor('green'):
+          self.ui.CurrentStatus.setText('Segmentation Status : Done by this annotator')
       
   def getCurrentTableItem(self):
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
@@ -2589,6 +2701,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
       self.updateCurrentPatient()
       self.loadPatient()
+      self.update_current_segmentation_status()
       
       # ----- ANW Addition ----- : Reset timer when change case, also reset button status
       self.resetTimer()
@@ -2658,6 +2771,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_NewMask(self):
       self.newSegments()
 
+  def on_annotator_name_changed(self):
+      self.update_case_list_colors()
+      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.update_current_segmentation_status()
+  
   def onPushButton_Interpolate(self):
       global INTERPOLATE_VALUE
       INTERPOLATE_VALUE = 1 - INTERPOLATE_VALUE # toggle
@@ -2982,42 +3100,84 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         
   
   def getClassificationInformation(self):
+      self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
+                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
+      header = None
+      if os.path.exists(self.outputClassificationInformationFile) and os.path.isfile(self.outputClassificationInformationFile):
+            with open(self.outputClassificationInformationFile, 'r') as f:
+                header = f.readlines()[0]
+    
       label_string = ""
       data_string = ""
-      for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = "No"
-          if self.checkboxWidgets[objectName].isChecked():
-              data = "Yes"
-          
-          data_string = data_string + data
-      
-      for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
-          label = comboBoxName.replace("_", " ").capitalize()
 
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
+      if header is not None:
+            label_string = header.split('time,')[1]
 
-          data = self.comboboxWidgets[comboBoxName].currentText
-          data_string = data_string + data
-      
-      for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
-          data_string = data_string + data
+            labels = label_string.split(',')
+
+            number_of_checkboxes = len(self.classification_config_yaml["checkboxes"].items())
+            number_of_comboboxes = len(self.classification_config_yaml["comboboxes"].items())
+            number_of_freetextboxes = len(self.classification_config_yaml["freetextboxes"].items())
+
+            for i, label in enumerate(labels):
+                data = ""
+                if '\n' in label:
+                    label = label.replace('\n', '')
+                if 0 <= i < number_of_checkboxes:
+                    for _, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                        if label == checkbox_label:
+                            data = "No"
+                            if self.checkboxWidgets[objectName].isChecked():
+                                data = "Yes"
+                elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
+                    for _, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                        combobox_label = comboBoxName.replace("_", " ").capitalize()
+                        if label == combobox_label:
+                            data = self.comboboxWidgets[comboBoxName].currentText
+                elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
+                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                        if label == free_text_label:
+                            data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+
+                if i > 0:
+                    data_string = data_string + ","
+                data_string = data_string + data
+
+      else:
+            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = "No"
+                if self.checkboxWidgets[objectName].isChecked():
+                    data = "Yes"
+                
+                data_string = data_string + data
+            
+            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                label = comboBoxName.replace("_", " ").capitalize()
+
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+
+                data = self.comboboxWidgets[comboBoxName].currentText
+                data_string = data_string + data
+            
+            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+                data_string = data_string + data
 
       return label_string, data_string
   
@@ -3096,6 +3256,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               print("Error: timer is not started for some unknown reason.")
       
       self.cast_segmentation_to_uint8()
+
+      self.update_case_list_colors()
 
   def qualityControlOfLabels(self):
       is_valid = True 
@@ -3307,10 +3469,63 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SaveSegmentationButton.setEnabled(True)
           self.ui.SaveClassificationButton.setEnabled(True)
           
-          self.updateCurrentOutputPathAndCurrentVolumeFilename()
+          if self.CurrentFolder is not None:
+                self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
-          self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+                self.update_case_list_colors()
 
+                self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+                self.update_current_segmentation_status()
+
+                self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+
+  def update_case_list_colors(self):
+      if self.outputFolder is None or self.CurrentFolder is None:
+          return
+      
+      segmentation_information_path = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
+      segmentation_information_df = None
+      if os.path.exists(segmentation_information_path):
+          segmentation_information_df = pd.read_csv(segmentation_information_path)
+
+          self.ui.SlicerDirectoryListView.clear()
+          for case in self.Cases:
+            case_id = case.split('.')[0]
+            item = qt.QListWidgetItem(case_id)
+ 
+            currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
+            if currentCaseSegmentationStatus == 0:
+                item.setForeground(qt.QColor('black'))
+            elif currentCaseSegmentationStatus == 1:
+                item.setForeground(qt.QColor('orange'))
+            elif currentCaseSegmentationStatus == 2:
+                item.setForeground(qt.QColor('green'))
+            
+            self.ui.SlicerDirectoryListView.addItem(item)
+      else:
+          return
+  
+  def get_segmentation_status(self, case, segmentation_information_df):
+      self.annotator_name = self.ui.Annotator_name.text
+
+      found_case = 0
+      if self.annotator_name is None:
+            msg = qt.QMessageBox()
+            msg.setIcon(qt.QMessageBox.Warning)
+            msg.setText("No annotator name defined")
+            msg.setInformativeText('The annotator name is empty, therefore, the case list colors are not updated. ')
+            msg.setWindowTitle("No annotator name defined")
+            msg.exec()
+
+      else:
+            for _, row in segmentation_information_df.iterrows():
+                if row['Volume filename'] == case and row['Annotator Name'] == self.annotator_name:
+                    return 2
+                elif row['Volume filename'] == case:
+                    found_case = 1
+          
+      return found_case
+          
   def msg_warnig_delete_segm_node_clicked(self, msg_warnig_delete_segm_node_button):
       if msg_warnig_delete_segm_node_button.text == 'OK':
         srcNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]

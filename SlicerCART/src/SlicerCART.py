@@ -539,6 +539,17 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       mouse_shortcuts_hbox.addWidget(self.mouse_shortcuts_checkbox)
 
       layout.addLayout(mouse_shortcuts_hbox)
+      
+      display_timer_hbox = qt.QHBoxLayout()
+      
+      display_timer_label = qt.QLabel('Display timer during segmentation? ')
+      display_timer_label.setStyleSheet("font-weight: bold")
+      display_timer_hbox.addWidget(display_timer_label)
+      
+      self.display_timer_checkbox = qt.QCheckBox()
+      display_timer_hbox.addWidget(self.display_timer_checkbox)
+      
+      layout.addLayout(display_timer_hbox)
 
       self.configure_labels_button = qt.QPushButton('Configure Labels...')
       self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
@@ -557,8 +568,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.cancel_button = qt.QPushButton('Cancel')
       layout.addWidget(self.cancel_button)
 
-      self.populate_default_values()
       self.connect_buttons_to_callbacks()
+      self.populate_default_values()
+
 
       self.setLayout(layout)
       self.setWindowTitle("Configure SlicerCART")
@@ -596,6 +608,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        else:
            self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
     
+       if self.display_timer_selected:
+           self.display_timer_checkbox.setChecked(True)
        
        if self.modality_selected == 'CT':
            self.ct_modality_radio_button.setChecked(True)
@@ -627,13 +641,15 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.keyboard_shortcuts_checkbox.setChecked(self.keyboard_shortcuts_selected)
 
        self.segmentation_checkbox_state_changed()
-       self.keyboard_shortcuts_checkbox_state_changed()
+       self.keyboard_shortcuts_checkbox_state_changed()       
 
    def set_default_values(self):
        self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
        self.classification_selected = self.general_config_yaml['is_classification_requested']
        self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
        self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
+       self.display_timer_selected = self.general_config_yaml['is_display_timer_requested']
+          
 
        if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
             self.include_semi_auto_PHE_tool_selected_option = 'Yes'
@@ -781,6 +797,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
        self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
        self.general_config_yaml['modality'] = self.modality_selected
+       self.general_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
 
        if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
            self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
@@ -2156,6 +2173,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
+
+    with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
+      self.general_config_yaml = yaml.full_load(file)
   
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
@@ -2301,7 +2321,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
     self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
-    self.ui.lcdNumber.setStyleSheet("background-color : black")
+    
+
     
     self.MostRecentPausedCasePath = ""
   
@@ -2374,6 +2395,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 callback = getattr(self, callback_name)
 
                 self.connectShortcut(shortcutKey, button, callback)
+            
+        if self.general_config_yaml['is_display_timer_requested']:
+            self.ui.lcdNumber.setStyleSheet("background-color : black")
+        else:
+            self.ui.lcdNumber.setVisible(False)
+        
         
         # Display the selected color view at module startup
         if self.general_config_yaml['slice_view_color'] == "Yellow":
@@ -2478,6 +2505,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
+      if not self.CurrentFolder: return
+        
       file_structure_valid = True
       if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)

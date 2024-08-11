@@ -1100,6 +1100,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
+      if not self.CurrentFolder: return
+      
       file_structure_valid = True
       if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)

@@ -19,6 +19,8 @@ import vtk
 import random
 import colorsys
 import sys
+from functools import partial
+import copy
 
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
@@ -82,13 +84,29 @@ REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
 IS_CLASSIFICATION_REQUESTED = True
 IS_SEGMENTATION_REQUESTED = True
 IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
+IS_MOUSE_SHORTCUTS_REQUESTED = False
+IS_KEYBOARD_SHORTCUTS_REQUESTED = True
 
 MODALITY = 'CT'
 
-LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "label_config.yml")
-KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "keyboard_shortcuts_config.yml")
-CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "classification_config.yml")
-GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), "general_config.yml")
+REQUIRE_EMPTY = True
+
+LABEL_CONFIG_FILENAME = "label_config.yml"
+KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
+CLASSIFICATION_CONFIG_FILENAME = "classification_config.yml"
+GENERAL_CONFIG_FILENAME = "general_config.yml"
+
+LABEL_CONFIG_COPY_FILENAME = LABEL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME = KEYBOARD_SHORTCUTS_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+CLASSIFICATION_CONFIG_COPY_FILENAME = CLASSIFICATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+GENERAL_CONFIG_COPY_FILENAME = GENERAL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+
+LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), LABEL_CONFIG_FILENAME)
+KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), KEYBOARD_SHORTCUTS_CONFIG_FILENAME)
+CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CLASSIFICATION_CONFIG_FILENAME)
+GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), GENERAL_CONFIG_FILENAME)
+
+CONF_FOLDER_NAME = '_conf'
 
 CT_WINDOW_WIDTH = 90
 CT_WINDOW_LEVEL = 45
@@ -96,6 +114,1426 @@ CT_WINDOW_LEVEL = 45
 
 
 TIMER_MUTEX = RLock()
+
+class SlicerCARTConfigurationInitialWindow(qt.QWidget):
+   def __init__(self, segmenter, parent = None):
+      super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+
+      layout = qt.QVBoxLayout()
+
+      self.reuse_configuration_hbox = qt.QHBoxLayout()
+
+      self.new_config_radio_button = qt.QRadioButton('New configuration', self)
+      self.reuse_config_radio_button = qt.QRadioButton('Continue from existing output folder', self)
+      self.use_template_config_radio_button = qt.QRadioButton('Use template configuration', self)
+
+      self.reuse_configuration_hbox.addWidget(self.new_config_radio_button)
+      self.reuse_configuration_hbox.addWidget(self.reuse_config_radio_button)
+      self.reuse_configuration_hbox.addWidget(self.use_template_config_radio_button)
+
+      self.new_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.new_config_radio_button.text))
+      self.reuse_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.reuse_config_radio_button.text))
+      self.use_template_config_radio_button.toggled.connect(lambda: self.update_selected_reuse_config_option(self.use_template_config_radio_button.text))
+
+      self.new_config_radio_button.setChecked(True) # par défaut
+      self.reuse_configuration_selected_option = self.new_config_radio_button.text
+
+      layout.addLayout(self.reuse_configuration_hbox) 
+
+      self.next_button = qt.QPushButton('Next')
+      self.next_button.clicked.connect(self.push_next)
+      layout.addWidget(self.next_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure SlicerCART")
+      self.resize(800, 100)
+   
+   def update_selected_reuse_config_option(self, option):
+       self.reuse_configuration_selected_option = option
+   
+   def push_next(self):
+       if self.reuse_configuration_selected_option == self.reuse_config_radio_button.text:
+           msg = qt.QMessageBox()
+           msg.setWindowTitle('Informative Message')
+           msg.setText('Please select the working output directory. ')
+           msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+           msg.buttonClicked.connect(self.select_output_folder_clicked)
+           msg.exec()
+       elif self.reuse_configuration_selected_option == self.use_template_config_radio_button.text:
+           msg = qt.QMessageBox()
+           msg.setWindowTitle('Informative Message')
+           msg.setText('Please select the _conf folder containing the template configuration files. ')
+           msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+           msg.buttonClicked.connect(self.select_template_folder_clicked)
+           msg.exec()
+       elif self.reuse_configuration_selected_option == self.new_config_radio_button.text:
+           slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter)
+           slicerCARTConfigurationSetupWindow.show()
+           self.segmenter.ui.SelectOutputFolder.setVisible(True)
+           self.close()
+
+   def select_output_folder_clicked(self, button):
+       if button.text == 'OK':
+          global REQUIRE_EMPTY
+          REQUIRE_EMPTY = False
+          self.segmenter.onSelectOutputFolder()
+          REQUIRE_EMPTY = True
+          self.segmenter.ui.SelectOutputFolder.setVisible(False)
+          if (os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
+             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
+                # use this configuration directly
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH)
+                
+                self.segmenter.setup_configuration()
+                self.close()
+          else:
+                msg = qt.QMessageBox()
+                msg.setWindowTitle('Informative Message')
+                msg.setText('The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
+                msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+                msg.buttonClicked.connect(self.error_msg_for_output_folder_selection_clicked)
+                msg.exec()
+          
+       else:
+          slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+          slicerCART_configuration_initial_window.show()
+          self.close()
+          return
+       
+   def error_msg_for_output_folder_selection_clicked(self, button):
+        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+        slicerCART_configuration_initial_window.show()
+        self.close()
+   
+   def select_template_folder_clicked(self, button):
+       if button.text == 'OK':
+          conf_folder_path = qt.QFileDialog.getExistingDirectory(None,"Open a folder", '', qt.QFileDialog.ShowDirsOnly)
+          if (os.path.split(conf_folder_path)[1] == CONF_FOLDER_NAME and
+              os.path.exists(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
+              os.path.exists(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
+              os.path.exists(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
+              os.path.exists(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
+                 
+              slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, conf_folder_path)
+              slicerCARTConfigurationSetupWindow.show()
+              self.segmenter.ui.SelectOutputFolder.setVisible(True)
+              self.close()
+
+          else:
+              msg = qt.QMessageBox()
+              msg.setWindowTitle('Informative Message')
+              msg.setText('The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
+              msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+              msg.buttonClicked.connect(self.error_msg_for_output_folder_selection_clicked)
+              msg.exec()
+              
+       else:
+          slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+          slicerCART_configuration_initial_window.show()
+          self.close()
+          return
+       
+   def push_cancel(self):
+       msg = qt.QMessageBox()
+       msg.setWindowTitle('Informative Message')
+       msg.setText('Using default configurations. To select a different configuration, restart the application. ')
+       msg.exec()
+
+       self.segmenter.setup_configuration()
+       self.close()
+
+class SlicerCARTConfigurationSetupWindow(qt.QWidget):
+   def __init__(self, segmenter, conf_folder_path = None, edit_conf = False, parent = None):
+      super(SlicerCARTConfigurationSetupWindow, self).__init__(parent)
+
+      self.edit_conf = edit_conf
+
+      if conf_folder_path is not None:
+          shutil.copy(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
+          shutil.copy(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH) 
+
+      with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
+            self.general_config_yaml = yaml.full_load(file)
+      with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
+            self.keyboard_shortcuts_config_yaml = yaml.full_load(file)
+    
+      self.set_default_values()
+
+      self.segmenter = segmenter
+
+      layout = qt.QVBoxLayout()
+
+      task_button_hbox = qt.QHBoxLayout()
+
+      task_button_hbox_label = qt.QLabel()
+      task_button_hbox_label.setText('Task : ')
+      task_button_hbox_label.setStyleSheet("font-weight: bold")
+
+      self.segmentation_task_checkbox = qt.QCheckBox()
+      self.segmentation_task_checkbox.setText('Segmentation')
+
+      self.classification_task_checkbox = qt.QCheckBox()
+      self.classification_task_checkbox.setText('Classification')
+
+      task_button_hbox.addWidget(task_button_hbox_label)
+      task_button_hbox.addWidget(self.segmentation_task_checkbox)
+      task_button_hbox.addWidget(self.classification_task_checkbox)
+
+      layout.addLayout(task_button_hbox)
+
+      modality_hbox = qt.QHBoxLayout()
+
+      modality_hbox_label = qt.QLabel()
+      modality_hbox_label.setText('Modality : ')
+      modality_hbox_label.setStyleSheet("font-weight: bold")
+
+      self.ct_modality_radio_button = qt.QRadioButton('CT', self)
+      self.mri_modality_radio_button = qt.QRadioButton('MRI', self)
+
+      modality_hbox.addWidget(modality_hbox_label)
+      modality_hbox.addWidget(self.ct_modality_radio_button)
+      modality_hbox.addWidget(self.mri_modality_radio_button)
+
+      layout.addLayout(modality_hbox)
+
+      self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
+      
+      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
+      self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
+      self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
+
+      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
+      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') 
+      self.include_semi_automatic_PHE_tool_combobox.addItem('No')
+
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
+
+      layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
+
+      bids_hbox = qt.QHBoxLayout()
+
+      self.bids_hbox_label = qt.QLabel()
+      self.bids_hbox_label.setText('Impose BIDS ? ')
+      self.bids_hbox_label.setStyleSheet("font-weight: bold")
+      bids_hbox.addWidget(self.bids_hbox_label)
+
+      self.bids_combobox = qt.QComboBox()
+      self.bids_combobox.addItem('Yes') 
+      self.bids_combobox.addItem('No')
+
+      bids_hbox.addWidget(self.bids_combobox)
+
+      layout.addLayout(bids_hbox)
+
+      file_extension_hbox = qt.QHBoxLayout()
+
+      self.file_extension_label = qt.QLabel()
+      self.file_extension_label.setText('Input File Extension : ')
+      self.file_extension_label.setStyleSheet("font-weight: bold")
+      file_extension_hbox.addWidget(self.file_extension_label)
+
+      self.file_extension_combobox = qt.QComboBox()
+      self.file_extension_combobox.addItem('*.nii.gz') 
+      self.file_extension_combobox.addItem('*.nrrd')
+
+      file_extension_hbox.addWidget(self.file_extension_combobox)
+
+      layout.addLayout(file_extension_hbox)
+
+      initial_view_hbox = qt.QHBoxLayout()
+
+      self.initial_view_label = qt.QLabel()
+      self.initial_view_label.setText('Initial View : ')
+      self.initial_view_label.setStyleSheet("font-weight: bold")
+      initial_view_hbox.addWidget(self.initial_view_label)
+
+      self.initial_view_combobox = qt.QComboBox()
+      self.initial_view_combobox.addItem('Red (axial)')
+      self.initial_view_combobox.addItem('Yellow (sagittal)')
+      self.initial_view_combobox.addItem('Green (coronal)')
+
+      initial_view_hbox.addWidget(self.initial_view_combobox)
+
+      layout.addLayout(initial_view_hbox)
+
+      interpolate_hbox = qt.QHBoxLayout()
+
+      self.interpolate_label = qt.QLabel()
+      self.interpolate_label.setText('Interpolate Image? ')
+      self.interpolate_label.setStyleSheet("font-weight: bold")
+      interpolate_hbox.addWidget(self.interpolate_label)
+
+      self.interpolate_combobox = qt.QComboBox()
+      self.interpolate_combobox.addItem('No') 
+      self.interpolate_combobox.addItem('Yes')
+
+      interpolate_hbox.addWidget(self.interpolate_combobox)
+
+      layout.addLayout(interpolate_hbox)
+
+      ct_window_level_hbox = qt.QHBoxLayout()
+
+      self.ct_window_level_label = qt.QLabel()
+      self.ct_window_level_label.setText('Window Level : ')
+      self.ct_window_level_label.setStyleSheet("font-weight: bold")
+      ct_window_level_hbox.addWidget(self.ct_window_level_label)
+
+      self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
+      onlyInt = qt.QIntValidator()
+      self.ct_window_level_line_edit.setValidator(onlyInt)
+      ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
+
+      layout.addLayout(ct_window_level_hbox)
+
+      ct_window_width_hbox = qt.QHBoxLayout()
+
+      self.ct_window_width_label = qt.QLabel()
+      self.ct_window_width_label.setText('Window Width : ')
+      self.ct_window_width_label.setStyleSheet("font-weight: bold")
+      ct_window_width_hbox.addWidget(self.ct_window_width_label)
+      
+      self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
+      self.ct_window_width_line_edit.setValidator(onlyInt)
+      ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
+
+      layout.addLayout(ct_window_width_hbox)
+
+      keyboard_shortcuts_hbox = qt.QHBoxLayout()
+
+      keyboard_shortcuts_label = qt.QLabel('Use Custom Keyboard Shortcuts? ')
+      keyboard_shortcuts_label.setStyleSheet("font-weight: bold")
+      keyboard_shortcuts_hbox.addWidget(keyboard_shortcuts_label)
+
+      self.keyboard_shortcuts_checkbox = qt.QCheckBox()
+      keyboard_shortcuts_hbox.addWidget(self.keyboard_shortcuts_checkbox)
+
+      layout.addLayout(keyboard_shortcuts_hbox)
+
+      toggle_fill_ks_hbox = qt.QHBoxLayout()
+
+      self.toggle_fill_ks_label = qt.QLabel()
+      self.toggle_fill_ks_label.setText('Toggle Fill Keyboard Shortcut : ')
+      self.toggle_fill_ks_label.setStyleSheet("font-style: italic")
+      toggle_fill_ks_hbox.addWidget(self.toggle_fill_ks_label)
+
+      self.toggle_fill_ks_line_edit = qt.QLineEdit(self.toggle_fill_ks_selected)
+      self.toggle_fill_ks_line_edit.setMaxLength(1)
+      toggle_fill_ks_hbox.addWidget(self.toggle_fill_ks_line_edit)
+
+      layout.addLayout(toggle_fill_ks_hbox)
+
+      toggle_visibility_ks_hbox = qt.QHBoxLayout()
+
+      self.toggle_visibility_ks_label = qt.QLabel()
+      self.toggle_visibility_ks_label.setText('Toggle Visibility Keyboard Shortcut : ')
+      self.toggle_visibility_ks_label.setStyleSheet("font-style: italic")
+      toggle_visibility_ks_hbox.addWidget(self.toggle_visibility_ks_label)
+
+      self.toggle_visibility_ks_line_edit = qt.QLineEdit(self.toggle_visibility_ks_selected)
+      self.toggle_visibility_ks_line_edit.setMaxLength(1)
+      toggle_visibility_ks_hbox.addWidget(self.toggle_visibility_ks_line_edit)
+
+      layout.addLayout(toggle_visibility_ks_hbox)
+
+      undo_ks_hbox = qt.QHBoxLayout()
+
+      self.undo_ks_label = qt.QLabel()
+      self.undo_ks_label.setText('Undo Keyboard Shortcut : ')
+      self.undo_ks_label.setStyleSheet("font-style: italic")
+      undo_ks_hbox.addWidget(self.undo_ks_label)
+
+      self.undo_ks_line_edit = qt.QLineEdit(self.undo_ks_selected)
+      self.undo_ks_line_edit.setMaxLength(1)
+      undo_ks_hbox.addWidget(self.undo_ks_line_edit)
+
+      layout.addLayout(undo_ks_hbox)
+
+      save_seg_ks_hbox = qt.QHBoxLayout()
+
+      self.save_seg_ks_label = qt.QLabel()
+      self.save_seg_ks_label.setText('Save Segmentation Keyboard Shortcut : ')
+      self.save_seg_ks_label.setStyleSheet("font-style: italic")
+      save_seg_ks_hbox.addWidget(self.save_seg_ks_label)
+
+      self.save_seg_ks_line_edit = qt.QLineEdit(self.save_seg_ks_selected)
+      self.save_seg_ks_line_edit.setMaxLength(1)
+      save_seg_ks_hbox.addWidget(self.save_seg_ks_line_edit)
+
+      layout.addLayout(save_seg_ks_hbox)
+
+      smooth_ks_hbox = qt.QHBoxLayout()
+
+      self.smooth_ks_label = qt.QLabel()
+      self.smooth_ks_label.setText('Smooth Margins Keyboard Shortcut : ')
+      self.smooth_ks_label.setStyleSheet("font-style: italic")
+      smooth_ks_hbox.addWidget(self.smooth_ks_label)
+
+      self.smooth_ks_line_edit = qt.QLineEdit(self.smooth_ks_selected)
+      self.smooth_ks_line_edit.setMaxLength(1)
+      smooth_ks_hbox.addWidget(self.smooth_ks_line_edit)
+
+      layout.addLayout(smooth_ks_hbox)
+
+      remove_small_holes_ks_hbox = qt.QHBoxLayout()
+
+      self.remove_small_holes_ks_label = qt.QLabel()
+      self.remove_small_holes_ks_label.setText('Remove Small Holes Keyboard Shortcut : ')
+      self.remove_small_holes_ks_label.setStyleSheet("font-style: italic")
+      remove_small_holes_ks_hbox.addWidget(self.remove_small_holes_ks_label)
+
+      self.remove_small_holes_ks_line_edit = qt.QLineEdit(self.remove_small_holes_ks_selected)
+      self.remove_small_holes_ks_line_edit.setMaxLength(1)
+      remove_small_holes_ks_hbox.addWidget(self.remove_small_holes_ks_line_edit)
+
+      layout.addLayout(remove_small_holes_ks_hbox)
+
+      interpolate_ks_hbox = qt.QHBoxLayout()
+
+      self.interpolate_ks_label = qt.QLabel()
+      self.interpolate_ks_label.setText('Interpolate Image Keyboard Shortcut : ')
+      self.interpolate_ks_label.setStyleSheet("font-style: italic")
+      interpolate_ks_hbox.addWidget(self.interpolate_ks_label)
+
+      self.interpolate_ks_line_edit = qt.QLineEdit(self.interpolate_ks_selected)
+      self.interpolate_ks_line_edit.setMaxLength(1)
+      interpolate_ks_hbox.addWidget(self.interpolate_ks_line_edit)
+
+      layout.addLayout(interpolate_ks_hbox)
+
+      mouse_shortcuts_hbox = qt.QHBoxLayout()
+
+      mouse_shortcuts_label = qt.QLabel('Use Custom Mouse Shortcuts? ')
+      mouse_shortcuts_label.setStyleSheet("font-weight: bold")
+      mouse_shortcuts_hbox.addWidget(mouse_shortcuts_label)
+
+      self.mouse_shortcuts_checkbox = qt.QCheckBox()
+      mouse_shortcuts_hbox.addWidget(self.mouse_shortcuts_checkbox)
+
+      layout.addLayout(mouse_shortcuts_hbox)
+
+      self.configure_labels_button = qt.QPushButton('Configure Labels...')
+      self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
+      layout.addWidget(self.configure_labels_button)
+
+      self.configure_classification_button = qt.QPushButton('Configure Classification...')
+      self.configure_classification_button.setStyleSheet("background-color : yellowgreen")
+      layout.addWidget(self.configure_classification_button)
+
+      self.previous_button = qt.QPushButton('Previous')
+      layout.addWidget(self.previous_button)
+      
+      self.apply_button = qt.QPushButton('Apply')
+      layout.addWidget(self.apply_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      layout.addWidget(self.cancel_button)
+
+      self.populate_default_values()
+      self.connect_buttons_to_callbacks()
+
+      if self.edit_conf:
+          self.disableWidgetsForEditConfiguration()
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure SlicerCART")
+      self.resize(800, 200)
+    
+   def disableWidgetsForEditConfiguration(self):
+       self.classification_task_checkbox.setEnabled(False)
+       self.segmentation_task_checkbox.setEnabled(False)
+
+       if self.bids_selected == False:
+           self.bids_combobox.setEnabled(False)
+    
+       self.file_extension_combobox.setEnabled(False)
+       self.ct_modality_radio_button.setEnabled(False)
+       self.mri_modality_radio_button.setEnabled(False)
+       self.previous_button.setVisible(False)
+   
+   def connect_buttons_to_callbacks(self):
+       self.segmentation_task_checkbox.stateChanged.connect(self.segmentation_checkbox_state_changed)
+       self.classification_task_checkbox.stateChanged.connect(self.classification_checkbox_state_changed)
+       self.keyboard_shortcuts_checkbox.stateChanged.connect(self.keyboard_shortcuts_checkbox_state_changed)
+       self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
+       self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
+       self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
+       self.bids_combobox.currentIndexChanged.connect(self.update_bids)
+       self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
+       self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
+       self.interpolate_combobox.currentIndexChanged.connect(self.update_interpolate)
+       self.ct_window_level_line_edit.textChanged.connect(self.update_ct_window_level)
+       self.ct_window_width_line_edit.textChanged.connect(self.update_ct_window_width)
+       self.toggle_fill_ks_line_edit.textChanged.connect(self.update_toggle_fill_ks)
+       self.toggle_visibility_ks_line_edit.textChanged.connect(self.update_toggle_visibility_ks)
+       self.undo_ks_line_edit.textChanged.connect(self.update_undo_ks)
+       self.save_seg_ks_line_edit.textChanged.connect(self.update_save_seg_ks)
+       self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
+       self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
+       self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
+       self.configure_labels_button.clicked.connect(self.push_configure_labels)
+       self.configure_classification_button.clicked.connect(self.push_configure_classification)
+       self.previous_button.clicked.connect(self.push_previous)
+       self.apply_button.clicked.connect(self.push_apply)
+       self.cancel_button.clicked.connect(self.push_cancel)
+   
+   def populate_default_values(self):
+       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
+           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(0)
+       else:
+           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
+    
+       
+       if self.modality_selected == 'CT':
+           self.ct_modality_radio_button.setChecked(True)
+       elif self.modality_selected == 'MRI':
+           self.mri_modality_radio_button.setChecked(True)
+
+       if self.bids_selected:
+           self.bids_combobox.setCurrentIndex(0)
+       else:
+           self.bids_combobox.setCurrentIndex(1)
+    
+       if 'Red' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(0)
+       elif 'Yellow' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(1)
+       elif 'Green' in self.initial_view_selected:
+           self.initial_view_combobox.setCurrentIndex(2)
+    
+       if self.file_extension_selected == '*.nii.gz':
+           self.file_extension_combobox.setCurrentIndex(0)
+       elif self.file_extension_selected == '*.nrrd':
+           self.file_extension_combobox.setCurrentIndex(1)
+
+       self.interpolate_combobox.setCurrentIndex(self.interpolate_selected)
+
+       self.segmentation_task_checkbox.setChecked(self.segmentation_selected)
+       self.classification_task_checkbox.setChecked(self.classification_selected)
+       self.mouse_shortcuts_checkbox.setChecked(self.mouse_shortcuts_selected)
+       self.keyboard_shortcuts_checkbox.setChecked(self.keyboard_shortcuts_selected)
+
+       self.segmentation_checkbox_state_changed()
+       self.keyboard_shortcuts_checkbox_state_changed()
+
+   def set_default_values(self):
+       self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
+       self.classification_selected = self.general_config_yaml['is_classification_requested']
+       self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
+       self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
+
+       if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
+            self.include_semi_auto_PHE_tool_selected_option = 'Yes'
+       else:
+            self.include_semi_auto_PHE_tool_selected_option = 'No'
+
+       self.modality_selected = self.general_config_yaml['modality']
+
+       self.bids_selected = self.general_config_yaml['impose_bids_format'] 
+
+       self.ct_window_level_selected = self.general_config_yaml['ct_window_level'] 
+       self.ct_window_width_selected = self.general_config_yaml['ct_window_width']  
+       self.file_extension_selected = self.general_config_yaml['input_filetype'] 
+
+       if self.general_config_yaml['slice_view_color'] == 'Red':
+           self.initial_view_selected = 'Red (axial)'
+       elif self.general_config_yaml['slice_view_color'] == 'Yellow':
+           self.initial_view_selected = 'Yellow (sagittal)'
+       elif self.general_config_yaml['slice_view_color'] == 'Green':
+           self.initial_view_selected = 'Green (coronal)'
+
+       self.interpolate_selected = self.general_config_yaml['interpolate_value'] 
+
+       self.toggle_fill_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] 
+       self.toggle_visibility_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] 
+       self.undo_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] 
+       self.save_seg_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] 
+       self.smooth_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] 
+       self.remove_small_holes_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] 
+       self.interpolate_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
+
+   def classification_checkbox_state_changed(self):
+       self.classification_selected = self.classification_task_checkbox.isChecked()
+       self.configure_classification_button.setEnabled(self.classification_selected)
+
+   def keyboard_shortcuts_checkbox_state_changed(self):
+       self.keyboard_shortcuts_selected = self.keyboard_shortcuts_checkbox.isChecked()
+
+       self.toggle_fill_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_fill_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_visibility_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.toggle_visibility_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.undo_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.undo_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.save_seg_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.save_seg_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.smooth_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.smooth_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.remove_small_holes_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.remove_small_holes_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+       self.interpolate_ks_label.setVisible(self.keyboard_shortcuts_selected)
+       self.interpolate_ks_line_edit.setVisible(self.keyboard_shortcuts_selected)
+   
+   def segmentation_checkbox_state_changed(self):
+       self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
+       self.configure_labels_button.setEnabled(self.segmentation_selected)
+
+       if self.segmentation_task_checkbox.isChecked():
+            if self.modality_selected == 'CT':
+                self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
+            else:
+                self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
+       else: 
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
+   
+   def update_interpolate_ks(self):
+       self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
+   
+   def update_remove_small_holes_ks(self):
+       self.remove_small_holes_ks_selected = self.remove_small_holes_ks_line_edit.text
+   
+   def update_smooth_ks(self):
+       self.smooth_ks_selected = self.smooth_ks_line_edit.text
+
+   def update_save_seg_ks(self):
+       self.save_seg_ks_selected = self.save_seg_ks_line_edit.text
+   
+   def update_undo_ks(self):
+       self.undo_ks_selected = self.undo_ks_line_edit.text
+   
+   def update_toggle_visibility_ks(self):
+       self.toggle_visibility_ks_selected = self.toggle_visibility_ks_line_edit.text
+   
+   def update_toggle_fill_ks(self):
+       self.toggle_fill_ks_selected = self.toggle_fill_ks_line_edit.text
+   
+   def update_ct_window_width(self):
+       self.ct_window_width_selected = self.ct_window_width_line_edit.text
+   
+   def update_ct_window_level(self):
+       self.ct_window_level_selected = self.ct_window_level_line_edit.text
+   
+   def update_interpolate(self):
+       if self.interpolate_combobox.currentText == 'Yes':
+           self.interpolate_selected = 1
+       else:
+           self.interpolate_selected = 0
+   
+   def update_initial_view(self):
+       self.initial_view_selected = self.initial_view_combobox.currentText
+   
+   def update_file_extension(self):
+       self.file_extension_selected = self.file_extension_combobox.currentText
+   
+   def update_bids(self):
+       self.bids_selected = self.bids_combobox.currentText
+   
+   def update_include_semi_automatic_PHE_tool(self):
+       self.include_semi_auto_PHE_tool_selected_option = self.include_semi_automatic_PHE_tool_combobox.currentText
+   
+   def update_selected_modality(self, option):
+       self.modality_selected = option
+
+       if self.modality_selected == 'CT':
+            self.bids_combobox.setEnabled(False)
+
+            self.ct_window_level_line_edit.setEnabled(True)
+            self.ct_window_width_line_edit.setEnabled(True)
+
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(self.segmentation_selected)
+       else:
+            self.bids_combobox.setEnabled(True)
+
+            self.ct_window_level_line_edit.setEnabled(False)
+            self.ct_window_width_line_edit.setEnabled(False)
+
+            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
+   
+   def push_configure_labels(self):
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected, self.edit_conf)
+       configureLabelsWindow.show()
+
+   def push_configure_classification(self):
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf)
+       configureClassificationWindow.show()
+   
+   def push_previous(self):
+       slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self.segmenter)
+       slicerCART_configuration_initial_window.show()
+       self.close()
+   
+   def push_apply(self):
+       self.general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
+       self.general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
+       self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
+       self.general_config_yaml['modality'] = self.modality_selected
+
+       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
+           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
+       elif self.include_semi_auto_PHE_tool_selected_option == 'No':
+           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
+    
+       if self.bids_selected == 'Yes':
+           self.general_config_yaml['impose_bids_format'] = True
+       elif self.bids_selected == 'No':
+           self.general_config_yaml['impose_bids_format'] = False
+    
+       self.general_config_yaml['input_filetype'] = self.file_extension_selected
+
+       self.general_config_yaml['interpolate_value'] = self.interpolate_selected
+       
+       if 'Red' in self.initial_view_selected:
+           self.general_config_yaml['slice_view_color'] = 'Red'
+       elif 'Yellow' in self.initial_view_selected:
+           self.general_config_yaml['slice_view_color'] = 'Yellow'
+       elif 'Green' in self.initial_view_selected:
+           self.general_config_yaml['slice_view_color'] = 'Green'
+    
+       self.general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
+       self.general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
+
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
+       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
+
+       with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.general_config_yaml, file)
+       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.keyboard_shortcuts_config_yaml, file)
+
+       self.segmenter.setup_configuration()
+       
+       if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
+            shutil.copy(LABEL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}')
+            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
+
+       self.close()
+
+   def push_cancel(self):
+       if self.edit_conf == False:
+            msg = qt.QMessageBox()
+            msg.setWindowTitle('Informative Message')
+            msg.setText('Using default configurations. To select a different configuration, restart the application. ')
+            msg.exec()
+
+       self.segmenter.setup_configuration()
+       self.close()
+
+class ConfigureClassificationWindow(qt.QWidget):
+   def __init__(self, segmenter, edit_conf, classification_config_yaml = None, parent = None):
+      super(ConfigureClassificationWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.edit_conf = edit_conf
+
+      if classification_config_yaml is None:
+            with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
+                    self.classification_config_yaml = yaml.full_load(file)
+      else:
+          self.classification_config_yaml = classification_config_yaml
+
+      layout = qt.QVBoxLayout()
+
+      self.checkbox_table_view = qt.QTableWidget()
+      layout.addWidget(self.checkbox_table_view)
+
+      if len(self.classification_config_yaml['checkboxes']) > 0:
+          number_of_checkboxes = len(self.classification_config_yaml['checkboxes'])
+
+          self.checkbox_table_view.setRowCount(number_of_checkboxes)
+          self.checkbox_table_view.setColumnCount(2)
+          self.checkbox_table_view.horizontalHeader().setStretchLastSection(True)
+          self.checkbox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, checkbox_label = checkbox_label: self.push_remove_checkbox_button(checkbox_label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.checkbox_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.checkbox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
+
+                cell = qt.QTableWidgetItem(checkbox_label)
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.checkbox_table_view.setItem(index, 1, cell)
+                self.checkbox_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+      self.add_checkbox_button = qt.QPushButton('Add Checkbox')
+      self.add_checkbox_button.clicked.connect(self.push_add_checkbox)
+      layout.addWidget(self.add_checkbox_button)
+
+      self.combobox_table_view = qt.QTableWidget()
+      layout.addWidget(self.combobox_table_view)
+
+      if len(self.classification_config_yaml['comboboxes']) > 0:
+          number_of_comboboxes = len(self.classification_config_yaml['comboboxes'])
+
+          self.combobox_table_view.setRowCount(number_of_comboboxes)
+          self.combobox_table_view.setColumnCount(3)
+          self.combobox_table_view.horizontalHeader().setStretchLastSection(True)
+          self.combobox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+          self.combobox_table_view.verticalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (combo_box_name, combo_box_options) in enumerate(self.classification_config_yaml["comboboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, combo_box_name = combo_box_name: self.push_remove_combobox_button(combo_box_name))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.combobox_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.combobox_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
+
+                cell = qt.QTableWidgetItem(combo_box_name.replace('_', ' ').capitalize())
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.combobox_table_view.setItem(index, 1, cell)
+                self.combobox_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+                combobox = qt.QComboBox()
+                for i, (name, label) in enumerate(combo_box_options.items()):
+                    combobox.addItem(label)
+
+                combobox_hbox = qt.QHBoxLayout()
+                combobox_hbox.addWidget(combobox)
+                combobox_hbox.setAlignment(qt.Qt.AlignCenter)
+                combobox_hbox.setContentsMargins(0, 0, 0, 0)
+                widget = qt.QWidget()
+                widget.setLayout(combobox_hbox)
+                self.combobox_table_view.setCellWidget(index, 2, widget)
+                self.combobox_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem(''))
+
+      self.add_combobox_button = qt.QPushButton('Add Drop Down')
+      self.add_combobox_button.clicked.connect(self.push_add_combobox)
+      layout.addWidget(self.add_combobox_button)
+
+      self.freetext_table_view = qt.QTableWidget()
+      layout.addWidget(self.freetext_table_view)
+
+      if len(self.classification_config_yaml['freetextboxes']) > 0:
+          number_of_freetextboxes = len(self.classification_config_yaml['freetextboxes'])
+
+          self.freetext_table_view.setRowCount(number_of_freetextboxes)
+          self.freetext_table_view.setColumnCount(2)
+          self.freetext_table_view.horizontalHeader().setStretchLastSection(True)
+          self.freetext_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, (objectName, freetextbox_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()): 
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, freetextbox_label = freetextbox_label: self.push_remove_freetextbox_button(freetextbox_label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.freetext_table_view.setCellWidget(index, 0, remove_button_widget)
+                self.freetext_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
+
+                cell = qt.QTableWidgetItem(freetextbox_label)
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.freetext_table_view.setItem(index, 1, cell)
+                self.freetext_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Label'))
+
+      self.add_freetextbox_button = qt.QPushButton('Add Text Field')
+      self.add_freetextbox_button.clicked.connect(self.push_add_freetextbox)
+      layout.addWidget(self.add_freetextbox_button)
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Classification")
+      self.resize(500, 600)
+
+   def push_remove_combobox_button(self, combo_box_name):
+       self.close()
+
+       self.classification_config_yaml['comboboxes'].pop(combo_box_name, None)
+
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow.show()
+   
+   def push_remove_checkbox_button(self, checkbox_label):
+       self.close()
+
+       object_name_to_remove = None
+
+       for i, (object_name, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+           if label == checkbox_label:
+               object_name_to_remove = object_name
+       
+       if object_name_to_remove is not None:
+            self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow.show()
+
+   def push_remove_freetextbox_button(self, freetextbox_label):
+       self.close()
+
+       object_name_to_remove = None
+       
+       for i, (object_name, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+           if label == freetextbox_label:
+               object_name_to_remove = object_name
+       
+       if object_name_to_remove is not None:
+            self.classification_config_yaml['freetextboxes'].pop(object_name_to_remove, None)
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow.show()
+
+   def push_add_freetextbox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'freetextbox', self.edit_conf)
+       configureSingleClassificationItemWindow.show()
+
+   def push_add_combobox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'combobox', self.edit_conf)
+       configureSingleClassificationItemWindow.show()
+   
+   def push_add_checkbox(self):
+       self.close()
+
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'checkbox', self.edit_conf)
+       configureSingleClassificationItemWindow.show()
+   
+   def push_save(self):
+       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(self.classification_config_yaml, file)
+    
+       if self.edit_conf:
+            if self.segmenter.outputFolder is not None and os.path.exists(self.segmenter.outputFolder):
+                list_of_paths_to_classification_information_files = sorted(glob(f'{self.segmenter.outputFolder}{os.sep}**{os.sep}*ClassificationInformation.csv', recursive = True))
+                
+                for path in list_of_paths_to_classification_information_files:
+                    with open(path, 'r+') as file:
+                        lines = file.readlines()
+
+                        indices_to_populate_with_empty = []
+                        total_number_of_items_in_new_setup = len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml['comboboxes'].items()) + len(self.classification_config_yaml['freetextboxes'].items())
+
+                        for i in range(len(lines)):
+                            if i == 0:
+                                header = lines[0]
+
+                                header_items = header.split(',')
+
+                                header_item_counter = 6 # start of the classification items
+                                new_header = header_items[0] + ',' + header_items[1] + ',' + header_items[2] + ',' + header_items[3] + ',' + header_items[4] + ',' + header_items[5] 
+                                
+                                for j, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+                                    if header_items[header_item_counter] == label:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6)
+                                    new_header = new_header + ',' + label
+                                
+                                for j, (combo_box_name, _) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                                    name = combo_box_name.replace('_', ' ').capitalize()
+                                    if header_items[header_item_counter] == name:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()))
+                                    new_header = new_header + ',' + name
+
+                                for j, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+                                    if header_item_counter < len(header_items) and '\n' in header_items[header_item_counter]:
+                                        header_items[header_item_counter] = header_items[header_item_counter].split('\n')[0]
+                
+                                    if header_item_counter < len(header_items) and header_items[header_item_counter] == label:
+                                        header_item_counter = header_item_counter + 1
+                                    else:
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml["comboboxes"].items()))
+                                    new_header = new_header + ',' + label
+                                lines[0] = new_header 
+                            else:
+                                line = '\n' + lines[i]
+
+                                line_items = line.split(',')
+
+                                item_counter = 6 # start of the classification items
+                                new_line = line_items[0] + ',' + line_items[1] + ',' + line_items[2] + ',' + line_items[3] + ',' + line_items[4] + ',' + line_items[5] 
+                                
+                                for j in range(6, total_number_of_items_in_new_setup + 6):
+                                    if j in indices_to_populate_with_empty:
+                                        new_line = new_line + ','
+                                    else:
+                                        if '\n' in line_items[item_counter]:
+                                            line_items[item_counter] = line_items[item_counter].replace('\n', '')
+                                        new_line = new_line + ',' + line_items[item_counter]
+                                        item_counter = item_counter + 1
+                                lines[i] = new_line 
+                        file.truncate(0)
+                        file.seek(0)
+                        file.writelines(lines)
+           
+       self.close()
+
+   def push_cancel(self):
+       self.close()
+
+class ConfigureSingleClassificationItemWindow(qt.QWidget):
+   def __init__(self, segmenter, classification_config_yaml, item_added, edit_conf, parent = None):
+      super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.classification_config_yaml = classification_config_yaml
+      self.item_added = item_added
+      self.edit_conf = edit_conf
+
+      layout = qt.QVBoxLayout()
+
+      name_hbox = qt.QHBoxLayout()
+
+      name_label = qt.QLabel('Item Name : ')
+      name_label.setStyleSheet("font-weight: bold")
+      name_hbox.addWidget(name_label)
+
+      self.name_line_edit = qt.QLineEdit('')
+      name_hbox.addWidget(self.name_line_edit)
+      
+      layout.addLayout(name_hbox)
+
+      if self.item_added == 'combobox':
+          options_hbox = qt.QHBoxLayout()
+
+          options_label = qt.QLabel('Options : ')
+          options_label.setStyleSheet("font-weight: bold")
+          options_hbox.addWidget(options_label)
+
+          self.options_combobox = qt.QComboBox()
+          self.options_combobox.setEditable(True)
+
+          options_hbox.addWidget(self.options_combobox)
+
+          layout.addLayout(options_hbox)
+
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Classification Item")
+      self.resize(200, 100)
+   
+   def push_save(self):
+       current_label_name = self.name_line_edit.text
+       object_name = current_label_name.replace(' ', '_')
+
+       if self.item_added == 'checkbox':
+            label_found = False
+            for i, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+                if label == current_label_name:
+                    label_found = True
+                    
+            if label_found == False:
+                # append
+                self.classification_config_yaml['checkboxes'].update({object_name : current_label_name.capitalize()})
+       elif self.item_added == 'combobox':
+            if self.options_combobox.count == 0:
+                msg = qt.QMessageBox()
+                msg.setWindowTitle('ERROR : No Drop Down Options Defined')
+                msg.setText('At least one drop down option must be defined. The previous classification configuration will be used. ')
+                msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+                msg.buttonClicked.connect(self.push_error_no_dropdown_option_defined)
+                msg.exec()
+            else:
+                options_dict = {}
+                combobox_option_items = [self.options_combobox.itemText(i) for i in range(self.options_combobox.count)]
+                for option in combobox_option_items:
+                    options_dict.update({option.replace(' ', '_') : option})
+
+                item_found = False
+                for i, (combobox_name, _) in enumerate(self.classification_config_yaml['comboboxes'].items()):
+                    if combobox_name == object_name:
+                        item_found = True
+
+                if item_found == False:
+                    # append
+                    self.classification_config_yaml['comboboxes'].update({object_name : options_dict})
+       elif self.item_added == 'freetextbox':
+            label_found = False
+            for i, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+                if label == current_label_name:
+                    label_found = True
+                    
+            if label_found == False:
+                # append
+                self.classification_config_yaml['freetextboxes'].update({object_name : current_label_name.capitalize()})
+        
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow.show()
+       self.close() 
+       
+   def push_error_no_dropdown_option_defined(self):
+       self.push_cancel()
+   
+   def push_cancel(self):
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow.show()
+       self.close()
+
+class ConfigureLabelsWindow(qt.QWidget):
+   def __init__(self, segmenter, modality, edit_conf, label_config_yaml = None, parent = None):
+      super(ConfigureLabelsWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.modality = modality
+      self.edit_conf = edit_conf
+
+      if label_config_yaml is None:
+            with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+                    self.label_config_yaml = yaml.full_load(file)
+      else:
+          self.label_config_yaml = label_config_yaml
+
+      layout = qt.QVBoxLayout()
+
+      self.label_table_view = qt.QTableWidget()
+      layout.addWidget(self.label_table_view)
+
+      if len(self.label_config_yaml['labels']) > 0:
+          number_of_labels = len(self.label_config_yaml['labels'])
+
+          self.label_table_view.setRowCount(number_of_labels)
+          if self.modality == 'MRI':
+                self.label_table_view.setColumnCount(5) # edit button, remove button, name, value, color
+          elif self.modality == 'CT':
+                self.label_table_view.setColumnCount(7) # edit button, remove button, name, value, color, range HU min, range HU max
+          self.label_table_view.horizontalHeader().setStretchLastSection(True)
+          self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
+          for index, label in enumerate(self.label_config_yaml['labels']): 
+                edit_button = qt.QPushButton('Edit')
+                edit_button.clicked.connect(lambda state, label = label: self.push_edit_button(label))
+                edit_button_hbox = qt.QHBoxLayout()
+                edit_button_hbox.addWidget(edit_button)
+                edit_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                edit_button_hbox.setContentsMargins(0, 0, 0, 0)
+                edit_button_widget = qt.QWidget()
+                edit_button_widget.setLayout(edit_button_hbox)
+                self.label_table_view.setCellWidget(index, 0, edit_button_widget)
+                self.label_table_view.setHorizontalHeaderItem(0, qt.QTableWidgetItem(''))
+
+                remove_button = qt.QPushButton('Remove')
+                remove_button.clicked.connect(lambda state, label = label: self.push_remove_button(label))
+                remove_button_hbox = qt.QHBoxLayout()
+                remove_button_hbox.addWidget(remove_button)
+                remove_button_hbox.setAlignment(qt.Qt.AlignCenter)
+                remove_button_hbox.setContentsMargins(0, 0, 0, 0)
+                remove_button_widget = qt.QWidget()
+                remove_button_widget.setLayout(remove_button_hbox)
+                self.label_table_view.setCellWidget(index, 1, remove_button_widget)
+                self.label_table_view.setHorizontalHeaderItem(1, qt.QTableWidgetItem(''))
+
+                if self.edit_conf:
+                    remove_button.setEnabled(False)
+
+                cell = qt.QTableWidgetItem(label['name'])
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.label_table_view.setItem(index, 2, cell)
+                self.label_table_view.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Name'))
+
+                cell = qt.QTableWidgetItem(str(label['value']))
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                self.label_table_view.setItem(index, 3, cell)
+                self.label_table_view.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Value'))
+
+                cell = qt.QTableWidgetItem('')
+                cell.setFlags(qt.Qt.NoItemFlags)
+                cell.setBackground(qt.QBrush(qt.QColor(label['color_r'], label['color_g'], label['color_b'])))
+                self.label_table_view.setItem(index, 4, cell)
+                self.label_table_view.setHorizontalHeaderItem(4, qt.QTableWidgetItem('Colour'))
+
+                if self.modality == 'CT':
+                    cell = qt.QTableWidgetItem(str(label['lower_bound_HU']))
+                    cell.setFlags(qt.Qt.NoItemFlags)
+                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    self.label_table_view.setItem(index, 5, cell)
+                    self.label_table_view.setHorizontalHeaderItem(5, qt.QTableWidgetItem('Min. HU'))
+
+                    cell = qt.QTableWidgetItem(str(label['upper_bound_HU']))
+                    cell.setFlags(qt.Qt.NoItemFlags)
+                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    self.label_table_view.setItem(index, 6, cell)
+                    self.label_table_view.setHorizontalHeaderItem(6, qt.QTableWidgetItem('Max. HU'))
+
+      self.add_label_button = qt.QPushButton('Add Label')
+      self.add_label_button.clicked.connect(self.push_add_label)
+      layout.addWidget(self.add_label_button)
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Labels")
+      self.resize(800, 200)
+
+   def push_edit_button(self, label):
+       self.close()
+
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml, label)
+       configureSingleLabelWindow.show()
+
+   def push_remove_button(self, label):
+       self.close()
+       
+       value_removed = -1
+       for l in self.label_config_yaml['labels']:
+           if l['name'] == label['name']:
+               value_removed = l['value']
+               self.label_config_yaml['labels'].remove(l)
+    
+       for l in self.label_config_yaml['labels']:
+           if l['value'] > value_removed and value_removed != -1:
+               l['value'] = l['value'] - 1
+        
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow.show()
+
+   def push_add_label(self):
+       self.close()
+
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSingleLabelWindow.show()
+   
+   def push_save(self):
+       if len(self.label_config_yaml['labels']) == 0:
+            msg = qt.QMessageBox()
+            msg.setWindowTitle('ERROR : Label list is empty')
+            msg.setText('The label list cannot be empty. Using the previous label configuration. ')
+            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+            msg.buttonClicked.connect(self.push_error_label_list_empty)
+            msg.exec()
+       else:
+            with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+                yaml.safe_dump(self.label_config_yaml, file)
+
+            self.close()
+
+   def push_error_label_list_empty(self):
+       self.push_cancel()
+   
+   def push_cancel(self):
+       self.close()
+
+class ConfigureSingleLabelWindow(qt.QWidget):
+   def __init__(self, segmenter, modality, edit_conf, label_config_yaml, label = None, parent = None):
+      super(ConfigureSingleLabelWindow, self).__init__(parent)
+
+      self.segmenter = segmenter
+      self.modality = modality
+      self.initial_label = label
+      self.label_config_yaml = label_config_yaml
+      self.edit_conf = edit_conf
+
+      layout = qt.QVBoxLayout()
+
+      name_hbox = qt.QHBoxLayout()
+
+      name_label = qt.QLabel('Name : ')
+      name_label.setStyleSheet("font-weight: bold")
+      name_hbox.addWidget(name_label)
+
+      self.name_line_edit = qt.QLineEdit('')
+      name_hbox.addWidget(self.name_line_edit)
+      
+      layout.addLayout(name_hbox)
+
+      value_hbox = qt.QHBoxLayout()
+
+      value_label = qt.QLabel('Value : ')
+      value_label.setStyleSheet("font-weight: bold")
+      value_hbox.addWidget(value_label)
+
+      self.value_line_edit = qt.QLineEdit('')
+      self.value_line_edit.setValidator(qt.QIntValidator())
+      self.value_line_edit.setEnabled(False) # To be changed at resolution of Issue #28
+      value_hbox.addWidget(self.value_line_edit)
+      
+      layout.addLayout(value_hbox)
+
+      color_hbox = qt.QHBoxLayout()
+
+      color_label = qt.QLabel('Colour : ')
+      color_label.setStyleSheet("font-weight: bold")
+      color_hbox.addWidget(color_label)
+
+      self.color_r_line_edit = qt.QLineEdit('R')
+      colorValidator = qt.QIntValidator()
+      colorValidator.setRange(0, 255)
+      self.color_r_line_edit.setValidator(colorValidator)
+      self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_r_line_edit)
+
+      self.color_g_line_edit = qt.QLineEdit('G')
+      self.color_g_line_edit.setValidator(colorValidator)
+      self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_g_line_edit)
+
+      self.color_b_line_edit = qt.QLineEdit('B')
+      self.color_b_line_edit.setValidator(colorValidator)
+      self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
+      color_hbox.addWidget(self.color_b_line_edit)
+
+      self.color_display = qt.QLabel('        ')
+      color_hbox.addWidget(self.color_display)
+
+      layout.addLayout(color_hbox)
+
+      if self.modality == 'CT':
+            min_hu_hbox = qt.QHBoxLayout()
+
+            min_hu_label = qt.QLabel('Min. HU : ')
+            min_hu_label.setStyleSheet("font-weight: bold")
+            min_hu_hbox.addWidget(min_hu_label)
+
+            self.min_hu_line_edit = qt.QLineEdit('')
+            self.min_hu_line_edit.setValidator(qt.QIntValidator())
+            min_hu_hbox.addWidget(self.min_hu_line_edit)
+            
+            layout.addLayout(min_hu_hbox)
+
+            max_hu_hbox = qt.QHBoxLayout()
+
+            max_hu_label = qt.QLabel('Max. HU : ')
+            max_hu_label.setStyleSheet("font-weight: bold")
+            max_hu_hbox.addWidget(max_hu_label)
+
+            self.max_hu_line_edit = qt.QLineEdit('')
+            self.max_hu_line_edit.setValidator(qt.QIntValidator())
+            max_hu_hbox.addWidget(self.max_hu_line_edit)
+            
+            layout.addLayout(max_hu_hbox)
+
+      if self.initial_label is not None:
+          self.name_line_edit.setText(self.initial_label['name'])
+          self.name_line_edit.setEnabled(False)
+          self.value_line_edit.setText(self.initial_label['value'])
+          self.color_r_line_edit.setText(label['color_r'])
+          self.color_g_line_edit.setText(label['color_g'])
+          self.color_b_line_edit.setText(label['color_b'])
+          self.color_line_edit_changed()
+
+          if self.modality == 'CT':
+              self.min_hu_line_edit.setText(self.initial_label['lower_bound_HU'])
+              self.max_hu_line_edit.setText(self.initial_label['upper_bound_HU'])
+
+      self.save_button = qt.QPushButton('Save')
+      self.save_button.clicked.connect(self.push_save)
+      layout.addWidget(self.save_button)
+
+      self.cancel_button = qt.QPushButton('Cancel')
+      self.cancel_button.clicked.connect(self.push_cancel)
+      layout.addWidget(self.cancel_button)
+
+      self.setLayout(layout)
+      self.setWindowTitle("Configure Label")
+      self.resize(400, 200)
+   
+   def color_line_edit_changed(self):
+       # (R, G, B)
+       color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
+       self.color_display.setStyleSheet(f"background-color:rgb{color}")
+   
+   def push_save(self):
+       current_label_name = self.name_line_edit.text
+    
+       label_found = False
+       for label in self.label_config_yaml['labels']:
+           if label['name'] == current_label_name:
+               # edit 
+               label_found = True
+               label['color_r'] = int(self.color_r_line_edit.text)
+               label['color_g'] = int(self.color_g_line_edit.text)
+               label['color_b'] = int(self.color_b_line_edit.text)
+
+               if self.modality == 'CT':
+                   label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+                   label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+               
+       if label_found == False:
+           # append
+           new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255, 'lower_bound_HU': 30, 'name': 'ICH', 'upper_bound_HU': 90, 'value': 1}
+           new_label['name'] = self.name_line_edit.text
+           new_label['value'] = len(self.label_config_yaml['labels']) + 1
+           new_label['color_r'] = int(self.color_r_line_edit.text)
+           new_label['color_g'] = int(self.color_g_line_edit.text)
+           new_label['color_b'] = int(self.color_b_line_edit.text)
+
+           if self.modality == 'CT':
+                new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+                new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+           self.label_config_yaml['labels'].append(new_label)
+        
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow.show()
+       self.close() 
+       
+   def push_cancel(self):
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow.show()
+       self.close()
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):
@@ -174,7 +1612,7 @@ class LoadClassificationWindow(qt.QWidget):
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
            if selected_version_df.at[0, label] == 'Yes':
                self.segmenter.checkboxWidgets[objectName].setChecked(True)
-           elif selected_version_df.at[0, label] == 'No':
+           elif selected_version_df.at[0, label] == 'No' or str(selected_version_df.at[0, label]) == 'nan':
                self.segmenter.checkboxWidgets[objectName].setChecked(False)
 
        for i, (comboBoxName, options) in enumerate(self.segmenter.classification_config_yaml["comboboxes"].items()):
@@ -500,6 +1938,10 @@ class SemiAutoPheToolThresholdWindow(qt.QWidget):
       self.cancelButton.clicked.connect(self.pushCancel)
       layout.addWidget(self.cancelButton)
 
+      self.reference_label = qt.QLabel()
+      self.reference_label.setText('Volbers, B., Staykov, D., Wagner, I., Dörfler, A., Saake, M., Schwab, S., & Bardutzky, J. (2011). Semi-automatic \n volumetric assessment of perihemorrhagic edema with computed tomography. European journal of neurology, \n 18(11), 1323–1328. https://doi.org/10.1111/j.1468-1331.2011.03395.x')
+      layout.addWidget(self.reference_label)
+
       self.setLayout(layout)
       self.setWindowTitle("Semi-automatic PHE Tool")
       self.resize(400, 200)
@@ -805,21 +2247,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-
-    # MB
-    self.interactor1 = slicer.app.layoutManager().sliceWidget(
-            'Yellow').sliceView().interactor()
-    self.interactor2 = slicer.app.layoutManager().sliceWidget(
-        'Red').sliceView().interactor()
-
-    # Apply the custom interactor style
-    styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
-    self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
-    self.interactor1.SetInteractorStyle(self.styleYellow)
-
-    styleRed = slicer.app.layoutManager().sliceWidget('Red')
-    self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
-    self.interactor2.SetInteractorStyle(self.styleRed)
   
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
@@ -844,6 +2271,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global MODALITY
         global IS_CLASSIFICATION_REQUESTED
         global IS_SEGMENTATION_REQUESTED
+        global IS_MOUSE_SHORTCUTS_REQUESTED
+        global IS_KEYBOARD_SHORTCUTS_REQUESTED
         global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
         global CT_WINDOW_WIDTH
@@ -856,6 +2285,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         MODALITY = self.general_config_yaml["modality"]
         IS_CLASSIFICATION_REQUESTED = self.general_config_yaml["is_classification_requested"]
         IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
+        IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
+        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.general_config_yaml["is_keyboard_shortcuts_requested"]
         IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.general_config_yaml["is_semi_automatic_phe_tool_requested"]
         INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
 
@@ -871,6 +2302,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             INPUT_FILE_EXTENSION = '*.nii.gz'
             # user can decide whether to impose bids or not
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
+            IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = False
 
 
   def setup(self):
@@ -896,21 +2328,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
     self.logic = SlicerCARTLogic()
-    self.get_label_config_values()
-    self.get_keyboard_shortcuts_config_values()
-    self.get_classification_config_values()
-    self.get_general_config_values()
+
+    slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self)
+    slicerCART_configuration_initial_window.show()
 
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
-
-    self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
-    self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
-    
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
+    self.ui.EditConfiguration.connect('clicked(bool)', self.onEditConfiguration)
     self.ui.SlicerDirectoryListView.clicked.connect(self.getCurrentTableItem)
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
@@ -944,20 +2372,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
-    # Display the selected color view at module startup
-    if self.general_config_yaml['slice_view_color'] == "Yellow":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
-    if self.general_config_yaml['slice_view_color'] == "Red":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
-    if self.general_config_yaml['slice_view_color'] == "Green":
-        slicer.app.layoutManager().setLayout(
-            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
-
-    for label in self.label_config_yaml["labels"]:
-        self.ui.dropDownButton_label_select.addItem(label["name"])
-
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.disablePauseTimerButton()
     self.disableSegmentAndPaintButtons()
@@ -982,45 +2396,108 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
-    # Change the value of the upper and lower bound of the HU
-    self.ui.UB_HU.setValue(self.UB_HU)
-    self.ui.LB_HU.setValue(self.LB_HU)
-    
-    comboboxesStartRow = self.setupCheckboxes(3)
-    freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-    self.setupFreeText(freetextStartRow)
-    
-    # Initialize timers
-    self.timers = []
-    timer_index = 0
-    for label in self.label_config_yaml["labels"]:
-        self.timers.append(Timer(number=timer_index))
-        timer_index = timer_index + 1
-    
     self.MostRecentPausedCasePath = ""
-    
-    if not IS_CLASSIFICATION_REQUESTED:
-        self.ui.MRMLCollapsibleButton.setVisible(False)
-    if not IS_SEGMENTATION_REQUESTED:
-        self.ui.MRMLCollapsibleButton_2.setVisible(False)
-    if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
-        self.ui.SemiAutomaticPHELabel.setVisible(False)
-        self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
-        self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
-    
-    for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
+  
+  def setup_configuration(self):
+        self.get_label_config_values()
+        self.get_keyboard_shortcuts_config_values()
+        self.get_classification_config_values()
+        self.get_general_config_values()
 
-        shortcutKey = i.get("shortcut")
-        callback_name = i.get("callback")
-        button_name = i.get("button")
+        if IS_MOUSE_SHORTCUTS_REQUESTED:
+            # MB
+            self.interactor1 = slicer.app.layoutManager().sliceWidget(
+                    'Yellow').sliceView().interactor()
+            self.interactor2 = slicer.app.layoutManager().sliceWidget(
+                'Red').sliceView().interactor()
 
-        button = getattr(self.ui, button_name)
-        callback = getattr(self, callback_name)
+            # Apply the custom interactor style
+            styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
+            self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
+            self.interactor1.SetInteractorStyle(self.styleYellow)
 
-        self.connectShortcut(shortcutKey, button, callback)
+            styleRed = slicer.app.layoutManager().sliceWidget('Red')
+            self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
+            self.interactor2.SetInteractorStyle(self.styleRed)
+
+        self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
+        self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
+        
+        # Change the value of the upper and lower bound of the HU
+        self.ui.UB_HU.setValue(self.UB_HU)
+        self.ui.LB_HU.setValue(self.LB_HU)
+
+        # clear classification widgets
+        for i in reversed(range(self.ui.ClassificationGridLayout.count())): 
+            if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+                self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+
+        comboboxesStartRow = self.setupCheckboxes(3)
+        freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+        self.setupFreeText(freetextStartRow)
+        
+        # Initialize timers
+        self.timers = []
+        timer_index = 0
+        for label in self.label_config_yaml["labels"]:
+            self.timers.append(Timer(number=timer_index))
+            timer_index = timer_index + 1
+        
+        if not IS_CLASSIFICATION_REQUESTED:
+            self.ui.MRMLCollapsibleButton.setVisible(False)
+        if not IS_SEGMENTATION_REQUESTED:
+            self.ui.MRMLCollapsibleButton_2.setVisible(False)
+        if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
+            self.ui.SemiAutomaticPHELabel.setVisible(False)
+            self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
+            self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+        
+        if MODALITY == 'MRI':
+            self.ui.ThresholdLabel.setVisible(False)
+            self.ui.MinimumLabel.setVisible(False)
+            self.ui.MaximumLabel.setVisible(False)
+            self.ui.LB_HU.setVisible(False)
+            self.ui.UB_HU.setVisible(False)
+            self.ui.pushDefaultMin.setVisible(False)
+            self.ui.pushDefaultMax.setVisible(False)
+
+        if self.general_config_yaml['is_keyboard_shortcuts_requested']:
+            for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
+
+                shortcutKey = i.get("shortcut")
+                callback_name = i.get("callback")
+                button_name = i.get("button")
+
+                button = getattr(self.ui, button_name)
+                callback = getattr(self, callback_name)
+
+                self.connectShortcut(shortcutKey, button, callback)
+        
+        # Display the selected color view at module startup
+        if self.general_config_yaml['slice_view_color'] == "Yellow":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+        if self.general_config_yaml['slice_view_color'] == "Red":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
+        if self.general_config_yaml['slice_view_color'] == "Green":
+            slicer.app.layoutManager().setLayout(
+                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
+            
+        self.ui.dropDownButton_label_select.clear()
+        for label in self.label_config_yaml["labels"]:
+            self.ui.dropDownButton_label_select.addItem(label["name"])
+  
+  def set_master_volume_intensity_mask_according_to_modality(self):
+      if MODALITY == 'CT':
+            self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+      elif MODALITY == 'MRI':
+            self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
   
   def setupCheckboxes(self, number_of_columns):
       self.checkboxWidgets = {}
+
+      row_index = 0
 
       for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
         #print(objectName, label)
@@ -1096,6 +2573,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(False)
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
+
+  def onEditConfiguration(self):
+      slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
+      slicerCARTConfigurationSetupWindow.show()
 
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
@@ -1228,8 +2709,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
       self.newSegmentation()
 
@@ -1591,42 +3072,84 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         
   
   def getClassificationInformation(self):
+      self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
+                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
+      header = None
+      if os.path.exists(self.outputClassificationInformationFile) and os.path.isfile(self.outputClassificationInformationFile):
+            with open(self.outputClassificationInformationFile, 'r') as f:
+                header = f.readlines()[0]
+    
       label_string = ""
       data_string = ""
-      for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = "No"
-          if self.checkboxWidgets[objectName].isChecked():
-              data = "Yes"
-          
-          data_string = data_string + data
-      
-      for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
-          label = comboBoxName.replace("_", " ").capitalize()
 
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
+      if header is not None:
+            label_string = header.split('time,')[1]
 
-          data = self.comboboxWidgets[comboBoxName].currentText
-          data_string = data_string + data
-      
-      for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
-          if label_string != "":
-              label_string = label_string + ","
-              data_string = data_string + ","
-          
-          label_string = label_string + label
-          
-          data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
-          data_string = data_string + data
+            labels = label_string.split(',')
+
+            number_of_checkboxes = len(self.classification_config_yaml["checkboxes"].items())
+            number_of_comboboxes = len(self.classification_config_yaml["comboboxes"].items())
+            number_of_freetextboxes = len(self.classification_config_yaml["freetextboxes"].items())
+
+            for i, label in enumerate(labels):
+                data = ""
+                if '\n' in label:
+                    label = label.replace('\n', '')
+                if 0 <= i < number_of_checkboxes:
+                    for _, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                        if label == checkbox_label:
+                            data = "No"
+                            if self.checkboxWidgets[objectName].isChecked():
+                                data = "Yes"
+                elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
+                    for _, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                        combobox_label = comboBoxName.replace("_", " ").capitalize()
+                        if label == combobox_label:
+                            data = self.comboboxWidgets[comboBoxName].currentText
+                elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
+                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                        if label == free_text_label:
+                            data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+
+                if i > 0:
+                    data_string = data_string + ","
+                data_string = data_string + data
+
+      else:
+            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = "No"
+                if self.checkboxWidgets[objectName].isChecked():
+                    data = "Yes"
+                
+                data_string = data_string + data
+            
+            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                label = comboBoxName.replace("_", " ").capitalize()
+
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+
+                data = self.comboboxWidgets[comboBoxName].currentText
+                data_string = data_string + data
+            
+            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                if label_string != "":
+                    label_string = label_string + ","
+                    data_string = data_string + ","
+                
+                label_string = label_string + label
+                
+                data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+                data_string = data_string + data
 
       return label_string, data_string
   
@@ -1873,66 +3396,43 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  def verifyConfigCompatibilities(self):
-      if self.outputFolder is not None:
-        folder_for_config_files = 'conf'
-        path_to_saved_config_files = f'{self.outputFolder}{os.sep}{folder_for_config_files}'
-
-        if os.path.exists(path_to_saved_config_files) == False:
-            os.makedirs(path_to_saved_config_files)
-
-        label_config_copy_filename = 'lc_c--do-not-modify.yml'
-        path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{label_config_copy_filename}'
-
-        classification_config_copy_filename = 'cbc_c--do-not-modify.yml'
-        path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{classification_config_copy_filename}'
+  def verify_empty(self):
+      if self.outputFolder is not None and os.path.exists(self.outputFolder):
 
         content_of_output_folder = os.listdir(self.outputFolder)
         if '.DS_Store' in content_of_output_folder:
             content_of_output_folder.remove('.DS_Store')
-
-        if os.path.exists(path_to_label_config_copy):
-            is_label_config_compatible = filecmp.cmp(path_to_label_config_copy, LABEL_CONFIG_FILE_PATH)
-            if is_label_config_compatible == False:
-                msg = qt.QMessageBox()
-                msg.setIcon(qt.QMessageBox.Critical)
-                msg.setText("ERROR : Incompatible Label Configuration")
-                msg.setInformativeText('The label_config.yml file has changed since the initial segmentation. ')
-                msg.setWindowTitle("ERROR : Incompatible Label Configuration")
-                msg.exec()
-
-                self.outputFolder = None
-
-        if os.path.exists(path_to_classification_config_copy):
-            is_classification_config_compatible = filecmp.cmp(path_to_classification_config_copy, CLASSIFICATION_CONFIG_FILE_PATH)
-            if is_classification_config_compatible == False:
-                msg = qt.QMessageBox()
-                msg.setIcon(qt.QMessageBox.Critical)
-                msg.setText("ERROR : Incompatible Classification Configuration")
-                msg.setInformativeText('The classification_config.yml file has changed since the initial classification annotation. ')
-                msg.setWindowTitle("ERROR : Incompatible Classification Configuration")
-                msg.exec()
-
-                self.outputFolder = None
         
-        if len(content_of_output_folder) > 1 and os.path.exists(path_to_label_config_copy) == False and os.path.exists(path_to_classification_config_copy) == False:
+        if len(content_of_output_folder) > 0:
+            self.outputFolder = None
+
             msg = qt.QMessageBox()
-            msg.setIcon(qt.QMessageBox.Warning)
-            msg.setText("WARNING : Possible Incompatible Configuration")
-            msg.setInformativeText('The output folder is not empty. No configuration files have been saved. Possible configuration incompatibility. Proceed with caution. Otherwise, choose an empty output folder. ')
-            msg.setWindowTitle("WARNING : Possible Incompatible Configuration")
+            msg.setIcon(qt.QMessageBox.Critical)
+            msg.setText("Error : The output folder must be empty ")
+            msg.setInformativeText('Given that there is a new configuration of SlicerCART, the output folder must be empty. ')
+            msg.setWindowTitle("ERROR : The output folder must be empty ")
             msg.exec()
+        else:
+            path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
+
+            if os.path.exists(path_to_saved_config_files) == False:
+                os.makedirs(path_to_saved_config_files)
+
+            path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{LABEL_CONFIG_COPY_FILENAME}'
+            path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}'
+            path_to_keyboard_shortcuts_config_copy = f'{path_to_saved_config_files}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}'
+            path_to_general_config_copy = f'{path_to_saved_config_files}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}'
 
             shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
-        elif len(content_of_output_folder) == 1:
-            shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
-            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, path_to_keyboard_shortcuts_config_copy)
   
   def onSelectOutputFolder(self):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
-      self.verifyConfigCompatibilities()
+      if REQUIRE_EMPTY: 
+          self.verify_empty()
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
@@ -1941,17 +3441,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.ui.SaveSegmentationButton.setEnabled(True)
           self.ui.SaveClassificationButton.setEnabled(True)
           
-          self.updateCurrentOutputPathAndCurrentVolumeFilename()
+          if self.CurrentFolder is not None:
+                self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
-          self.update_case_list_colors()
+                self.update_case_list_colors()
 
-          self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-          self.update_current_segmentation_status()
+                self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+                self.update_current_segmentation_status()
 
-          self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+                self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
 
   def update_case_list_colors(self):
-      if self.outputFolder is None:
+      if self.outputFolder is None or self.CurrentFolder is None:
           return
       
       segmentation_information_path = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
@@ -2131,8 +3632,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(85)
-      Vol_displayNode.SetLevel(45)
+      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -2304,7 +3805,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Set up the mask parameters (note that PaintAllowed...was changed to EditAllowed)
         self.segmentEditorNode.SetMaskMode(slicer.vtkMRMLSegmentationNode.EditAllowedEverywhere)
         #Set if using Editable intensity range (the range is defined below using object.setParameter)
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
 
@@ -2372,7 +3873,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onLB_HU(self):
       try:
         self.LB_HU=self.ui.LB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
       except:
@@ -2381,7 +3882,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onUB_HU(self):
       try:
         self.UB_HU=self.ui.UB_HU.value
-        self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
+        self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
         self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:

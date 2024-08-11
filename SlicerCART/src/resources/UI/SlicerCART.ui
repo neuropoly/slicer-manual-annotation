@@ -244,6 +244,13 @@
       </item>
       <item row="0" column="0" colspan="2">
        <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+         <widget class="QPushButton" name="EditConfiguration">
+          <property name="text">
+           <string>Edit SlicerCART Configuration</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="SelectVolumeFolder">
           <property name="text">

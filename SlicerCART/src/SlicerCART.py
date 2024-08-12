@@ -526,16 +526,19 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(mouse_shortcuts_hbox)
       
+
       display_timer_hbox = qt.QHBoxLayout()
 
-      display_timer_label = qt.QLabel('Display timer during segmentation? ')
-      display_timer_label.setStyleSheet("font-weight: bold")
-      display_timer_hbox.addWidget(display_timer_label)
+      self.display_timer_label = qt.QLabel('Display timer during segmentation? ')
+      self.display_timer_label.setStyleSheet("font-weight: bold")
+      display_timer_hbox.addWidget(self.display_timer_label)
 
       self.display_timer_checkbox = qt.QCheckBox()
       display_timer_hbox.addWidget(self.display_timer_checkbox)
 
       layout.addLayout(display_timer_hbox)
+
+          
 
       self.configure_labels_button = qt.QPushButton('Configure Labels...')
       self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
@@ -711,8 +714,15 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
                 self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
             else:
                 self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
+                
+            self.display_timer_checkbox.setEnabled(True)
+            self.display_timer_label.setStyleSheet("font-weight: bold; color : white")
+
        else: 
             self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
+            self.display_timer_checkbox.setEnabled(False)
+            self.display_timer_label.setStyleSheet("font-weight: bold; color : gray")
+
    
    def update_interpolate_ks(self):
        self.interpolate_ks_selected = self.interpolate_ks_line_edit.text

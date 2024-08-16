@@ -396,7 +396,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
       onlyInt = qt.QIntValidator()
       self.ct_window_level_line_edit.setValidator(onlyInt)
+      self.ct_window_level_line_edit.setInputMask("0000")
       ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
+      
 
       layout.addLayout(ct_window_level_hbox)
 
@@ -409,6 +411,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       
       self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
       self.ct_window_width_line_edit.setValidator(onlyInt)
+      self.ct_window_width_line_edit.setInputMask("0000")
       ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
 
       layout.addLayout(ct_window_width_hbox)

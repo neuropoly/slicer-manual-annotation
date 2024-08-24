@@ -22,7 +22,6 @@ import sys
 from functools import partial
 import copy
 
-
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 # TODO: check if the package installed with error
 
@@ -33,7 +32,8 @@ REQUIRED_PYTHON_PACKAGES = {
     "PyYAML": "yaml",
     "pynrrd": "nrrd",
     "slicerio": "slicerio",
-    "bids_validator": "bids_validator"
+    "bids_validator": "bids_validator",
+    "darkdetect": "darkdetect"
 }
 
 def check_and_install_python_packages():
@@ -72,6 +72,7 @@ import nrrd
 import pandas as pd
 import slicerio
 import yaml
+import darkdetect
 
 INPUT_FILE_EXTENSION = '*.nii.gz'
 INTERPOLATE_VALUE = 0
@@ -95,16 +96,19 @@ LABEL_CONFIG_FILENAME = "label_config.yml"
 KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
 CLASSIFICATION_CONFIG_FILENAME = "classification_config.yml"
 GENERAL_CONFIG_FILENAME = "general_config.yml"
+SEGMENTATION_CONFIG_FILENAME = "segmentation_config.yml"
 
 LABEL_CONFIG_COPY_FILENAME = LABEL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME = KEYBOARD_SHORTCUTS_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 CLASSIFICATION_CONFIG_COPY_FILENAME = CLASSIFICATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 GENERAL_CONFIG_COPY_FILENAME = GENERAL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+SEGMENTATION_CONFIG_COPY_FILENAME = SEGMENTATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 
 LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), LABEL_CONFIG_FILENAME)
 KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), KEYBOARD_SHORTCUTS_CONFIG_FILENAME)
 CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CLASSIFICATION_CONFIG_FILENAME)
 GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), GENERAL_CONFIG_FILENAME)
+SEGMENTATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), SEGMENTATION_CONFIG_FILENAME)
 
 CONF_FOLDER_NAME = '_conf'
 
@@ -310,21 +314,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(modality_hbox)
 
-      self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
-      
-      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
-      self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
-      self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
-
-      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
-      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') 
-      self.include_semi_automatic_PHE_tool_combobox.addItem('No')
-
-      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
-      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
-
-      layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
-
       bids_hbox = qt.QHBoxLayout()
 
       self.bids_hbox_label = qt.QLabel()
@@ -529,23 +518,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
       layout.addLayout(mouse_shortcuts_hbox)
       
-
-      display_timer_hbox = qt.QHBoxLayout()
-
-      self.display_timer_label = qt.QLabel('Display timer during segmentation? ')
-      self.display_timer_label.setStyleSheet("font-weight: bold")
-      display_timer_hbox.addWidget(self.display_timer_label)
-
-      self.display_timer_checkbox = qt.QCheckBox()
-      display_timer_hbox.addWidget(self.display_timer_checkbox)
-
-      layout.addLayout(display_timer_hbox)
-
-          
-
-      self.configure_labels_button = qt.QPushButton('Configure Labels...')
-      self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
-      layout.addWidget(self.configure_labels_button)
+      
+      self.configure_segmentation_button = qt.QPushButton('Configure Segmentation...')
+      self.configure_segmentation_button.setStyleSheet("background-color : yellowgreen")
+      layout.addWidget(self.configure_segmentation_button)
 
       self.configure_classification_button = qt.QPushButton('Configure Classification...')
       self.configure_classification_button.setStyleSheet("background-color : yellowgreen")
@@ -588,7 +564,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.keyboard_shortcuts_checkbox.stateChanged.connect(self.keyboard_shortcuts_checkbox_state_changed)
        self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
        self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
-       self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
        self.bids_combobox.currentIndexChanged.connect(self.update_bids)
        self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
        self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
@@ -602,21 +577,13 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
        self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
        self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
-       self.configure_labels_button.clicked.connect(self.push_configure_labels)
+       self.configure_segmentation_button.clicked.connect(self.push_configure_segmentation)
        self.configure_classification_button.clicked.connect(self.push_configure_classification)
        self.previous_button.clicked.connect(self.push_previous)
        self.apply_button.clicked.connect(self.push_apply)
        self.cancel_button.clicked.connect(self.push_cancel)
    
    def populate_default_values(self):
-       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
-           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(0)
-       else:
-           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
-
-       if self.display_timer_selected:
-           self.display_timer_checkbox.setChecked(True)    
-       
        if self.modality_selected == 'CT':
            self.ct_modality_radio_button.setChecked(True)
        elif self.modality_selected == 'MRI':
@@ -654,12 +621,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.classification_selected = self.general_config_yaml['is_classification_requested']
        self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
        self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
-       self.display_timer_selected = self.general_config_yaml['is_display_timer_requested']
-
-       if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
-            self.include_semi_auto_PHE_tool_selected_option = 'Yes'
-       else:
-            self.include_semi_auto_PHE_tool_selected_option = 'No'
 
        self.modality_selected = self.general_config_yaml['modality']
 
@@ -710,22 +671,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    
    def segmentation_checkbox_state_changed(self):
        self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
-       self.configure_labels_button.setEnabled(self.segmentation_selected)
-
-       if self.segmentation_task_checkbox.isChecked():
-            if self.modality_selected == 'CT':
-                self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
-            else:
-                self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-                
-            self.display_timer_checkbox.setEnabled(True)
-            self.display_timer_label.setStyleSheet("font-weight: bold; color : white")
-
-       else: 
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-            self.display_timer_checkbox.setEnabled(False)
-            self.display_timer_label.setStyleSheet("font-weight: bold; color : gray")
-
+       self.configure_segmentation_button.setEnabled(self.segmentation_selected)
    
    def update_interpolate_ks(self):
        self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
@@ -769,9 +715,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def update_bids(self):
        self.bids_selected = self.bids_combobox.currentText
    
-   def update_include_semi_automatic_PHE_tool(self):
-       self.include_semi_auto_PHE_tool_selected_option = self.include_semi_automatic_PHE_tool_combobox.currentText
-   
    def update_selected_modality(self, option):
        self.modality_selected = option
 
@@ -781,18 +724,15 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(True)
             self.ct_window_width_line_edit.setEnabled(True)
 
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(self.segmentation_selected)
        else:
             self.bids_combobox.setEnabled(True)
 
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
-
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-   
-   def push_configure_labels(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected, self.edit_conf)
-       configureLabelsWindow.show()
+    
+   def push_configure_segmentation(self):
+       self.configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality_selected, self.edit_conf)
+       self.configureSegmentationWindow.show()
 
    def push_configure_classification(self):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf)
@@ -809,12 +749,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
        self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
        self.general_config_yaml['modality'] = self.modality_selected
-       self.general_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
-
-       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
-           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
-       elif self.include_semi_auto_PHE_tool_selected_option == 'No':
-           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
     
        if self.bids_selected == 'Yes':
            self.general_config_yaml['impose_bids_format'] = True
@@ -1016,6 +950,7 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.setLayout(layout)
       self.setWindowTitle("Configure Classification")
       self.resize(500, 600)
+
 
    def push_remove_combobox_button(self, combo_box_name):
        self.close()
@@ -1254,22 +1189,28 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        configureClassificationWindow.show()
        self.close()
 
-class ConfigureLabelsWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, edit_conf, label_config_yaml = None, parent = None):
-      super(ConfigureLabelsWindow, self).__init__(parent)
-
-      self.segmenter = segmenter
-      self.modality = modality
-      self.edit_conf = edit_conf
-
+class ConfigureSegmentationWindow(qt.QWidget):
+    def __init__(self, segmenter, modality, edit_conf, segmentation_config_yaml = None, label_config_yaml = None, parent = None):
+      super(ConfigureSegmentationWindow, self).__init__(parent)
+      with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
+        self.segmentation_config_yaml = yaml.full_load(file)
+        
       if label_config_yaml is None:
             with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
                     self.label_config_yaml = yaml.full_load(file)
       else:
           self.label_config_yaml = label_config_yaml
-
+        
+        
+      
+      self.segmenter = segmenter
+      self.edit_conf = edit_conf
+      self.modality = modality
+      
+      self.set_default_values()
+      
+          
       layout = qt.QVBoxLayout()
-
       self.label_table_view = qt.QTableWidget()
       layout.addWidget(self.label_table_view)
 
@@ -1283,6 +1224,7 @@ class ConfigureLabelsWindow(qt.QWidget):
                 self.label_table_view.setColumnCount(7) # edit button, remove button, name, value, color, range HU min, range HU max
           self.label_table_view.horizontalHeader().setStretchLastSection(True)
           self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
+
 
           for index, label in enumerate(self.label_config_yaml['labels']): 
                 edit_button = qt.QPushButton('Edit')
@@ -1340,32 +1282,68 @@ class ConfigureLabelsWindow(qt.QWidget):
                     cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                     self.label_table_view.setItem(index, 6, cell)
                     self.label_table_view.setHorizontalHeaderItem(6, qt.QTableWidgetItem('Max. HU'))
+                    
+      self.label_table_view.setSizePolicy(qt.QSizePolicy.Expanding, qt.QSizePolicy.Fixed)
+    #  self.label_table_view.resize(, 300)
 
       self.add_label_button = qt.QPushButton('Add Label')
       self.add_label_button.clicked.connect(self.push_add_label)
       layout.addWidget(self.add_label_button)
 
-      self.save_button = qt.QPushButton('Save')
-      self.save_button.clicked.connect(self.push_save)
-      layout.addWidget(self.save_button)
+      self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
+      
+      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
+      self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
+      self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
 
+      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
+      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') 
+      self.include_semi_automatic_PHE_tool_combobox.addItem('No')
+
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
+      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
+
+      layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
+
+      display_timer_hbox = qt.QHBoxLayout()
+
+      self.display_timer_label = qt.QLabel('Display timer during segmentation? ')
+      self.display_timer_label.setStyleSheet("font-weight: bold")
+      display_timer_hbox.addWidget(self.display_timer_label)
+
+      self.display_timer_checkbox = qt.QCheckBox()
+      display_timer_hbox.addWidget(self.display_timer_checkbox)
+
+      layout.addLayout(display_timer_hbox)
+      
+      self.apply_button = qt.QPushButton('Apply')
+      self.apply_button.clicked.connect(self.push_apply)
+      layout.addWidget(self.apply_button)
+      
       self.cancel_button = qt.QPushButton('Cancel')
       self.cancel_button.clicked.connect(self.push_cancel)
-      layout.addWidget(self.cancel_button)
-
+      layout.addWidget(self.cancel_button)      
+      
+      self.populate_default_values()
+      self.connect_buttons_to_callbacks()
+      
       self.setLayout(layout)
-      self.setWindowTitle("Configure Labels")
-      self.resize(800, 200)
+      self.setWindowTitle("Configure Segmentation")
+      self.resize(500, 600)
+      
+    def push_add_label(self):
+       self.close()
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSingleLabelWindow.show()
 
-   def push_edit_button(self, label):
+    def push_edit_button(self, label):
        self.close()
 
        configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml, label)
        configureSingleLabelWindow.show()
-
-   def push_remove_button(self, label):
-       self.close()
        
+    def push_remove_button(self, label):    
+       self.close()   
        value_removed = -1
        for l in self.label_config_yaml['labels']:
            if l['name'] == label['name']:
@@ -1375,17 +1353,42 @@ class ConfigureLabelsWindow(qt.QWidget):
        for l in self.label_config_yaml['labels']:
            if l['value'] > value_removed and value_removed != -1:
                l['value'] = l['value'] - 1
+       
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.label_config_yaml, file)
+       
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
+       
+        
 
-   def push_add_label(self):
-       self.close()
+     
+    def set_default_values(self):
+       if self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested']:  
+            self.include_semi_auto_PHE_tool_selected_option = 'Yes'
+       else:
+            self.include_semi_auto_PHE_tool_selected_option = 'No'  
+     
+    def update_include_semi_automatic_PHE_tool(self):
+       self.include_semi_auto_PHE_tool_selected_option = str(self.include_semi_automatic_PHE_tool_combobox.currentText)
+       
+    def populate_default_values(self):
+        self.display_timer_selected = self.segmentation_config_yaml['is_display_timer_requested']
+        if self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested']:  
+            self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(0)
+        else:
+            self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
+        
+        if self.display_timer_selected:
+           self.display_timer_checkbox.setChecked(True)    
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureSingleLabelWindow.show()
-   
-   def push_save(self):
+    def connect_buttons_to_callbacks(self):
+        self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
+        self.apply_button.clicked.connect(self.push_apply)
+        self.cancel_button.clicked.connect(self.push_cancel)
+        
+    def push_apply(self):
        if len(self.label_config_yaml['labels']) == 0:
             msg = qt.QMessageBox()
             msg.setWindowTitle('ERROR : Label list is empty')
@@ -1396,14 +1399,29 @@ class ConfigureLabelsWindow(qt.QWidget):
        else:
             with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
                 yaml.safe_dump(self.label_config_yaml, file)
+                
+       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
+           self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
+       elif self.include_semi_auto_PHE_tool_selected_option == 'No':
+           self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
+           
+       self.segmentation_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
+       
+       with open(SEGMENTATION_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.segmentation_config_yaml, file)
+              
+       if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
+            shutil.copy(LABEL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}')
+            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
+            shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
 
-            self.close()
-
-   def push_error_label_list_empty(self):
-       self.push_cancel()
-   
-   def push_cancel(self):
        self.close()
+       
+    def push_cancel(self):
+       self.close()
+
 
 class ConfigureSingleLabelWindow(qt.QWidget):
    def __init__(self, segmenter, modality, edit_conf, label_config_yaml, label = None, parent = None):
@@ -1525,6 +1543,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        self.color_display.setStyleSheet(f"background-color:rgb{color}")
    
    def push_save(self):
+       self.close()
        current_label_name = self.name_line_edit.text
     
        label_found = False
@@ -1553,15 +1572,18 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
            self.label_config_yaml['labels'].append(new_label)
+           
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.label_config_yaml, file)
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
-       self.close() 
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
        
    def push_cancel(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
        self.close()
+
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):
@@ -2288,9 +2310,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
         self.label_config_yaml = yaml.safe_load(file)
 
+  def get_segmentation_config_values(self):
+      with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
+        self.segmentation_config_yaml = yaml.safe_load(file)
+    
+      global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
+    
+      IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.segmentation_config_yaml["is_semi_automatic_phe_tool_requested"]
+
   def get_general_config_values(self):
       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
         self.general_config_yaml = yaml.safe_load(file)
+    
 
         global INPUT_FILE_EXTENSION
         global DEFAULT_VOLUMES_DIRECTORY
@@ -2298,13 +2329,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
         global MODALITY
         global IS_CLASSIFICATION_REQUESTED
-        global IS_SEGMENTATION_REQUESTED
         global IS_MOUSE_SHORTCUTS_REQUESTED
         global IS_KEYBOARD_SHORTCUTS_REQUESTED
-        global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
         global CT_WINDOW_WIDTH
         global CT_WINDOW_LEVEL
+        global IS_SEGMENTATION_REQUESTED
+
 
         INPUT_FILE_EXTENSION = self.general_config_yaml["input_filetype"]
         DEFAULT_VOLUMES_DIRECTORY = self.general_config_yaml["default_volume_directory"]
@@ -2312,10 +2343,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         DEFAULT_SEGMENTATION_DIRECTORY = self.general_config_yaml["default_segmentation_directory"]
         MODALITY = self.general_config_yaml["modality"]
         IS_CLASSIFICATION_REQUESTED = self.general_config_yaml["is_classification_requested"]
-        IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
-        IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
         IS_KEYBOARD_SHORTCUTS_REQUESTED = self.general_config_yaml["is_keyboard_shortcuts_requested"]
-        IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.general_config_yaml["is_semi_automatic_phe_tool_requested"]
+        IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
+        IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
+
+
         INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
 
         if MODALITY == 'CT':
@@ -2331,6 +2363,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # user can decide whether to impose bids or not
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
             IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = False
+
 
 
   def setup(self):
@@ -2431,6 +2464,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.get_keyboard_shortcuts_config_values()
         self.get_classification_config_values()
         self.get_general_config_values()
+        self.get_segmentation_config_values()
 
         if IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
@@ -2474,6 +2508,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if not IS_CLASSIFICATION_REQUESTED:
             self.ui.MRMLCollapsibleButton.setVisible(False)
         if not IS_SEGMENTATION_REQUESTED:
+            
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
         if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
             self.ui.SemiAutomaticPHELabel.setVisible(False)
@@ -2501,7 +2536,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                 self.connectShortcut(shortcutKey, button, callback)
                 
-        if self.general_config_yaml['is_display_timer_requested']:
+        if self.segmentation_config_yaml['is_display_timer_requested']:
             self.ui.lcdNumber.setStyleSheet("background-color : black")
         else:
             self.ui.lcdNumber.setVisible(False)

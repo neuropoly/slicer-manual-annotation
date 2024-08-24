@@ -1422,7 +1422,6 @@ class ConfigureSegmentationWindow(qt.QWidget):
     def push_cancel(self):
        self.close()
 
-
 class ConfigureSingleLabelWindow(qt.QWidget):
    def __init__(self, segmenter, modality, edit_conf, label_config_yaml, label = None, parent = None):
       super(ConfigureSingleLabelWindow, self).__init__(parent)
@@ -1469,16 +1468,19 @@ class ConfigureSingleLabelWindow(qt.QWidget):
       colorValidator = qt.QIntValidator()
       colorValidator.setRange(0, 255)
       self.color_r_line_edit.setValidator(colorValidator)
+      self.color_r_line_edit.setInputMask("000")
       self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_r_line_edit)
 
       self.color_g_line_edit = qt.QLineEdit('G')
       self.color_g_line_edit.setValidator(colorValidator)
+      self.color_g_line_edit.setInputMask("000")
       self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_g_line_edit)
 
       self.color_b_line_edit = qt.QLineEdit('B')
       self.color_b_line_edit.setValidator(colorValidator)
+      self.color_b_line_edit.setInputMask("000")
       self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_b_line_edit)
 
@@ -1496,6 +1498,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
             self.min_hu_line_edit = qt.QLineEdit('')
             self.min_hu_line_edit.setValidator(qt.QIntValidator())
+            self.min_hu_line_edit.setInputMask("0000")
             min_hu_hbox.addWidget(self.min_hu_line_edit)
             
             layout.addLayout(min_hu_hbox)
@@ -1504,10 +1507,12 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
             max_hu_label = qt.QLabel('Max. HU : ')
             max_hu_label.setStyleSheet("font-weight: bold")
+
             max_hu_hbox.addWidget(max_hu_label)
 
             self.max_hu_line_edit = qt.QLineEdit('')
             self.max_hu_line_edit.setValidator(qt.QIntValidator())
+            self.max_hu_line_edit.setInputMask("0000")
             max_hu_hbox.addWidget(self.max_hu_line_edit)
             
             layout.addLayout(max_hu_hbox)
@@ -1583,7 +1588,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureSegmentationWindow.show()
        self.close()
-
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):

@@ -20,17 +20,3 @@ labels:
   name: PHE
   upper_bound_HU: 33
   value: 3
-- color_b: 200
-  color_g: 150
-  color_r: 100
-  lower_bound_HU: 20
-  name: testing
-  upper_bound_HU: 50
-  value: 4
-- color_b: 78
-  color_g: 234
-  color_r: 123
-  lower_bound_HU: 45
-  name: working
-  upper_bound_HU: 3000
-  value: 5

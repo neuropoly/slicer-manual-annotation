@@ -278,7 +278,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.set_default_values()
 
       self.segmenter = segmenter
-
       layout = qt.QVBoxLayout()
 
       task_button_hbox = qt.QHBoxLayout()
@@ -754,7 +753,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
            self.general_config_yaml['impose_bids_format'] = True
        elif self.bids_selected == 'No':
            self.general_config_yaml['impose_bids_format'] = False
-    
+              
        self.general_config_yaml['input_filetype'] = self.file_extension_selected
 
        self.general_config_yaml['interpolate_value'] = self.interpolate_selected
@@ -789,7 +788,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
             shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
             shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
-
+            shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
        self.close()
 
    def push_cancel(self):
@@ -1360,10 +1359,6 @@ class ConfigureSegmentationWindow(qt.QWidget):
        configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
        configureSegmentationWindow.show()
         
-       
-        
-
-     
     def set_default_values(self):
        if self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested']:  
             self.include_semi_auto_PHE_tool_selected_option = 'Yes'
@@ -1404,8 +1399,8 @@ class ConfigureSegmentationWindow(qt.QWidget):
            self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
        elif self.include_semi_auto_PHE_tool_selected_option == 'No':
            self.segmentation_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
-           
-       self.segmentation_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
+       
+       self.segmentation_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()   
        
        with open(SEGMENTATION_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(self.segmentation_config_yaml, file)
@@ -1416,6 +1411,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
             shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
             shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
             shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
+
 
        self.close()
        
@@ -2301,6 +2297,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
+    
   
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
@@ -2319,9 +2316,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.segmentation_config_yaml = yaml.safe_load(file)
     
       global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
+      global IS_DISPLAY_TIMER_REQUESTED
     
       IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.segmentation_config_yaml["is_semi_automatic_phe_tool_requested"]
-
+      IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
+      
   def get_general_config_values(self):
       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
         self.general_config_yaml = yaml.safe_load(file)
@@ -2367,8 +2366,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # user can decide whether to impose bids or not
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
             IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = False
-
-
 
   def setup(self):
     """
@@ -2462,13 +2459,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
     self.MostRecentPausedCasePath = ""
-  
+    
   def setup_configuration(self):
         self.get_label_config_values()
         self.get_keyboard_shortcuts_config_values()
         self.get_classification_config_values()
         self.get_general_config_values()
         self.get_segmentation_config_values()
+        
+        if not IS_DISPLAY_TIMER_REQUESTED:
+            self.ui.PauseTimerButton.hide()
+            self.ui.StartTimerButton.hide()    
 
         if IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
@@ -2622,7 +2623,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       shortcut.setKey(qt.QKeySequence(shortcutKey))
       shortcut.connect("activated()", lambda: self.toggleKeyboardShortcut(button, callback))
       return shortcut
-  
+
+    
   def toggleKeyboardShortcut(self, button, callback):
       button.toggle()
       callback()
@@ -2746,6 +2748,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # note that updateCaseAll() not implemented here - it is called when a case is selected from the list view or next/previous button is clicked
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
+      
+      if not IS_DISPLAY_TIMER_REQUESTED:
+          self.enableSegmentAndPaintButtons()
+      
       self.updateCurrentPatient()
       self.loadPatient()
       self.update_current_segmentation_status()
@@ -2803,6 +2809,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           i = i + 1
 
       self.currentOutputPath = os.path.split(self.outputFolder + relativePath)[0]
+      print(self.currentOutputPath)
       self.currentVolumeFilename = os.path.split(self.outputFolder + relativePath)[1].split(".")[0]
   
 
@@ -2926,7 +2933,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentPath()
       self.LB_HU = label_LB_HU
       self.UB_HU = label_UB_HU
-      self.onPushButton_Paint()
   
       if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
         self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
@@ -2978,8 +2984,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect = self.segmentEditorWidget.activeEffect()
       effect.setParameter("Operation","EraseOutside")
       effect.setParameter("Shape","FreeForm")
-
   def ClearPHESegment(self):
+
       flag_PHE_label_exists = False
       PHE_label = None
       PHE_label_index = 0
@@ -2997,20 +3003,20 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def startTimer(self):
       with TIMER_MUTEX:
-        self.counter = 0
-        # Add flag to avoid counting time when user clicks on save segm button
-        self.flag2 = True
+            self.counter = 0
+            # Add flag to avoid counting time when user clicks on save segm button
+            self.flag2 = True
 
-        # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
-        # Create a timer
-        self.timer = qt.QTimer()
-        self.timer.timeout.connect(self.updatelcdNumber)
+            # ----- ANW Addition ----- : Code to keep track of time passed with lcdNumber on UI
+            # Create a timer
+            self.timer = qt.QTimer()
+            self.timer.timeout.connect(self.updatelcdNumber)
 
-        # Start the timer and update every second
-        self.timer.start(100) # 1000 ms = 1 second
+            # Start the timer and update every second
+            self.timer.start(100) # 1000 ms = 1 second
 
-        # Call the updatelcdNumber function
-        self.updatelcdNumber()
+            # Call the updatelcdNumber function
+            self.updatelcdNumber()
 
   def updatelcdNumber(self):
       # Get the time
@@ -3053,7 +3059,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if (self.ui.PauseTimerButton.isChecked()):
             self.ui.PauseTimerButton.toggle()
         
-        self.disableSegmentAndPaintButtons() 
+        if not IS_DISPLAY_TIMER_REQUESTED:
+            self.enableSegmentAndPaintButtons()
+        else:
+            self.disableSegmentAndPaintButtons() 
 
   def enableStartTimerButton(self):
     self.ui.StartTimerButton.setEnabled(True)
@@ -3067,7 +3076,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def toggleStartTimerButton(self):
       if (self.ui.SlicerDirectoryListView.count > 0):
-        if self.ui.StartTimerButton.isChecked():
             self.startTimer()
             self.timer_router()
 
@@ -3121,6 +3129,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
+      print(self.currentOutputPath)
       if len(self.revision_step) != 0:
           if os.path.exists(self.outputFolder) == False:
                 msgboxtime = qt.QMessageBox()
@@ -3859,7 +3868,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       except:
         pass 
       
+  def startTimerForActions(self):  
+    with TIMER_MUTEX:
+        try:
+            if not self.flag2:
+                self.toggleStartTimerButton()     
+        except AttributeError:
+            self.toggleStartTimerButton() 
+
+    
   def onPushLassoPaint(self):
+        self.startTimerForActions()
+      
         self.segmentEditorWidget.setActiveEffectByName("Scissors")
         self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
         effect = self.segmentEditorWidget.activeEffect()
@@ -3868,6 +3888,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         effect.setSliceCutMode(3)
   
   def onPushButton_Paint(self):
+        self.startTimerForActions()
+        
         selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.label_config_yaml["labels"][self.current_label_index]['name'])
         self.segmentEditorNode.SetSelectedSegmentID(selected_segment_id)
         self.segmentEditorWidget.setActiveEffectByName("Paint")
@@ -3885,6 +3907,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
 
   def toggleFillButton(self):
+      self.startTimerForActions()
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : yellowgreen")
           self.ui.pushButton_ToggleFill.setText('Fill: ON')
@@ -3895,6 +3918,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
 
   def onPushButton_ToggleVisibility(self):
+      self.startTimerForActions()
       if self.ui.pushButton_ToggleVisibility.isChecked():
           self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
@@ -3912,9 +3936,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def onPushButton_segmeditor(self):
+      self.startTimerForActions()
       slicer.util.selectModule("SegmentEditor")
 
   def onPushButton_Erase(self):
+      self.startTimerForActions()
       self.segmentEditorWidget.setActiveEffectByName("Erase")
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
@@ -3926,6 +3952,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_Smooth(self):
       # pass
       # Smoothing
+      self.startTimerForActions()
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
       effect = self.segmentEditorWidget.activeEffect()
@@ -3938,6 +3965,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing
+      self.startTimerForActions()
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
       effect = self.segmentEditorWidget.activeEffect()

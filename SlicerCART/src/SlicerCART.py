@@ -2517,10 +2517,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if not IS_SEGMENTATION_REQUESTED:
             
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
-        if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
-            self.ui.SemiAutomaticPHELabel.setVisible(False)
-            self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
-            self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
+        self.ui.SemiAutomaticPHELabel.setVisible(IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED)
+        self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED)
+        self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED)
         
         if MODALITY == 'MRI':
             self.ui.ThresholdLabel.setVisible(False)

@@ -274,6 +274,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.general_config_yaml = yaml.full_load(file)
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
             self.keyboard_shortcuts_config_yaml = yaml.full_load(file)
+
     
       self.set_default_values()
 
@@ -775,12 +776,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
        self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
        self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
-
+       
        with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(self.general_config_yaml, file)
        with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(self.keyboard_shortcuts_config_yaml, file)
-
+        
        self.segmenter.setup_configuration()
        
        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
@@ -1412,7 +1413,8 @@ class ConfigureSegmentationWindow(qt.QWidget):
             shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
             shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
 
-
+       self.segmenter.setup_configuration()
+        
        self.close()
        
     def push_cancel(self):
@@ -2320,7 +2322,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
       IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.segmentation_config_yaml["is_semi_automatic_phe_tool_requested"]
       IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
-      
   def get_general_config_values(self):
       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
         self.general_config_yaml = yaml.safe_load(file)
@@ -2467,9 +2468,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.get_general_config_values()
         self.get_segmentation_config_values()
         
-        if not IS_DISPLAY_TIMER_REQUESTED:
-            self.ui.PauseTimerButton.hide()
-            self.ui.StartTimerButton.hide()    
+        self.ui.PauseTimerButton.setVisible(IS_DISPLAY_TIMER_REQUESTED)
+        self.ui.StartTimerButton.setVisible(IS_DISPLAY_TIMER_REQUESTED)
+        self.ui.lcdNumber.setVisible(IS_DISPLAY_TIMER_REQUESTED)
+
 
         if IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
@@ -2540,11 +2542,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 callback = getattr(self, callback_name)
 
                 self.connectShortcut(shortcutKey, button, callback)
-                
-        if self.segmentation_config_yaml['is_display_timer_requested']:
-            self.ui.lcdNumber.setStyleSheet("background-color : black")
-        else:
-            self.ui.lcdNumber.setVisible(False)
+
                 
         # Display the selected color view at module startup
         if self.general_config_yaml['slice_view_color'] == "Yellow":

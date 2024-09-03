@@ -23,6 +23,9 @@ import colorsys
 import sys
 from functools import partial
 import copy
+from configparser import ConfigParser 
+
+
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 # TODO: check if the package installed with error
@@ -117,9 +120,29 @@ CONF_FOLDER_NAME = '_conf'
 CT_WINDOW_WIDTH = 90
 CT_WINDOW_LEVEL = 45
 
-
-
 TIMER_MUTEX = RLock()
+
+def get_slicer_ini_path():
+    # Determine the base configuration directory based on the operating system
+    if os.name == 'nt':  # Windows
+        config_dir = Path(os.getenv('APPDATA')) / 'slicer.org'
+    else:  # Linux and macOS
+        config_dir = Path.home() / '.config' / 'slicer.org'
+
+    # Define the path to slicer.ini
+    ini_path = config_dir / 'slicer.ini'
+
+    # Check if slicer.ini exists in the determined directory
+    if ini_path.exists():
+        return str(ini_path)
+    else:
+        return None  # slicer.ini file not found
+
+configur = ConfigParser()
+configur.read(slicer.app.slicerUserSettingsFilePath)
+SELECTED_STYLE = configur.get("Styles", "Style")
+
+print(SELECTED_STYLE)
 
 
 class LoadClassificationWindow(qt.QWidget):

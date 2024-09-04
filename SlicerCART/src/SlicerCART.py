@@ -1,4 +1,3 @@
-from SlicerConfigurationWindows import *
 
 # To install a package in slicer python environment, use the following command:
 # pip install --user package_name
@@ -26,6 +25,7 @@ import copy
 from configparser import ConfigParser 
 
 
+from subFolder.SlicerConfigurationWindows import *
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 # TODO: check if the package installed with error
@@ -141,9 +141,6 @@ def get_slicer_ini_path():
 configur = ConfigParser()
 configur.read(slicer.app.slicerUserSettingsFilePath)
 SELECTED_STYLE = configur.get("Styles", "Style")
-
-print(SELECTED_STYLE)
-
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):

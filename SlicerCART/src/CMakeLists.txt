@@ -4,6 +4,8 @@ set(MODULE_NAME SlicerCART)
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
+  subFolder/__init__.py
+  subFolder/SlicerConfigurationWindows.py
   )
 
 set(MODULE_PYTHON_RESOURCES

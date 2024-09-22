@@ -23,6 +23,7 @@ import sys
 from functools import partial
 import copy
 from configparser import ConfigParser 
+import json
 
 
 from subFolder.SlicerConfigurationWindows import *
@@ -121,22 +122,6 @@ CT_WINDOW_WIDTH = 90
 CT_WINDOW_LEVEL = 45
 
 TIMER_MUTEX = RLock()
-
-def get_slicer_ini_path():
-    # Determine the base configuration directory based on the operating system
-    if os.name == 'nt':  # Windows
-        config_dir = Path(os.getenv('APPDATA')) / 'slicer.org'
-    else:  # Linux and macOS
-        config_dir = Path.home() / '.config' / 'slicer.org'
-
-    # Define the path to slicer.ini
-    ini_path = config_dir / 'slicer.ini'
-
-    # Check if slicer.ini exists in the determined directory
-    if ini_path.exists():
-        return str(ini_path)
-    else:
-        return None  # slicer.ini file not found
 
 configur = ConfigParser()
 configur.read(slicer.app.slicerUserSettingsFilePath)
@@ -877,6 +862,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
       IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.segmentation_config_yaml["is_semi_automatic_phe_tool_requested"]
       IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
+ 
   def get_general_config_values(self):
       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
         self.general_config_yaml = yaml.safe_load(file)
@@ -953,6 +939,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
+    
+    self.lineDetails = {}
+
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -988,6 +977,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.ShowSegmentVersionLegendButton.connect('clicked(bool)', self.onPush_ShowSegmentVersionLegendButton)
     
+    self.ui.placeMeasurementLine.connect('clicked(bool)', self.onPlacePointsAndConnect)
+
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
@@ -1194,6 +1185,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LassoPaintButton.setEnabled(True)
     self.ui.pushButton_Erase.setEnabled(True)
     self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(True)
+    self.ui.placeMeasurementLine.setEnabled(True)
 
   def disableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(False)
@@ -1201,6 +1193,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(False)
     self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
+    self.ui.placeMeasurementLine.setEnabled(False)
+
 
   def onEditConfiguration(self):
       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
@@ -1935,57 +1929,63 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.exec()
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
-        tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration" 
-        for label in self.label_config_yaml["labels"]:
-            tag_str = tag_str + "," + label["name"] + " duration"
-        
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentSegmentationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + str(self.ui.lcdNumber.value)
-        for timer in self.timers:
-            data_str = data_str + "," + str(timer.total_time)
-        
-        self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_SegmentationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputSegmentationInformationFile):
-            with open(self.outputSegmentationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputSegmentationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
-  
-  def saveClassificationInformation(self, classification_information_labels_string, classification_information_data_string):
-        currentClassificationInformationVersion = self.getClassificationInformationVersion()
+    # Header row
+    tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration"
+    
+    # Add labels to the header row
+    for label in self.label_config_yaml["labels"]:
+        tag_str += "," + label["name"] + " duration"
+    
+    # Add line detail headers
+    for line_key in self.lineDetails:
+        tag_str += f",{line_key} ControlPoint1,{line_key} ControlPoint2,{line_key} Length"
 
-        tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time" 
-        tag_str = tag_str + "," + classification_information_labels_string
+    # Start with case information
+    data_str = self.currentCase
+    data_str += "," + currentSegmentationVersion
+    data_str += "," + self.annotator_name
+    data_str += "," + self.annotator_degree
+    data_str += "," + self.revision_step[0]
+    data_str += "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    data_str += "," + str(self.ui.lcdNumber.value)
+    
+    # Add timer durations
+    for timer in self.timers:
+        data_str += "," + str(timer.total_time)
+    
+    # Add line details, ensuring control points are kept in one cell
+    for line_key, line_data in self.lineDetails.items():
+        control_point1 = ';'.join(map(str, line_data["ControlPoint1"]))  # Join with semicolon
+        control_point2 = ';'.join(map(str, line_data["ControlPoint2"]))  # Join with semicolon
+        length = line_data["Length"]  # Length is a number, no need for conversion
         
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentClassificationInformationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + classification_information_data_string
+        # Add control points and length to the data string
+        data_str += f",{control_point1},{control_point2},{length}"
+
+    # Define the file path for output
+    self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
+                                                          f'{self.currentVolumeFilename}_SegmentationInformation.csv')
+    
+    
+    if os.path.isfile(self.outputSegmentationInformationFile):
+        # Read existing contents
+        with open(self.outputSegmentationInformationFile, 'r') as f:
+            existing_content = f.readlines()
+            existing_content = existing_content[1:] if len(existing_content) > 1 else []
+
+        # Rewrite the file with the new header and existing data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")  # Write the new header
+            f.writelines(existing_content)  # Write the old content
         
-        self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputClassificationInformationFile):
-            with open(self.outputClassificationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputClassificationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
+        # Append the new data
+        with open(self.outputSegmentationInformationFile, 'a') as f:
+            f.write(data_str + "\n")
+    else:
+        # If the file doesn't exist, create it and write the header and data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")
+            f.write(data_str + "\n")
   
   def getClassificationInformationVersion(self):
       version = "v"
@@ -2513,6 +2513,54 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("SmoothingMethod", "MEDIAN")
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
+
+  def onPlacePointsAndConnect(self):
+    self.startTimerForActions()
+
+    # Create a new Markups Line Node
+    self.lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
+
+    # Set the line name (you can modify the naming convention as needed)
+    lineName = f"Line_{slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLMarkupsLineNode')}"
+    self.lineNode.SetName(lineName)
+
+    # Set the interaction mode to "Place"
+    slicer.modules.markups.logic().SetActiveListID(self.lineNode)
+    interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    # Observe the completion of the point placement (use EndPlaceEvent instead)
+    self.lineNode.AddObserver(self.lineNode.PointModifiedEvent, self.onLinePlaced)
+
+  def onLinePlaced(self, caller, event):
+    # Check if the user has placed both control points
+    if caller.GetNumberOfControlPoints() < 2:
+        print("Waiting for two control points to be placed.")
+        return
+
+    # Retrieve the control point coordinates after the user places the points
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    caller.GetNthControlPointPosition(0, p1)  # First control point
+    caller.GetNthControlPointPosition(1, p2)  # Second control point
+
+    # Calculate the length of the line
+    lineLength = caller.GetLineLengthWorld()
+
+    # Use the line name as the key in the dictionary
+    lineName = caller.GetName()
+
+    # Store details in the dictionary (for backend use)
+    self.lineDetails[lineName] = {
+        "ControlPoint1": p1,
+        "ControlPoint2": p2,
+        "Length": lineLength
+    }
+    
+    print(self.lineDetails)
+
+
+
 
 
       

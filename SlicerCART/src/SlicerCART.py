@@ -941,6 +941,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CurrentFolder = None
     
     self.lineDetails = {}
+    self.previousAction = None
 
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -2408,7 +2409,27 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       showSegmentVersionLegendWindow.show()
   
   def onPushButton_undo(self):
-      self.segmentEditorWidget.undo()
+      if self.previousAction == 'segmentation':  
+        self.segmentEditorWidget.undo()
+      
+      else:
+              # Get the last added markup node (or customize based on specific markup type)
+        markupsNodeList = slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsNode")
+        markupsNodeList.InitTraversal()
+        
+        lastMarkupNode = None
+        while True:
+            markupNode = markupsNodeList.GetNextItemAsObject()
+            if markupNode:
+                lastMarkupNode = markupNode  # Keep track of the last markup node
+            else:
+                break
+
+        # Remove the last control point from the markup node (or remove the whole node if needed)
+        if lastMarkupNode and lastMarkupNode.GetNumberOfControlPoints() > 0:
+            lastMarkupNode.RemoveNthControlPoint(lastMarkupNode.GetNumberOfControlPoints() - 1)
+        else:
+            slicer.mrmlScene.RemoveNode(lastMarkupNode)  # Remove the whole markup node if no points remain
 
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
@@ -2433,7 +2454,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
   def onPushLassoPaint(self):
         self.startTimerForActions()
-      
+        self.previousAction = 'segmentation'
         self.segmentEditorWidget.setActiveEffectByName("Scissors")
         self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
         effect = self.segmentEditorWidget.activeEffect()
@@ -2443,7 +2464,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   def onPushButton_Paint(self):
         self.startTimerForActions()
-        
+        self.previousAction = 'segmentation'
         selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.label_config_yaml["labels"][self.current_label_index]['name'])
         self.segmentEditorNode.SetSelectedSegmentID(selected_segment_id)
         self.segmentEditorWidget.setActiveEffectByName("Paint")
@@ -2462,6 +2483,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def toggleFillButton(self):
       self.startTimerForActions()
+      self.previousAction = 'segmentation'
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : yellowgreen")
           self.ui.pushButton_ToggleFill.setText('Fill: ON')
@@ -2473,6 +2495,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onPushButton_ToggleVisibility(self):
       self.startTimerForActions()
+      self.previousAction = 'segmentation'
       if self.ui.pushButton_ToggleVisibility.isChecked():
           self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
@@ -2495,6 +2518,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onPushButton_Erase(self):
       self.startTimerForActions()
+      self.previousAction = 'segmentation'
       self.segmentEditorWidget.setActiveEffectByName("Erase")
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
@@ -2507,6 +2531,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # pass
       # Smoothing
       self.startTimerForActions()
+      self.previousAction = 'segmentation'
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
       effect = self.segmentEditorWidget.activeEffect()
@@ -2516,11 +2541,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onPlacePointsAndConnect(self):
     self.startTimerForActions()
-
-    # Create a new Markups Line Node
+    self.previousAction = 'markups'
     self.lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
 
-    # Set the line name (you can modify the naming convention as needed)
+    # Set the line name
     lineName = f"Line_{slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLMarkupsLineNode')}"
     self.lineNode.SetName(lineName)
 
@@ -2529,13 +2553,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
 
-    # Observe the completion of the point placement (use EndPlaceEvent instead)
     self.lineNode.AddObserver(self.lineNode.PointModifiedEvent, self.onLinePlaced)
 
   def onLinePlaced(self, caller, event):
     # Check if the user has placed both control points
     if caller.GetNumberOfControlPoints() < 2:
-        print("Waiting for two control points to be placed.")
         return
 
     # Retrieve the control point coordinates after the user places the points
@@ -2557,8 +2579,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         "Length": lineLength
     }
     
-    print(self.lineDetails)
-
 
 
 

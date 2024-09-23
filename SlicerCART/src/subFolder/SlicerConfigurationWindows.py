@@ -1478,7 +1478,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
       self.value_line_edit = qt.QLineEdit('')
       self.value_line_edit.setValidator(qt.QIntValidator())
-      self.value_line_edit.setEnabled(False) # To be changed at resolution of Issue #28
+      self.value_line_edit.setEnabled(True) # To be changed at resolution of Issue #28
       value_hbox.addWidget(self.value_line_edit)
       
       layout.addLayout(value_hbox)

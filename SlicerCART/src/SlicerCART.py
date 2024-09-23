@@ -1930,6 +1930,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.exec()
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
+    self.previousAction = None
     # Header row
     tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration"
     
@@ -2412,8 +2413,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.previousAction == 'segmentation':  
         self.segmentEditorWidget.undo()
       
-      else:
-              # Get the last added markup node (or customize based on specific markup type)
+      elif self.previousAction == 'markups':
         markupsNodeList = slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsNode")
         markupsNodeList.InitTraversal()
         
@@ -2425,11 +2425,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 break
 
-        # Remove the last control point from the markup node (or remove the whole node if needed)
         if lastMarkupNode and lastMarkupNode.GetNumberOfControlPoints() > 0:
             lastMarkupNode.RemoveNthControlPoint(lastMarkupNode.GetNumberOfControlPoints() - 1)
         else:
             slicer.mrmlScene.RemoveNode(lastMarkupNode)  # Remove the whole markup node if no points remain
+            
+        removedNode = self.lineDetails.pop(lastMarkupNode.GetName())
 
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
@@ -2578,6 +2579,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         "ControlPoint2": p2,
         "Length": lineLength
     }
+    
+    print(self.lineDetails)
     
 
 

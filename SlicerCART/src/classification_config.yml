@@ -36,5 +36,6 @@ comboboxes:
     wmc_none: None
     wmc_severe: Severe
 freetextboxes:
+  lmao: Lmao
   number_of_focal_points: Number of focal points
   other_comments: Comments

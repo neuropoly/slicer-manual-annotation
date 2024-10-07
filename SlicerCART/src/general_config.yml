@@ -3,12 +3,11 @@ ct_window_width: 85
 default_segmentation_directory: ''
 default_volume_directory: ''
 impose_bids_format: false
-input_filetype: '*.nii.gz'
+input_filetype: '*.nrrd'
 interpolate_value: 1
 is_classification_requested: true
 is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: false
-is_segmentation_requested: false
-is_semi_automatic_phe_tool_requested: true
+is_segmentation_requested: true
 modality: CT
 slice_view_color: Red

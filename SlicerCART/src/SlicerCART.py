@@ -83,7 +83,6 @@ REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
 
 IS_CLASSIFICATION_REQUESTED = True
 IS_SEGMENTATION_REQUESTED = True
-IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = True
 IS_MOUSE_SHORTCUTS_REQUESTED = False
 IS_KEYBOARD_SHORTCUTS_REQUESTED = True
 
@@ -309,21 +308,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       modality_hbox.addWidget(self.mri_modality_radio_button)
 
       layout.addLayout(modality_hbox)
-
-      self.include_semi_automatic_PHE_tool_hbox = qt.QHBoxLayout()
-      
-      self.include_semi_automatic_PHE_tool_label = qt.QLabel()
-      self.include_semi_automatic_PHE_tool_label.setText('Include Semi-Automatic PHE Segmentation Tool? ')
-      self.include_semi_automatic_PHE_tool_label.setStyleSheet("font-weight: bold")
-
-      self.include_semi_automatic_PHE_tool_combobox = qt.QComboBox()
-      self.include_semi_automatic_PHE_tool_combobox.addItem('Yes') 
-      self.include_semi_automatic_PHE_tool_combobox.addItem('No')
-
-      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_label)
-      self.include_semi_automatic_PHE_tool_hbox.addWidget(self.include_semi_automatic_PHE_tool_combobox)
-
-      layout.addLayout(self.include_semi_automatic_PHE_tool_hbox)
 
       bids_hbox = qt.QHBoxLayout()
 
@@ -571,7 +555,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.keyboard_shortcuts_checkbox.stateChanged.connect(self.keyboard_shortcuts_checkbox_state_changed)
        self.ct_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.ct_modality_radio_button.text))
        self.mri_modality_radio_button.toggled.connect(lambda: self.update_selected_modality(self.mri_modality_radio_button.text))
-       self.include_semi_automatic_PHE_tool_combobox.currentIndexChanged.connect(self.update_include_semi_automatic_PHE_tool)
        self.bids_combobox.currentIndexChanged.connect(self.update_bids)
        self.file_extension_combobox.currentIndexChanged.connect(self.update_file_extension)
        self.initial_view_combobox.currentIndexChanged.connect(self.update_initial_view)
@@ -592,12 +575,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.cancel_button.clicked.connect(self.push_cancel)
    
    def populate_default_values(self):
-       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
-           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(0)
-       else:
-           self.include_semi_automatic_PHE_tool_combobox.setCurrentIndex(1)
-    
-       
        if self.modality_selected == 'CT':
            self.ct_modality_radio_button.setChecked(True)
        elif self.modality_selected == 'MRI':
@@ -635,11 +612,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.classification_selected = self.general_config_yaml['is_classification_requested']
        self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
        self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
-
-       if self.general_config_yaml['is_semi_automatic_phe_tool_requested']:  
-            self.include_semi_auto_PHE_tool_selected_option = 'Yes'
-       else:
-            self.include_semi_auto_PHE_tool_selected_option = 'No'
 
        self.modality_selected = self.general_config_yaml['modality']
 
@@ -692,14 +664,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
        self.configure_labels_button.setEnabled(self.segmentation_selected)
 
-       if self.segmentation_task_checkbox.isChecked():
-            if self.modality_selected == 'CT':
-                self.include_semi_automatic_PHE_tool_combobox.setEnabled(True)
-            else:
-                self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-       else: 
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-   
    def update_interpolate_ks(self):
        self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
    
@@ -742,9 +706,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    def update_bids(self):
        self.bids_selected = self.bids_combobox.currentText
    
-   def update_include_semi_automatic_PHE_tool(self):
-       self.include_semi_auto_PHE_tool_selected_option = self.include_semi_automatic_PHE_tool_combobox.currentText
-   
    def update_selected_modality(self, option):
        self.modality_selected = option
 
@@ -754,15 +715,12 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(True)
             self.ct_window_width_line_edit.setEnabled(True)
 
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(self.segmentation_selected)
        else:
             self.bids_combobox.setEnabled(True)
 
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
-            self.include_semi_automatic_PHE_tool_combobox.setEnabled(False)
-   
    def push_configure_labels(self):
        configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected, self.edit_conf)
        configureLabelsWindow.show()
@@ -783,10 +741,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
        self.general_config_yaml['modality'] = self.modality_selected
 
-       if self.include_semi_auto_PHE_tool_selected_option == 'Yes':
-           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = True 
-       elif self.include_semi_auto_PHE_tool_selected_option == 'No':
-           self.general_config_yaml['is_semi_automatic_phe_tool_requested'] = False 
     
        if self.bids_selected == 'Yes':
            self.general_config_yaml['impose_bids_format'] = True
@@ -1897,114 +1851,6 @@ class LoadSegmentationsWindow(qt.QWidget):
    def pushCancel(self):
        self.close()
 
-class SemiAutoPheToolThresholdWindow(qt.QWidget):
-   def __init__(self, segmenter, parent = None):
-      super(SemiAutoPheToolThresholdWindow, self).__init__(parent)
-      
-      self.segmenter = segmenter
-      self.LB_HU_value = segmenter.LB_HU
-      self.UB_HU_value = segmenter.UB_HU
-
-      layout = qt.QVBoxLayout()
-      self.textLabel = qt.QLabel("Threshold bounds: ")
-      self.textLabel.setStyleSheet("font-weight: bold")
-      layout.addWidget(self.textLabel)
-
-      self.minimumLabel = qt.QLabel("Minimum")
-      layout.addWidget(self.minimumLabel)
-      
-      self.semiAutoPHE_LB_HU_spinbox = qt.QSpinBox()
-      self.semiAutoPHE_LB_HU_spinbox.valueChanged.connect(self.LB_HU_valueChanged)
-      layout.addWidget(self.semiAutoPHE_LB_HU_spinbox)
-      self.semiAutoPHE_LB_HU_spinbox.setMinimum(-32000)
-      self.semiAutoPHE_LB_HU_spinbox.setMaximum(29000)
-      self.semiAutoPHE_LB_HU_spinbox.setValue(self.LB_HU_value)
-
-      self.maximumLabel = qt.QLabel("Maximum")
-      layout.addWidget(self.maximumLabel)
-      
-      self.semiAutoPHE_UB_HU_spinbox = qt.QSpinBox()
-      self.semiAutoPHE_UB_HU_spinbox.valueChanged.connect(self.UB_HU_valueChanged)
-      layout.addWidget(self.semiAutoPHE_UB_HU_spinbox)
-      self.semiAutoPHE_UB_HU_spinbox.setMinimum(-32000)
-      self.semiAutoPHE_UB_HU_spinbox.setMaximum(29000)
-      self.semiAutoPHE_UB_HU_spinbox.setValue(self.UB_HU_value)
-
-      self.continueButton = qt.QPushButton('Continue')
-      self.continueButton.clicked.connect(self.pushContinue)
-      layout.addWidget(self.continueButton)
-
-      self.cancelButton = qt.QPushButton('Cancel')
-      self.cancelButton.clicked.connect(self.pushCancel)
-      layout.addWidget(self.cancelButton)
-
-      self.reference_label = qt.QLabel()
-      self.reference_label.setText('Volbers, B., Staykov, D., Wagner, I., Dörfler, A., Saake, M., Schwab, S., & Bardutzky, J. (2011). Semi-automatic \n volumetric assessment of perihemorrhagic edema with computed tomography. European journal of neurology, \n 18(11), 1323–1328. https://doi.org/10.1111/j.1468-1331.2011.03395.x')
-      layout.addWidget(self.reference_label)
-
-      self.setLayout(layout)
-      self.setWindowTitle("Semi-automatic PHE Tool")
-      self.resize(400, 200)
-
-   def UB_HU_valueChanged(self):
-      self.UB_HU_value = self.semiAutoPHE_UB_HU_spinbox.value
-      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
-
-   def LB_HU_valueChanged(self):
-      self.LB_HU_value = self.semiAutoPHE_LB_HU_spinbox.value
-      self.segmenter.ApplyThresholdPHE(self.LB_HU_value, self.UB_HU_value)
-
-   def pushContinue(self):
-       self.segmenter.setUpperAndLowerBoundHU(self.LB_HU_value, self.UB_HU_value)
-       
-       self.instructionsWindow = SemiAutoPheToolInstructionsWindow(self.segmenter)
-       self.instructionsWindow.show()
-       
-       self.close()
-
-   def pushCancel(self):
-       self.segmenter.ClearPHESegment()
-       self.close()
-
-class SemiAutoPheToolInstructionsWindow(qt.QWidget):
-   def __init__(self, segmenter, parent = None):
-      super(SemiAutoPheToolInstructionsWindow, self).__init__(parent)
-      
-      self.segmenter = segmenter
-
-      layout = qt.QVBoxLayout()
-      self.textLabel = qt.QLabel("Instructions:")
-      self.textLabel.setStyleSheet("font-weight: bold")
-      layout.addWidget(self.textLabel)
-
-      self.minimumLabel = qt.QLabel("Click <b>Continue</b> and draw a generous boundary of the ICH and PHE complex. Note that the boundary may be drawn in multiple views. When you are finished drawing the boundary, click on <b>Show Result</b> in the main extension menu. "
-                                    + "The HU thresholds and manual fine-tuning of included voxels are left to the annotator\'s discretion. "
-                                    + "\n(If a popup message about visibility shows up, click <b>No</b>.)")
-      self.minimumLabel.setWordWrap(True)
-      layout.addWidget(self.minimumLabel)
-
-      self.continueButton = qt.QPushButton('Continue')
-      self.continueButton.clicked.connect(self.pushContinue)
-      layout.addWidget(self.continueButton)
-
-      self.cancelButton = qt.QPushButton('Cancel')
-      self.cancelButton.clicked.connect(self.pushCancel)
-      layout.addWidget(self.cancelButton)
-
-      self.setLayout(layout)
-      self.setWindowTitle("Semi-automatic PHE Tool")
-      self.resize(400, 200)
-
-   def pushContinue(self):
-       self.segmenter.ApplySemiAutomaticThresholdAlgorithm()
-       self.close()
-
-   def pushCancel(self):
-       self.segmenter.ClearPHESegment()
-       self.close()
-
-
-
 class OptionalMethods():
     pass
 
@@ -2273,7 +2119,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global IS_SEGMENTATION_REQUESTED
         global IS_MOUSE_SHORTCUTS_REQUESTED
         global IS_KEYBOARD_SHORTCUTS_REQUESTED
-        global IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED
         global INTERPOLATE_VALUE
         global CT_WINDOW_WIDTH
         global CT_WINDOW_LEVEL
@@ -2287,7 +2132,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
         IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
         IS_KEYBOARD_SHORTCUTS_REQUESTED = self.general_config_yaml["is_keyboard_shortcuts_requested"]
-        IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = self.general_config_yaml["is_semi_automatic_phe_tool_requested"]
         INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
 
         if MODALITY == 'CT':
@@ -2302,7 +2146,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             INPUT_FILE_EXTENSION = '*.nii.gz'
             # user can decide whether to impose bids or not
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
-            IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED = False
 
 
   def setup(self):
@@ -2357,8 +2200,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Erase.connect('clicked(bool)', self.onPushButton_Erase)  
     self.ui.pushButton_Smooth.connect('clicked(bool)', self.onPushButton_Smooth)  
     self.ui.pushButton_Small_holes.connect('clicked(bool)', self.onPushButton_Small_holes)  
-    self.ui.pushButton_SemiAutomaticPHE_Launch.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_Launch)
-    self.ui.pushButton_SemiAutomaticPHE_ShowResult.connect('clicked(bool)', self.onPushButton_SemiAutomaticPHE_ShowResult)
     self.ui.dropDownButton_label_select.currentIndexChanged.connect(self.onDropDownButton_label_select)
     self.ui.PauseTimerButton.connect('clicked(bool)', self.togglePauseTimerButton)
     self.ui.StartTimerButton.connect('clicked(bool)', self.toggleStartTimerButton)
@@ -2372,7 +2213,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
-    self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.disablePauseTimerButton()
     self.disableSegmentAndPaintButtons()
     self.ui.pushButton_Interpolate.setEnabled(False)
@@ -2385,7 +2225,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.LoadSegmentation.setEnabled(False)
 
     self.ui.ThresholdLabel.setStyleSheet("font-weight: bold")
-    self.ui.SemiAutomaticPHELabel.setStyleSheet("font-weight: bold")
 
     self.ui.UB_HU.setMinimum(-32000)
     self.ui.LB_HU.setMinimum(-32000)
@@ -2447,11 +2286,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.MRMLCollapsibleButton.setVisible(False)
         if not IS_SEGMENTATION_REQUESTED:
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
-        if not IS_SEMI_AUTOMATIC_PHE_TOOL_REQUESTED:
-            self.ui.SemiAutomaticPHELabel.setVisible(False)
-            self.ui.pushButton_SemiAutomaticPHE_Launch.setVisible(False)
-            self.ui.pushButton_SemiAutomaticPHE_ShowResult.setVisible(False)
-        
+
         if MODALITY == 'MRI':
             self.ui.ThresholdLabel.setVisible(False)
             self.ui.MinimumLabel.setVisible(False)
@@ -2565,13 +2400,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushButton_Paint.setEnabled(True)
     self.ui.LassoPaintButton.setEnabled(True)
     self.ui.pushButton_Erase.setEnabled(True)
-    self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(True)
 
   def disableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(False)
     self.ui.LassoPaintButton.setEnabled(False)
-    self.ui.pushButton_SemiAutomaticPHE_Launch.setEnabled(False)
-    self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
 
   def onEditConfiguration(self):
@@ -2858,67 +2690,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       self.timer_router()
 
-  def onPushButton_SemiAutomaticPHE_Launch(self):
-      flag_PHE_label_exists = False
-      PHE_label = None
-      PHE_label_index = 0
-      for label in self.label_config_yaml["labels"]:
-          if label["name"] == "PHE":
-              flag_PHE_label_exists = True 
-              PHE_label = label
-              break
-          PHE_label_index = PHE_label_index + 1
-      assert flag_PHE_label_exists
-
-      PHE_segment_name = f"{self.currentCase}_PHE"
-      self.onPushButton_select_label(PHE_segment_name, PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
-      self.ui.dropDownButton_label_select.setCurrentIndex(PHE_label_index)
-      toolWindow = SemiAutoPheToolThresholdWindow(self)
-      toolWindow.show()
-      
-  def onPushButton_SemiAutomaticPHE_ShowResult(self):
-      self.segmentationNode.GetDisplayNode().SetVisibility(True)
-      self.onPushButton_Erase()
-      self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(False)
-
-  def ApplyThresholdPHE(self, inLB_HU, inUB_HU):
-      self.segmentEditorWidget.setActiveEffectByName("Threshold")
-      effect = self.segmentEditorWidget.activeEffect()
-      effect.setParameter("MinimumThreshold",f"{inLB_HU}")
-      effect.setParameter("MaximumThreshold",f"{inUB_HU}")
-      effect.self().onApply()
-
-  def ApplySemiAutomaticThresholdAlgorithm(self):
-      self.ui.pushButton_SemiAutomaticPHE_ShowResult.setEnabled(True)
-      
-      self.segmentationNode.GetDisplayNode().SetVisibility(False)
-
-      self.segmentEditorWidget.setActiveEffectByName("Threshold")
-      effect = self.segmentEditorWidget.activeEffect()
-      effect.setParameter("MinimumThreshold",f"{self.LB_HU}")
-      effect.setParameter("MaximumThreshold",f"{self.UB_HU}")
-      effect.self().onApply()
-
-      self.segmentEditorWidget.setActiveEffectByName("Scissors")
-      effect = self.segmentEditorWidget.activeEffect()
-      effect.setParameter("Operation","EraseOutside")
-      effect.setParameter("Shape","FreeForm")
-
-  def ClearPHESegment(self):
-      flag_PHE_label_exists = False
-      PHE_label = None
-      PHE_label_index = 0
-      for label in self.label_config_yaml["labels"]:
-          if label["name"] == "PHE":
-              flag_PHE_label_exists = True 
-              PHE_label = label
-              break
-          PHE_label_index = PHE_label_index + 1
-      assert flag_PHE_label_exists
-
-      segm_name = f"{self.currentCase}_PHE"
-      self.srcSegmentation.RemoveSegment(segm_name)
-      self.onNewLabelSegm(PHE_label["name"], PHE_label["color_r"], PHE_label["color_g"], PHE_label["color_b"], PHE_label["lower_bound_HU"], PHE_label["upper_bound_HU"])
 
   def startTimer(self):
       with TIMER_MUTEX:

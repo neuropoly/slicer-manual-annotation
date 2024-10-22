@@ -1,7 +1,6 @@
 # SlicerCART
-![slicerCART logo.png](SlicerCART/src/resources/Icons/SlicerCART.png)
-SlicerCART : Configurable Annotation and Review Tool. 
-
+![](SlicerCART/src/Resources/Icons/SlicerCART.png)
+SlicerCART: Configurable Annotation and Review Tool. 
 
 ## Description
 

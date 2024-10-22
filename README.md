@@ -8,7 +8,7 @@ SlicerCART : Configurable Annotation and Review Tool.
 * 3D Slicer extension
 * Adapted from code of Dr. Laurent Létourneau-Guillon and his team in [ICH_SEGMENTER_V2](https://github.com/laurentletg/ICH_SEGMENTER_V2), [SlicerCART](https://github.com/laurentletg/SlicerCART), and [Brain_Extraction](https://github.com/MattFr56/CT_Brain_Extraction/blob/main/Brain_Extraction/Brain_Extraction/Brain_Extraction.py). This is an effort to create a unified code for a configurable 3D Slicer extension. 
 * Inspired from [Neuropoly](https://neuro.polymtl.ca/)'s workflow. 
-* This tool is made to improve manual segmentation workflows across different teams. 
+* This tool is made to improve manual segmentation and classification workflows across different teams. 
 
 **Keywords:** medical imaging, manual segmentation, manual correction, workflow, ground-truth segmentation, quality control
 
@@ -19,6 +19,15 @@ SlicerCART : Configurable Annotation and Review Tool.
 - BIDS - Brain Imaging Data Structure
 - GUI - Graphical User Interface
 - QC - Quality Control
+
+## Rationale
+
+* Manual segmentation and classification tasks are required in the research setting related to medical imaging artificial intelligence tool development
+* An open-source solution for such tasks would better benefit the research setting
+* Actual open-source solutions that enable imaging viewing and annotation are not optimal from an end-user standpoint (especially from various background), increasing the already high burden of manual segmentation and classification tasks
+* A workflow aimed to efficiently navigate through a dataset while performing manual segmentation / correction, including revision steps and robust annotation consistency assessment is crucial for handling large amount of data and provide the best ground-truth references segmentation as possible. 
+
+**Module specific functions (in details) **
 
 This module has been adapted to perform several tasks. Among other things, it allows the user to:
 
@@ -44,27 +53,31 @@ This module has been adapted to perform several tasks. Among other things, it al
 
 ### Requirements
 
-* MacOS Sonoma (recommended)
+* MacOS Sonoma or Sequoia is recommended 
 * A working version of [3D Slicer](https://download.slicer.org).
-  * N.B. The version used to develop this module is the version 5.2.2 since more recent versions were not able to support some extensions that previously worked (e.g. JupySlicer)
+  * N.B. The version currently used to develop this module is the version 5.6.2 (most stable release as of 2024-10-22). The version 5.2.2 has also been used.
 
 This module has been developed on:
 
-* MacOS Sonoma version 14.1.1
-* 3D Slicer version 5.2.2
+* MacOS Sonoma version 14.1.1 and Sequoia 15.0.1
+* 3D Slicer version 5.6.2
 
 Although it may work on other versions and/or operating system, please note that it has not been tested.
 
 ## Installation steps
+
+If previous version of Slicer ---» delete the app. If on MacOS, you can do it by doing right lick on the app in the application folder --- move to trash --- go to trash --- empty the trash --- restart your computer.
+
+
 1. Install [3D Slicer](https://download.slicer.org).  
-2. Clone this repository.
-3. Modify `label_config.yml` to describe your annotations. There can be as many or as few as you would like. The colors are configurable using RGB integer values between 0 and 255. The default HU thresholds for each label are also configurable. These can also be modified directly in the extension. Note that additional tools will appear in the user interface if one of the labels is either intracerebral hemorrhage (ICH) or perihematomal edema (PHE). 
-4. Open 3D Slicer. 
+2. Clone this repository in the location of your choice.
+3. Then, go in the finder --- find the file SlicerCART.py file, and copy the pathname.
+4. Open 3D Slicer.
 5. Activate the checkbox `Enable developer mode` in `Edit -> Application Settings -> Developer -> Enable developer mode`. 
-6. Add the path of the folder containing the `SlicerCART.py` file in `Edit -> Application Settings -> Modules -> Additional module paths`. 
-    * There might be errors. These would be seen in the Python Console. 
-7. The module can be found under `Examples -> SlicerCART`. 
+6. Add the path of the `SlicerCART.py` file in `Edit -> Application Settings -> Modules -> Additional module paths`.(N.B. 1) You must have the file: if it is the folder path, then the module will not work; 2) in the Additional modul path section, the path copied might be shown to the folder: this is a Slicer thing, and should not affect working property of the module if it was the file that you copied).
+7. The module can be found under `Examples -> SlicerCART`: the module should now be opened (N.B. 1) If first use, you may have additional requirements to install. A pop-up window from Slicer advertising you should pop-up if so: just click ok).
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
+9. There might be errors. These would be seen in the Python Console: if any errors, we highly recommend you to fix them before any further use!
 
 ### Trouble shooting 
 
@@ -75,8 +88,6 @@ Although it may work on other versions and/or operating system, please note that
 
 ### Documentation
 TODO (after sufficient development has been made)
-* [SlicerCART Demo Video (June 24th 2024)](https://drive.google.com/drive/u/0/folders/1DClUQDOvTnbYoe68sdhgmVo_GL7vkBKA)
-* Example of workflow that could be implemented (documentation [here](https://github.com/neuropoly/slicer-manual-annotation/blob/main/workflow_example.md)) with videos examples ([12min30:](https://www.dropbox.com/scl/fi/ddhj5f2rx2ydzy2k7s6b8/slicer-manual-annotation_overview.mov?rlkey=rhgs9usmhqfbfe9tylmk42tlo&st=c5zhnyjs&dl=0) summary; [40min](https://www.dropbox.com/scl/fi/j8e3xuhugjylg3hhxhzm7/20240619_slicer-manual-annotation-detailed_explanations.mov?rlkey=0otcuw4nwjuo8l72qxohir8ry&st=6vu8ob2n&dl=0): detailed).
 
 ### Video tutorials 
 TODO (after sufficient development has been made)
@@ -92,3 +103,4 @@ TODO (after sufficient development has been made)
 * An Ni Wu
 * Maxime Bouthillier
 * Delphine Pilon
+* Neuropoly Team

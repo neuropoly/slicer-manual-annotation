@@ -27,7 +27,7 @@ SlicerCART : Configurable Annotation and Review Tool.
 * Actual open-source solutions that enable imaging viewing and annotation are not optimal from an end-user standpoint (especially from various background), increasing the already high burden of manual segmentation and classification tasks
 * A workflow aimed to efficiently navigate through a dataset while performing manual segmentation / correction, including revision steps and robust annotation consistency assessment is crucial for handling large amount of data and provide the best ground-truth references segmentation as possible. 
 
-**Module specific functions (in details) **
+**Module specific functions (in details)**
 
 This module has been adapted to perform several tasks. Among other things, it allows the user to:
 

@@ -20,7 +20,7 @@ SlicerCART : Configurable Annotation and Review Tool.
 - GUI - Graphical User Interface
 - QC - Quality Control
 
-## Rationale
+**Rationale:**
 
 * Manual segmentation and classification tasks are required in the research setting related to medical imaging artificial intelligence tool development
 * An open-source solution for such tasks would better benefit the research setting

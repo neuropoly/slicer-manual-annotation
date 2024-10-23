@@ -23,9 +23,8 @@ import colorsys
 import sys
 from functools import partial
 import copy
-from configparser import ConfigParser 
+from configparser import ConfigParser
 import json
-
 
 from subFolder.SlicerConfigurationWindows import *
 
@@ -1301,7 +1300,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       if not IS_DISPLAY_TIMER_REQUESTED:
           self.enableSegmentAndPaintButtons()
-      
+        
       self.updateCurrentPatient()
       self.loadPatient()
       self.update_current_segmentation_status()

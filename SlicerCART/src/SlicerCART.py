@@ -90,20 +90,11 @@ MODALITY = 'CT'
 
 REQUIRE_EMPTY = True
 
-LABEL_CONFIG_FILENAME = "label_config.yml"
-KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
-CLASSIFICATION_CONFIG_FILENAME = "classification_config.yml"
-GENERAL_CONFIG_FILENAME = "general_config.yml"
+CONFIG_FILENAME = "configuration.yml"
+CONFIG_COPY_FILENAME = CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 
-LABEL_CONFIG_COPY_FILENAME = LABEL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
-KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME = KEYBOARD_SHORTCUTS_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
-CLASSIFICATION_CONFIG_COPY_FILENAME = CLASSIFICATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
-GENERAL_CONFIG_COPY_FILENAME = GENERAL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CONFIG_FILENAME)
 
-LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), LABEL_CONFIG_FILENAME)
-KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), KEYBOARD_SHORTCUTS_CONFIG_FILENAME)
-CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CLASSIFICATION_CONFIG_FILENAME)
-GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), GENERAL_CONFIG_FILENAME)
 
 CONF_FOLDER_NAME = '_conf'
 
@@ -184,16 +175,9 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
           self.segmenter.onSelectOutputFolder()
           REQUIRE_EMPTY = True
           self.segmenter.ui.SelectOutputFolder.setVisible(False)
-          if (os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
-             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
-             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
-             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
-             os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
-                # use this configuration directly
-                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
-                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
-                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
-                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH)
+          if os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}'):
+                shutil.copy(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}', CONFIG_FILE_PATH)
+
                 
                 self.segmenter.setup_configuration()
                 self.close()
@@ -220,10 +204,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
        if button.text == 'OK':
           conf_folder_path = qt.QFileDialog.getExistingDirectory(None,"Open a folder", '', qt.QFileDialog.ShowDirsOnly)
           if (os.path.split(conf_folder_path)[1] == CONF_FOLDER_NAME and
-              os.path.exists(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}') and 
-              os.path.exists(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}') and 
-              os.path.exists(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}') and
-              os.path.exists(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')):
+                os.path.exists(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}')):
                  
               slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter, conf_folder_path)
               slicerCARTConfigurationSetupWindow.show()
@@ -260,16 +241,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.edit_conf = edit_conf
 
       if conf_folder_path is not None:
-          shutil.copy(f'{conf_folder_path}{os.sep}{LABEL_CONFIG_COPY_FILENAME}', LABEL_CONFIG_FILE_PATH)
-          shutil.copy(f'{conf_folder_path}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}', CLASSIFICATION_CONFIG_FILE_PATH)
-          shutil.copy(f'{conf_folder_path}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}', GENERAL_CONFIG_FILE_PATH)
-          shutil.copy(f'{conf_folder_path}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}', KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH) 
+          shutil.copy(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}', CONFIG_COPY_FILENAME) 
 
-      with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
-            self.general_config_yaml = yaml.full_load(file)
-      with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
-            self.keyboard_shortcuts_config_yaml = yaml.full_load(file)
-    
+      with open(CONFIG_FILE_PATH, 'r') as file:
+            self.config_yaml = yaml.full_load(file)
+      print(CONFIG_FILE_PATH)
       self.set_default_values()
 
       self.segmenter = segmenter
@@ -608,35 +584,35 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.keyboard_shortcuts_checkbox_state_changed()
 
    def set_default_values(self):
-       self.segmentation_selected = self.general_config_yaml['is_segmentation_requested'] 
-       self.classification_selected = self.general_config_yaml['is_classification_requested']
-       self.mouse_shortcuts_selected = self.general_config_yaml['is_mouse_shortcuts_requested']
-       self.keyboard_shortcuts_selected = self.general_config_yaml['is_keyboard_shortcuts_requested']
+       self.segmentation_selected = self.config_yaml['is_segmentation_requested'] 
+       self.classification_selected = self.config_yaml['is_classification_requested']
+       self.mouse_shortcuts_selected = self.config_yaml['is_mouse_shortcuts_requested']
+       self.keyboard_shortcuts_selected = self.config_yaml['is_keyboard_shortcuts_requested']
 
-       self.modality_selected = self.general_config_yaml['modality']
+       self.modality_selected = self.config_yaml['modality']
 
-       self.bids_selected = self.general_config_yaml['impose_bids_format'] 
+       self.bids_selected = self.config_yaml['impose_bids_format'] 
 
-       self.ct_window_level_selected = self.general_config_yaml['ct_window_level'] 
-       self.ct_window_width_selected = self.general_config_yaml['ct_window_width']  
-       self.file_extension_selected = self.general_config_yaml['input_filetype'] 
+       self.ct_window_level_selected = self.config_yaml['ct_window_level'] 
+       self.ct_window_width_selected = self.config_yaml['ct_window_width']  
+       self.file_extension_selected = self.config_yaml['input_filetype'] 
 
-       if self.general_config_yaml['slice_view_color'] == 'Red':
+       if self.config_yaml['slice_view_color'] == 'Red':
            self.initial_view_selected = 'Red (axial)'
-       elif self.general_config_yaml['slice_view_color'] == 'Yellow':
+       elif self.config_yaml['slice_view_color'] == 'Yellow':
            self.initial_view_selected = 'Yellow (sagittal)'
-       elif self.general_config_yaml['slice_view_color'] == 'Green':
+       elif self.config_yaml['slice_view_color'] == 'Green':
            self.initial_view_selected = 'Green (coronal)'
 
-       self.interpolate_selected = self.general_config_yaml['interpolate_value'] 
+       self.interpolate_selected = self.config_yaml['interpolate_value'] 
 
-       self.toggle_fill_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] 
-       self.toggle_visibility_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] 
-       self.undo_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] 
-       self.save_seg_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] 
-       self.smooth_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] 
-       self.remove_small_holes_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] 
-       self.interpolate_ks_selected = self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
+       self.toggle_fill_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] 
+       self.toggle_visibility_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] 
+       self.undo_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] 
+       self.save_seg_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] 
+       self.smooth_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] 
+       self.remove_small_holes_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] 
+       self.interpolate_ks_selected = self.config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] 
 
    def classification_checkbox_state_changed(self):
        self.classification_selected = self.classification_task_checkbox.isChecked()
@@ -735,52 +711,47 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.close()
    
    def push_apply(self):
-       self.general_config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
-       self.general_config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
-       self.general_config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
-       self.general_config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
-       self.general_config_yaml['modality'] = self.modality_selected
+       self.config_yaml['is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
+       self.config_yaml['is_classification_requested'] = self.classification_task_checkbox.isChecked()
+       self.config_yaml['is_mouse_shortcuts_requested'] = self.mouse_shortcuts_checkbox.isChecked()
+       self.config_yaml['is_keyboard_shortcuts_requested'] = self.keyboard_shortcuts_checkbox.isChecked()
+       self.config_yaml['modality'] = self.modality_selected
 
     
        if self.bids_selected == 'Yes':
-           self.general_config_yaml['impose_bids_format'] = True
+           self.config_yaml['impose_bids_format'] = True
        elif self.bids_selected == 'No':
-           self.general_config_yaml['impose_bids_format'] = False
+           self.config_yaml['impose_bids_format'] = False
     
-       self.general_config_yaml['input_filetype'] = self.file_extension_selected
+       self.config_yaml['input_filetype'] = self.file_extension_selected
 
-       self.general_config_yaml['interpolate_value'] = self.interpolate_selected
+       self.config_yaml['interpolate_value'] = self.interpolate_selected
        
        if 'Red' in self.initial_view_selected:
-           self.general_config_yaml['slice_view_color'] = 'Red'
+           self.config_yaml['slice_view_color'] = 'Red'
        elif 'Yellow' in self.initial_view_selected:
-           self.general_config_yaml['slice_view_color'] = 'Yellow'
+           self.config_yaml['slice_view_color'] = 'Yellow'
        elif 'Green' in self.initial_view_selected:
-           self.general_config_yaml['slice_view_color'] = 'Green'
+           self.config_yaml['slice_view_color'] = 'Green'
     
-       self.general_config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
-       self.general_config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
+       self.config_yaml['ct_window_level'] = int(self.ct_window_level_selected)
+       self.config_yaml['ct_window_width'] = int(self.ct_window_width_selected)
 
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
-       self.keyboard_shortcuts_config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][0]['shortcut'] = self.toggle_fill_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][1]['shortcut'] = self.toggle_visibility_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][2]['shortcut'] = self.undo_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][3]['shortcut'] = self.save_seg_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][4]['shortcut'] = self.smooth_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut'] = self.remove_small_holes_ks_selected
+       self.config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut'] = self.interpolate_ks_selected
 
-       with open(GENERAL_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(self.general_config_yaml, file)
-       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'w') as file:   
-            yaml.safe_dump(self.keyboard_shortcuts_config_yaml, file)
+       with open(CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.config_yaml, file)
 
        self.segmenter.setup_configuration()
        
        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
-            shutil.copy(LABEL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}')
-            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
-            shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
-            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
+            shutil.copy(CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
 
        self.close()
 
@@ -802,25 +773,25 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.edit_conf = edit_conf
 
       if classification_config_yaml is None:
-            with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
-                    self.classification_config_yaml = yaml.full_load(file)
+            with open(CONFIG_FILE_PATH, 'r') as file:
+                self.config_yaml = yaml.full_load(file)
       else:
-          self.classification_config_yaml = classification_config_yaml
+          self.config_yaml = classification_config_yaml
 
       layout = qt.QVBoxLayout()
 
       self.checkbox_table_view = qt.QTableWidget()
       layout.addWidget(self.checkbox_table_view)
 
-      if len(self.classification_config_yaml['checkboxes']) > 0:
-          number_of_checkboxes = len(self.classification_config_yaml['checkboxes'])
+      if len(self.config_yaml['checkboxes']) > 0:
+          number_of_checkboxes = len(self.config_yaml['checkboxes'])
 
           self.checkbox_table_view.setRowCount(number_of_checkboxes)
           self.checkbox_table_view.setColumnCount(2)
           self.checkbox_table_view.horizontalHeader().setStretchLastSection(True)
           self.checkbox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
-          for index, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()): 
+          for index, (objectName, checkbox_label) in enumerate(self.config_yaml["checkboxes"].items()): 
                 remove_button = qt.QPushButton('Remove')
                 remove_button.clicked.connect(lambda state, checkbox_label = checkbox_label: self.push_remove_checkbox_button(checkbox_label))
                 remove_button_hbox = qt.QHBoxLayout()
@@ -848,8 +819,8 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.combobox_table_view = qt.QTableWidget()
       layout.addWidget(self.combobox_table_view)
 
-      if len(self.classification_config_yaml['comboboxes']) > 0:
-          number_of_comboboxes = len(self.classification_config_yaml['comboboxes'])
+      if len(self.config_yaml['comboboxes']) > 0:
+          number_of_comboboxes = len(self.config_yaml['comboboxes'])
 
           self.combobox_table_view.setRowCount(number_of_comboboxes)
           self.combobox_table_view.setColumnCount(3)
@@ -857,7 +828,7 @@ class ConfigureClassificationWindow(qt.QWidget):
           self.combobox_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
           self.combobox_table_view.verticalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
-          for index, (combo_box_name, combo_box_options) in enumerate(self.classification_config_yaml["comboboxes"].items()): 
+          for index, (combo_box_name, combo_box_options) in enumerate(self.config_yaml["comboboxes"].items()): 
                 remove_button = qt.QPushButton('Remove')
                 remove_button.clicked.connect(lambda state, combo_box_name = combo_box_name: self.push_remove_combobox_button(combo_box_name))
                 remove_button_hbox = qt.QHBoxLayout()
@@ -898,15 +869,15 @@ class ConfigureClassificationWindow(qt.QWidget):
       self.freetext_table_view = qt.QTableWidget()
       layout.addWidget(self.freetext_table_view)
 
-      if len(self.classification_config_yaml['freetextboxes']) > 0:
-          number_of_freetextboxes = len(self.classification_config_yaml['freetextboxes'])
+      if len(self.config_yaml['freetextboxes']) > 0:
+          number_of_freetextboxes = len(self.config_yaml['freetextboxes'])
 
           self.freetext_table_view.setRowCount(number_of_freetextboxes)
           self.freetext_table_view.setColumnCount(2)
           self.freetext_table_view.horizontalHeader().setStretchLastSection(True)
           self.freetext_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
-          for index, (objectName, freetextbox_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()): 
+          for index, (objectName, freetextbox_label) in enumerate(self.config_yaml["freetextboxes"].items()): 
                 remove_button = qt.QPushButton('Remove')
                 remove_button.clicked.connect(lambda state, freetextbox_label = freetextbox_label: self.push_remove_freetextbox_button(freetextbox_label))
                 remove_button_hbox = qt.QHBoxLayout()
@@ -946,9 +917,9 @@ class ConfigureClassificationWindow(qt.QWidget):
    def push_remove_combobox_button(self, combo_box_name):
        self.close()
 
-       self.classification_config_yaml['comboboxes'].pop(combo_box_name, None)
+       self.config_yaml['comboboxes'].pop(combo_box_name, None)
 
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.config_yaml)
        configureClassificationWindow.show()
    
    def push_remove_checkbox_button(self, checkbox_label):
@@ -956,14 +927,14 @@ class ConfigureClassificationWindow(qt.QWidget):
 
        object_name_to_remove = None
 
-       for i, (object_name, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+       for i, (object_name, label) in enumerate(self.config_yaml['checkboxes'].items()):
            if label == checkbox_label:
                object_name_to_remove = object_name
        
        if object_name_to_remove is not None:
-            self.classification_config_yaml['checkboxes'].pop(object_name_to_remove, None)
+            self.config_yaml['checkboxes'].pop(object_name_to_remove, None)
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.config_yaml)
        configureClassificationWindow.show()
 
    def push_remove_freetextbox_button(self, freetextbox_label):
@@ -971,37 +942,37 @@ class ConfigureClassificationWindow(qt.QWidget):
 
        object_name_to_remove = None
        
-       for i, (object_name, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+       for i, (object_name, label) in enumerate(self.config_yaml['freetextboxes'].items()):
            if label == freetextbox_label:
                object_name_to_remove = object_name
        
        if object_name_to_remove is not None:
-            self.classification_config_yaml['freetextboxes'].pop(object_name_to_remove, None)
+            self.config_yaml['freetextboxes'].pop(object_name_to_remove, None)
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.config_yaml)
        configureClassificationWindow.show()
 
    def push_add_freetextbox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'freetextbox', self.edit_conf)
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.config_yaml, 'freetextbox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
 
    def push_add_combobox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'combobox', self.edit_conf)
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.config_yaml, 'combobox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
    
    def push_add_checkbox(self):
        self.close()
 
-       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.classification_config_yaml, 'checkbox', self.edit_conf)
+       configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(self.segmenter, self.config_yaml, 'checkbox', self.edit_conf)
        configureSingleClassificationItemWindow.show()
    
    def push_save(self):
-       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'w') as file:   
-           yaml.safe_dump(self.classification_config_yaml, file)
+       with open(CONFIG_FILE_PATH, 'w') as file:   
+           yaml.safe_dump(self.config_yaml, file)
     
        if self.edit_conf:
             if self.segmenter.outputFolder is not None and os.path.exists(self.segmenter.outputFolder):
@@ -1012,7 +983,7 @@ class ConfigureClassificationWindow(qt.QWidget):
                         lines = file.readlines()
 
                         indices_to_populate_with_empty = []
-                        total_number_of_items_in_new_setup = len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml['comboboxes'].items()) + len(self.classification_config_yaml['freetextboxes'].items())
+                        total_number_of_items_in_new_setup = len(self.config_yaml['checkboxes'].items()) + len(self.config_yaml['comboboxes'].items()) + len(self.config_yaml['freetextboxes'].items())
 
                         for i in range(len(lines)):
                             if i == 0:
@@ -1023,29 +994,29 @@ class ConfigureClassificationWindow(qt.QWidget):
                                 header_item_counter = 6 # start of the classification items
                                 new_header = header_items[0] + ',' + header_items[1] + ',' + header_items[2] + ',' + header_items[3] + ',' + header_items[4] + ',' + header_items[5] 
                                 
-                                for j, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+                                for j, (_, label) in enumerate(self.config_yaml['checkboxes'].items()):
                                     if header_items[header_item_counter] == label:
                                         header_item_counter = header_item_counter + 1
                                     else:
                                         indices_to_populate_with_empty.append(j + 6)
                                     new_header = new_header + ',' + label
                                 
-                                for j, (combo_box_name, _) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                                for j, (combo_box_name, _) in enumerate(self.config_yaml["comboboxes"].items()):
                                     name = combo_box_name.replace('_', ' ').capitalize()
                                     if header_items[header_item_counter] == name:
                                         header_item_counter = header_item_counter + 1
                                     else:
-                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()))
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.config_yaml['checkboxes'].items()))
                                     new_header = new_header + ',' + name
 
-                                for j, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+                                for j, (_, label) in enumerate(self.config_yaml['freetextboxes'].items()):
                                     if header_item_counter < len(header_items) and '\n' in header_items[header_item_counter]:
                                         header_items[header_item_counter] = header_items[header_item_counter].split('\n')[0]
                 
                                     if header_item_counter < len(header_items) and header_items[header_item_counter] == label:
                                         header_item_counter = header_item_counter + 1
                                     else:
-                                        indices_to_populate_with_empty.append(j + 6 + len(self.classification_config_yaml['checkboxes'].items()) + len(self.classification_config_yaml["comboboxes"].items()))
+                                        indices_to_populate_with_empty.append(j + 6 + len(self.config_yaml['checkboxes'].items()) + len(self.config_yaml["comboboxes"].items()))
                                     new_header = new_header + ',' + label
                                 lines[0] = new_header 
                             else:
@@ -1079,7 +1050,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
       super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
 
       self.segmenter = segmenter
-      self.classification_config_yaml = classification_config_yaml
+      self.config_yaml = classification_config_yaml
       self.item_added = item_added
       self.edit_conf = edit_conf
 
@@ -1129,13 +1100,13 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
 
        if self.item_added == 'checkbox':
             label_found = False
-            for i, (_, label) in enumerate(self.classification_config_yaml['checkboxes'].items()):
+            for i, (_, label) in enumerate(self.config_yaml['checkboxes'].items()):
                 if label == current_label_name:
                     label_found = True
                     
             if label_found == False:
                 # append
-                self.classification_config_yaml['checkboxes'].update({object_name : current_label_name.capitalize()})
+                self.config_yaml['checkboxes'].update({object_name : current_label_name.capitalize()})
        elif self.item_added == 'combobox':
             if self.options_combobox.count == 0:
                 msg = qt.QMessageBox()
@@ -1151,24 +1122,24 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                     options_dict.update({option.replace(' ', '_') : option})
 
                 item_found = False
-                for i, (combobox_name, _) in enumerate(self.classification_config_yaml['comboboxes'].items()):
+                for i, (combobox_name, _) in enumerate(self.config_yaml['comboboxes'].items()):
                     if combobox_name == object_name:
                         item_found = True
 
                 if item_found == False:
                     # append
-                    self.classification_config_yaml['comboboxes'].update({object_name : options_dict})
+                    self.config_yaml['comboboxes'].update({object_name : options_dict})
        elif self.item_added == 'freetextbox':
             label_found = False
-            for i, (_, label) in enumerate(self.classification_config_yaml['freetextboxes'].items()):
+            for i, (_, label) in enumerate(self.config_yaml['freetextboxes'].items()):
                 if label == current_label_name:
                     label_found = True
                     
             if label_found == False:
                 # append
-                self.classification_config_yaml['freetextboxes'].update({object_name : current_label_name.capitalize()})
+                self.config_yaml['freetextboxes'].update({object_name : current_label_name.capitalize()})
         
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.config_yaml)
        configureClassificationWindow.show()
        self.close() 
        
@@ -1176,7 +1147,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        self.push_cancel()
    
    def push_cancel(self):
-       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.classification_config_yaml)
+       configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf, self.config_yaml)
        configureClassificationWindow.show()
        self.close()
 
@@ -1189,18 +1160,18 @@ class ConfigureLabelsWindow(qt.QWidget):
       self.edit_conf = edit_conf
 
       if label_config_yaml is None:
-            with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-                    self.label_config_yaml = yaml.full_load(file)
+            with open(CONFIG_FILE_PATH, 'r') as file:
+                    self.config_yaml = yaml.full_load(file)
       else:
-          self.label_config_yaml = label_config_yaml
+          self.config_yaml = label_config_yaml
 
       layout = qt.QVBoxLayout()
 
       self.label_table_view = qt.QTableWidget()
       layout.addWidget(self.label_table_view)
 
-      if len(self.label_config_yaml['labels']) > 0:
-          number_of_labels = len(self.label_config_yaml['labels'])
+      if len(self.config_yaml['labels']) > 0:
+          number_of_labels = len(self.config_yaml['labels'])
 
           self.label_table_view.setRowCount(number_of_labels)
           if self.modality == 'MRI':
@@ -1210,7 +1181,7 @@ class ConfigureLabelsWindow(qt.QWidget):
           self.label_table_view.horizontalHeader().setStretchLastSection(True)
           self.label_table_view.horizontalHeader().setSectionResizeMode(qt.QHeaderView.Stretch)
 
-          for index, label in enumerate(self.label_config_yaml['labels']): 
+          for index, label in enumerate(self.config_yaml['labels']): 
                 edit_button = qt.QPushButton('Edit')
                 edit_button.clicked.connect(lambda state, label = label: self.push_edit_button(label))
                 edit_button_hbox = qt.QHBoxLayout()
@@ -1286,33 +1257,33 @@ class ConfigureLabelsWindow(qt.QWidget):
    def push_edit_button(self, label):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml, label)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.config_yaml, label)
        configureSingleLabelWindow.show()
 
    def push_remove_button(self, label):
        self.close()
        
        value_removed = -1
-       for l in self.label_config_yaml['labels']:
+       for l in self.config_yaml['labels']:
            if l['name'] == label['name']:
                value_removed = l['value']
-               self.label_config_yaml['labels'].remove(l)
+               self.config_yaml['labels'].remove(l)
     
-       for l in self.label_config_yaml['labels']:
+       for l in self.config_yaml['labels']:
            if l['value'] > value_removed and value_removed != -1:
                l['value'] = l['value'] - 1
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.config_yaml)
        configureLabelsWindow.show()
 
    def push_add_label(self):
        self.close()
 
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.config_yaml)
        configureSingleLabelWindow.show()
    
    def push_save(self):
-       if len(self.label_config_yaml['labels']) == 0:
+       if len(self.config_yaml['labels']) == 0:
             msg = qt.QMessageBox()
             msg.setWindowTitle('ERROR : Label list is empty')
             msg.setText('The label list cannot be empty. Using the previous label configuration. ')
@@ -1320,8 +1291,8 @@ class ConfigureLabelsWindow(qt.QWidget):
             msg.buttonClicked.connect(self.push_error_label_list_empty)
             msg.exec()
        else:
-            with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
-                yaml.safe_dump(self.label_config_yaml, file)
+            with open(CONFIG_FILE_PATH, 'w') as file:   
+                yaml.safe_dump(self.config_yaml, file)
 
             self.close()
 
@@ -1338,7 +1309,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
       self.segmenter = segmenter
       self.modality = modality
       self.initial_label = label
-      self.label_config_yaml = label_config_yaml
+      self.config_yaml = label_config_yaml
       self.edit_conf = edit_conf
 
       layout = qt.QVBoxLayout()
@@ -1454,7 +1425,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        current_label_name = self.name_line_edit.text
     
        label_found = False
-       for label in self.label_config_yaml['labels']:
+       for label in self.config_yaml['labels']:
            if label['name'] == current_label_name:
                # edit 
                label_found = True
@@ -1470,7 +1441,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
            # append
            new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255, 'lower_bound_HU': 30, 'name': 'ICH', 'upper_bound_HU': 90, 'value': 1}
            new_label['name'] = self.name_line_edit.text
-           new_label['value'] = len(self.label_config_yaml['labels']) + 1
+           new_label['value'] = len(self.config_yaml['labels']) + 1
            new_label['color_r'] = int(self.color_r_line_edit.text)
            new_label['color_g'] = int(self.color_g_line_edit.text)
            new_label['color_b'] = int(self.color_b_line_edit.text)
@@ -1478,14 +1449,14 @@ class ConfigureSingleLabelWindow(qt.QWidget):
            if self.modality == 'CT':
                 new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
-           self.label_config_yaml['labels'].append(new_label)
+           self.config_yaml['labels'].append(new_label)
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.config_yaml)
        configureLabelsWindow.show()
        self.close() 
        
    def push_cancel(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.config_yaml)
        configureLabelsWindow.show()
        self.close()
 
@@ -2093,22 +2064,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-  
-  def get_keyboard_shortcuts_config_values(self):
-      with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
-        self.keyboard_config_yaml = yaml.safe_load(file)
-  
-  def get_classification_config_values(self):
-      with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
-        self.classification_config_yaml = yaml.safe_load(file)
 
-  def get_label_config_values(self):
-      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
-        self.label_config_yaml = yaml.safe_load(file)
 
   def get_general_config_values(self):
-      with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
-        self.general_config_yaml = yaml.safe_load(file)
+      with open(CONFIG_FILE_PATH, 'r') as file:
+        self.config_yaml = yaml.safe_load(file)
 
         global INPUT_FILE_EXTENSION
         global DEFAULT_VOLUMES_DIRECTORY
@@ -2123,29 +2083,29 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         global CT_WINDOW_WIDTH
         global CT_WINDOW_LEVEL
 
-        INPUT_FILE_EXTENSION = self.general_config_yaml["input_filetype"]
-        DEFAULT_VOLUMES_DIRECTORY = self.general_config_yaml["default_volume_directory"]
+        INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
+        DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
         self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-        DEFAULT_SEGMENTATION_DIRECTORY = self.general_config_yaml["default_segmentation_directory"]
-        MODALITY = self.general_config_yaml["modality"]
-        IS_CLASSIFICATION_REQUESTED = self.general_config_yaml["is_classification_requested"]
-        IS_SEGMENTATION_REQUESTED = self.general_config_yaml["is_segmentation_requested"]
-        IS_MOUSE_SHORTCUTS_REQUESTED = self.general_config_yaml["is_mouse_shortcuts_requested"]
-        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.general_config_yaml["is_keyboard_shortcuts_requested"]
-        INTERPOLATE_VALUE = self.general_config_yaml["interpolate_value"]
+        DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml["default_segmentation_directory"]
+        MODALITY = self.config_yaml["modality"]
+        IS_CLASSIFICATION_REQUESTED = self.config_yaml["is_classification_requested"]
+        IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
+        IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml["is_mouse_shortcuts_requested"]
+        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml["is_keyboard_shortcuts_requested"]
+        INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
 
         if MODALITY == 'CT':
             # then BIDS not mandatory because it is not yet supported 
             # therefore, either .nrrd or .nii.gz accepted 
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-            CT_WINDOW_WIDTH = self.general_config_yaml["ct_window_width"]
-            CT_WINDOW_LEVEL = self.general_config_yaml["ct_window_level"]
+            CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
+            CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
 
         elif MODALITY == 'MRI':
             # therefore, .nii.gz required  
             INPUT_FILE_EXTENSION = '*.nii.gz'
             # user can decide whether to impose bids or not
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.general_config_yaml["impose_bids_format"]
+            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml["impose_bids_format"]
 
 
   def setup(self):
@@ -2238,9 +2198,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.MostRecentPausedCasePath = ""
   
   def setup_configuration(self):
-        self.get_label_config_values()
-        self.get_keyboard_shortcuts_config_values()
-        self.get_classification_config_values()
         self.get_general_config_values()
 
         if IS_MOUSE_SHORTCUTS_REQUESTED:
@@ -2259,8 +2216,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
             self.interactor2.SetInteractorStyle(self.styleRed)
 
-        self.LB_HU = self.label_config_yaml["labels"][0]["lower_bound_HU"]
-        self.UB_HU = self.label_config_yaml["labels"][0]["upper_bound_HU"]
+        self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
+        self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
         
         # Change the value of the upper and lower bound of the HU
         self.ui.UB_HU.setValue(self.UB_HU)
@@ -2278,7 +2235,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # Initialize timers
         self.timers = []
         timer_index = 0
-        for label in self.label_config_yaml["labels"]:
+        for label in self.config_yaml["labels"]:
             self.timers.append(Timer(number=timer_index))
             timer_index = timer_index + 1
         
@@ -2296,8 +2253,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.pushDefaultMin.setVisible(False)
             self.ui.pushDefaultMax.setVisible(False)
 
-        if self.general_config_yaml['is_keyboard_shortcuts_requested']:
-            for i in self.keyboard_config_yaml["KEYBOARD_SHORTCUTS"]:
+        if self.config_yaml['is_keyboard_shortcuts_requested']:
+            for i in self.config_yaml["KEYBOARD_SHORTCUTS"]:
 
                 shortcutKey = i.get("shortcut")
                 callback_name = i.get("callback")
@@ -2309,18 +2266,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.connectShortcut(shortcutKey, button, callback)
         
         # Display the selected color view at module startup
-        if self.general_config_yaml['slice_view_color'] == "Yellow":
+        if self.config_yaml['slice_view_color'] == "Yellow":
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
-        if self.general_config_yaml['slice_view_color'] == "Red":
+        if self.config_yaml['slice_view_color'] == "Red":
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
-        if self.general_config_yaml['slice_view_color'] == "Green":
+        if self.config_yaml['slice_view_color'] == "Green":
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
             
         self.ui.dropDownButton_label_select.clear()
-        for label in self.label_config_yaml["labels"]:
+        for label in self.config_yaml["labels"]:
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
   def set_master_volume_intensity_mask_according_to_modality(self):
@@ -2334,7 +2291,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       row_index = 0
 
-      for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+      for i, (objectName, label) in enumerate(self.config_yaml["checkboxes"].items()):
         #print(objectName, label)
         checkbox = qt.QCheckBox()
         checkbox.setText(label)
@@ -2353,7 +2310,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.comboboxWidgets = {}
       
       row_index = start_row
-      for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+      for i, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
         comboboxLabel = qt.QLabel(comboBoxName.replace("_", " ").capitalize() + " :")
         comboboxLabel.setStyleSheet("font-weight: bold")
         self.ui.ClassificationGridLayout.addWidget(comboboxLabel, row_index, 0)
@@ -2371,7 +2328,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.freeTextBoxes = {}
 
       row_index = start_row
-      for i, (freeTextObjectName, freeTextLabel) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+      for i, (freeTextObjectName, freeTextLabel) in enumerate(self.config_yaml["freetextboxes"].items()):
           freeTextQLabel = qt.QLabel(freeTextLabel.capitalize() + " :")
           freeTextQLabel.setStyleSheet("font-weight: bold")
           self.ui.ClassificationGridLayout.addWidget(freeTextQLabel, row_index, 0)
@@ -2412,16 +2369,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
-
       file_structure_valid = True
+
       if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
-    
+              
       if file_structure_valid == False:
           return # don't load any patient cases
-
+      
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
-
+      
       if not self.CasesPaths:
             msg_box = qt.QMessageBox()
             msg_box.setWindowTitle("No files found")
@@ -2432,6 +2389,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg_box.setText(text)
             msg_box.exec()
             return
+        
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
@@ -2524,7 +2482,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def loadPatient(self):
       timer_index = 0
       self.timers = []
-      for label in self.label_config_yaml["labels"]:
+      for label in self.config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
           timer_index = timer_index + 1
       
@@ -2638,12 +2596,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   # Load all segments at once    
   def createNewSegments(self):
-        for label in self.label_config_yaml["labels"]:
+        for label in self.config_yaml["labels"]:
             self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
         
-        first_label_name = self.label_config_yaml["labels"][0]["name"]
+        first_label_name = self.config_yaml["labels"][0]["name"]
         first_label_segment_name = first_label_name
-        self.onPushButton_select_label(first_label_segment_name, self.label_config_yaml["labels"][0]["lower_bound_HU"], self.label_config_yaml["labels"][0]["upper_bound_HU"])
+        self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
 
   def newSegment(self, segment_name=None):
     
@@ -2834,11 +2792,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime.exec()
 
   def resetClassificationInformation(self):
-        for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+        for i, (objectName, label) in enumerate(self.config_yaml["checkboxes"].items()):
             self.checkboxWidgets[objectName].setChecked(False)
-        for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+        for i, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
             self.comboboxWidgets[comboBoxName].currentText = list(options.items())[0][1]
-        for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+        for i, (freeTextBoxObjectName, label) in enumerate(self.config_yaml["freetextboxes"].items()):
             self.freeTextBoxes[freeTextBoxObjectName].setText("")
         
   
@@ -2858,27 +2816,27 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             labels = label_string.split(',')
 
-            number_of_checkboxes = len(self.classification_config_yaml["checkboxes"].items())
-            number_of_comboboxes = len(self.classification_config_yaml["comboboxes"].items())
-            number_of_freetextboxes = len(self.classification_config_yaml["freetextboxes"].items())
+            number_of_checkboxes = len(self.config_yaml["checkboxes"].items())
+            number_of_comboboxes = len(self.config_yaml["comboboxes"].items())
+            number_of_freetextboxes = len(self.config_yaml["freetextboxes"].items())
 
             for i, label in enumerate(labels):
                 data = ""
                 if '\n' in label:
                     label = label.replace('\n', '')
                 if 0 <= i < number_of_checkboxes:
-                    for _, (objectName, checkbox_label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                    for _, (objectName, checkbox_label) in enumerate(self.config_yaml["checkboxes"].items()):
                         if label == checkbox_label:
                             data = "No"
                             if self.checkboxWidgets[objectName].isChecked():
                                 data = "Yes"
                 elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
-                    for _, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                    for _, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
                         combobox_label = comboBoxName.replace("_", " ").capitalize()
                         if label == combobox_label:
                             data = self.comboboxWidgets[comboBoxName].currentText
                 elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
-                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.config_yaml["freetextboxes"].items()):
                         if label == free_text_label:
                             data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
 
@@ -2887,7 +2845,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 data_string = data_string + data
 
       else:
-            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+            for i, (objectName, label) in enumerate(self.config_yaml["checkboxes"].items()):
                 if label_string != "":
                     label_string = label_string + ","
                     data_string = data_string + ","
@@ -2900,7 +2858,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 
                 data_string = data_string + data
             
-            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+            for i, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
                 label = comboBoxName.replace("_", " ").capitalize()
 
                 if label_string != "":
@@ -2912,7 +2870,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 data = self.comboboxWidgets[comboBoxName].currentText
                 data_string = data_string + data
             
-            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+            for i, (freeTextBoxObjectName, label) in enumerate(self.config_yaml["freetextboxes"].items()):
                 if label_string != "":
                     label_string = label_string + ","
                     data_string = data_string + ","
@@ -3006,21 +2964,21 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       is_valid = True 
 
       segment_names = self.getAllSegmentNames()
-      if len(segment_names) != len(self.label_config_yaml["labels"]):
+      if len(segment_names) != len(self.config_yaml["labels"]):
           msg = qt.QMessageBox()
           msg.setIcon(qt.QMessageBox.Critical)
           msg.setText("ERROR : Incorrect number of labels")
-          msg.setInformativeText(f'Expected {len(self.label_config_yaml["labels"])} labels but obtained {len(segment_names)}. ')
+          msg.setInformativeText(f'Expected {len(self.config_yaml["labels"])} labels but obtained {len(segment_names)}. ')
           msg.setWindowTitle("ERROR : Incorrect number of labels")
           msg.exec()
           return False
       
       for i, segment_name in enumerate(segment_names):
-          if segment_name != self.label_config_yaml["labels"][i]["name"]:
+          if segment_name != self.config_yaml["labels"][i]["name"]:
               msg = qt.QMessageBox()
               msg.setIcon(qt.QMessageBox.Critical)
               msg.setText("ERROR : Label mismatch")
-              msg.setInformativeText(f'Expected {self.label_config_yaml["labels"][i]["name"]} but obtained {segment_name}. ')
+              msg.setInformativeText(f'Expected {self.config_yaml["labels"][i]["name"]} but obtained {segment_name}. ')
               msg.setWindowTitle("ERROR : Label mismatch")
               msg.exec()
               return False
@@ -3069,7 +3027,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
         tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration" 
-        for label in self.label_config_yaml["labels"]:
+        for label in self.config_yaml["labels"]:
             tag_str = tag_str + "," + label["name"] + " duration"
         
         data_str = self.currentCase 
@@ -3189,16 +3147,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if os.path.exists(path_to_saved_config_files) == False:
                 os.makedirs(path_to_saved_config_files)
 
-            path_to_label_config_copy = f'{path_to_saved_config_files}{os.sep}{LABEL_CONFIG_COPY_FILENAME}'
-            path_to_classification_config_copy = f'{path_to_saved_config_files}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}'
-            path_to_keyboard_shortcuts_config_copy = f'{path_to_saved_config_files}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}'
-            path_to_general_config_copy = f'{path_to_saved_config_files}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}'
+            path_to_config_copy = f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
 
-            shutil.copy(LABEL_CONFIG_FILE_PATH, path_to_label_config_copy)
-            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, path_to_classification_config_copy)
-            shutil.copy(GENERAL_CONFIG_FILE_PATH, path_to_general_config_copy)
-            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, path_to_keyboard_shortcuts_config_copy)
-  
+            shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
+
   def onSelectOutputFolder(self):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
@@ -3393,7 +3345,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.colorsSelectedVersionFilePathsForCompareSegmentVersions = {}
 
       selected_label_value = 0
-      for label in self.label_config_yaml['labels']:
+      for label in self.config_yaml['labels']:
           if selected_label == label['name']:
               selected_label_value = label['value']
 
@@ -3487,19 +3439,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         loaded_segment_ids = self.segmentationNode.GetSegmentation().GetSegmentIDs()
         for i, segment_id in enumerate(loaded_segment_ids):
-            for label in self.label_config_yaml["labels"]:
+            for label in self.config_yaml["labels"]:
                 if str(label['value']) == str(segment_id):
                     segment = self.segmentationNode.GetSegmentation().GetSegment(segment_id)
                     segment.SetName(label["name"])
                     segment.SetColor(label["color_r"]/255, label["color_g"]/255, label["color_b"]/255)
 
         list_of_segment_names = self.getAllSegmentNames()
-        for label in self.label_config_yaml["labels"]:
+        for label in self.config_yaml["labels"]:
             if label['name'] not in list_of_segment_names:
                 self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
 
         for segment_id in loaded_segment_ids:
-            for label in self.label_config_yaml["labels"]:
+            for label in self.config_yaml["labels"]:
                 if str(segment_id) == str(label['value']) or str(segment_id) == str(label['name']):
                     self.segmentationNode.GetSegmentation().SetSegmentIndex(str(segment_id), label['value']-1)
 
@@ -3512,16 +3464,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return list_of_segment_names
 
   def onPushDefaultMin(self):
-      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+      with open(CONFIG_FILE_PATH, 'r') as file:
         fresh_config = yaml.safe_load(file)
-        self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
-        self.setUpperAndLowerBoundHU(self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+      with open(CONFIG_FILE_PATH, 'r') as file:
         fresh_config = yaml.safe_load(file)
-        self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
-        self.setUpperAndLowerBoundHU(self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
+        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPush_ShowSegmentVersionLegendButton(self):
       segmentationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
@@ -3545,7 +3497,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
-      label = self.label_config_yaml["labels"][value]
+      label = self.config_yaml["labels"][value]
       self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])
 
       label_name = label["name"]
@@ -3564,7 +3516,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         effect.setSliceCutMode(3)
   
   def onPushButton_Paint(self):
-        selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.label_config_yaml["labels"][self.current_label_index]['name'])
+        selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.config_yaml["labels"][self.current_label_index]['name'])
         self.segmentEditorNode.SetSelectedSegmentID(selected_segment_id)
         self.segmentEditorWidget.setActiveEffectByName("Paint")
         # Note it seems that sometimes you need to activate the effect first with :
@@ -3646,7 +3598,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.LB_HU=self.ui.LB_HU.value
         self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.label_config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
+        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = self.LB_HU
       except:
         pass
       
@@ -3655,7 +3607,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.UB_HU=self.ui.UB_HU.value
         self.set_master_volume_intensity_mask_according_to_modality()
         self.segmentEditorNode.SetSourceVolumeIntensityMaskRange(self.LB_HU, self.UB_HU)
-        self.label_config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
+        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = self.UB_HU
       except:
         pass
       

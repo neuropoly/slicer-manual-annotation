@@ -1,4 +1,4 @@
-ct_window_level: 50
+ct_window_level: 45
 ct_window_width: 50
 default_segmentation_directory: ''
 default_volume_directory: ''
@@ -11,5 +11,5 @@ is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: false
 is_segmentation_requested: true
 is_semi_automatic_phe_tool_requested: true
-modality: CT
+modality: MRI
 slice_view_color: Red

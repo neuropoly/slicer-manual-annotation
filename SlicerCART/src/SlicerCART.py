@@ -1,5 +1,3 @@
-### MB THIS IS A TEST FOR REVISION WORKFLOW.
-
 # To install a package in slicer python environment, use the following command:
 # pip install --user package_name
 import os

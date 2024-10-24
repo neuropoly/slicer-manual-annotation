@@ -22,6 +22,11 @@ import sys
 from functools import partial
 import copy
 
+# MB issue40
+import subFolder.SlicerConfigurationWindows as aaa
+# from subFolder.SlicerConfigurationWindows import *
+# MB test issue40, import a second subfolder
+import subFolder.CheckFunctions as bbb
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 # TODO: check if the package installed with error
@@ -2178,6 +2183,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
+    self.maxime = 123
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -2597,9 +2603,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.loadPatient()
 
 
-  
+
 
   def onNextButton(self):
+      # print('x', aaa.other_file_same_level())
+      print('test maxime ', aaa.jacques())
+      bbb.ppcheck()
+
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()
       self.resetClassificationInformation()

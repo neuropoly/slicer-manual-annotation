@@ -20,24 +20,3 @@ labels:
   name: PHE
   upper_bound_HU: 33
   value: 3
-- color_b: 0
-  color_g: 100
-  color_r: 40
-  lower_bound_HU: 0
-  name: test label
-  upper_bound_HU: 120
-  value: 4
-- color_b: 30
-  color_g: 240
-  color_r: 90
-  lower_bound_HU: 23
-  name: hurray
-  upper_bound_HU: 234
-  value: 5
-- color_b: 30
-  color_g: 20
-  color_r: 10
-  lower_bound_HU: 45
-  name: should work
-  upper_bound_HU: 455
-  value: 6

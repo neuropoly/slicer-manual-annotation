@@ -386,7 +386,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
       onlyInt = qt.QIntValidator()
       self.ct_window_level_line_edit.setValidator(onlyInt)
-      self.ct_window_level_line_edit.setInputMask("0000")
+      self.ct_window_level_line_edit.setInputMask("0000;x")
       ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
 
       layout.addLayout(ct_window_level_hbox)
@@ -1445,7 +1445,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
       color_hbox.addWidget(self.color_g_line_edit)
 
       self.color_b_line_edit = qt.QLineEdit('B')
-      self.color_b_line_edit.setValidator(colorValidator)
+      #self.color_b_line_edit.setValidator(colorValidator)
       self.color_b_line_edit.setInputMask("000")
       self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_b_line_edit)
@@ -1473,11 +1473,11 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
             max_hu_label = qt.QLabel('Max. HU : ')
             max_hu_label.setStyleSheet("font-weight: bold")
-            self.max_hu_line_edit.setInputMask("0000")
             max_hu_hbox.addWidget(max_hu_label)
 
             self.max_hu_line_edit = qt.QLineEdit('')
             self.max_hu_line_edit.setValidator(qt.QIntValidator())
+            self.max_hu_line_edit.setInputMask("0000")
             max_hu_hbox.addWidget(self.max_hu_line_edit)
             
             layout.addLayout(max_hu_hbox)
@@ -1513,7 +1513,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        self.color_display.setStyleSheet(f"background-color:rgb{color}")
    
    def push_save(self):
-       self.close()
        current_label_name = self.name_line_edit.text
     
        label_found = False
@@ -1545,16 +1544,19 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
        with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
             yaml.safe_dump(self.label_config_yaml, file)
-
-       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureSegmentationWindow.show()
         
+       self.configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf)
+       self.configureSegmentationWindow.show()
        self.close() 
+
+       
+
        
    def push_cancel(self):
-       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureSegmentationWindow.show()
+       self.configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf)
+       self.configureSegmentationWindow.show()
        self.close()
+
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):
@@ -2164,9 +2166,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
         self.keyboard_config_yaml = yaml.safe_load(file)
-        
 
-  
   def get_classification_config_values(self):
       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
         self.classification_config_yaml = yaml.safe_load(file)
@@ -2499,6 +2499,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
+      #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
           return
 
@@ -2858,6 +2859,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.PauseTimerButton.setEnabled(False)
 
   def toggleStartTimerButton(self):
+      #allow users to start the timer by clicking on any of the segmentation-related buttons
       if (self.ui.SlicerDirectoryListView.count > 0):
             self.startTimer()
             self.timer_router()

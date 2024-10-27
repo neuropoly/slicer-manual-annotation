@@ -10,5 +10,5 @@ is_display_timer_requested: false
 is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: false
 is_segmentation_requested: true
-modality: MRI
+modality: CT
 slice_view_color: Red

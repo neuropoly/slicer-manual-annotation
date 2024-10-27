@@ -216,27 +216,7 @@
              </item>
             </layout>
            </item>
-           <item row="5" column="0">
-           <widget class="QLabel"  name="SemiAutomaticPHELabel">
-             <property name="text">
-                <string>Semi-automatic PHE Tool</string>
-               </property>
-             </widget>
-           </item>
-           <item row="6" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_Launch">
-               <property name="text">
-                <string>Launch</string>
-               </property>
-              </widget>
-           </item>
-           <item row="7" column="0">
-           <widget class="QPushButton" name="pushButton_SemiAutomaticPHE_ShowResult">
-               <property name="text">
-                <string>Show Result</string>
-               </property>
-              </widget>
-           </item>
+
           </layout>
          </widget>
         </item>

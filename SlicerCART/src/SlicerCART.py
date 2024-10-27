@@ -94,16 +94,19 @@ LABEL_CONFIG_FILENAME = "label_config.yml"
 KEYBOARD_SHORTCUTS_CONFIG_FILENAME = "keyboard_shortcuts_config.yml"
 CLASSIFICATION_CONFIG_FILENAME = "classification_config.yml"
 GENERAL_CONFIG_FILENAME = "general_config.yml"
+SEGMENTATION_CONFIG_FILENAME = "segmentation_config.yml"
 
 LABEL_CONFIG_COPY_FILENAME = LABEL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME = KEYBOARD_SHORTCUTS_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 CLASSIFICATION_CONFIG_COPY_FILENAME = CLASSIFICATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 GENERAL_CONFIG_COPY_FILENAME = GENERAL_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
+SEGMENTATION_CONFIG_COPY_FILENAME = SEGMENTATION_CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 
 LABEL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), LABEL_CONFIG_FILENAME)
 KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), KEYBOARD_SHORTCUTS_CONFIG_FILENAME)
 CLASSIFICATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CLASSIFICATION_CONFIG_FILENAME)
 GENERAL_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), GENERAL_CONFIG_FILENAME)
+SEGMENTATION_CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), SEGMENTATION_CONFIG_FILENAME)
 
 CONF_FOLDER_NAME = '_conf'
 
@@ -269,6 +272,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.general_config_yaml = yaml.full_load(file)
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
             self.keyboard_shortcuts_config_yaml = yaml.full_load(file)
+            
+      with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
+            self.segmentation_config_yaml = yaml.full_load(file)
     
       self.set_default_values()
 
@@ -380,6 +386,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.ct_window_level_line_edit = qt.QLineEdit(self.ct_window_level_selected)
       onlyInt = qt.QIntValidator()
       self.ct_window_level_line_edit.setValidator(onlyInt)
+      self.ct_window_level_line_edit.setInputMask("0000")
       ct_window_level_hbox.addWidget(self.ct_window_level_line_edit)
 
       layout.addLayout(ct_window_level_hbox)
@@ -393,6 +400,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       
       self.ct_window_width_line_edit = qt.QLineEdit(self.ct_window_width_selected)
       self.ct_window_width_line_edit.setValidator(onlyInt)
+      self.ct_window_width_line_edit.setInputMask("0000")
       ct_window_width_hbox.addWidget(self.ct_window_width_line_edit)
 
       layout.addLayout(ct_window_width_hbox)
@@ -509,14 +517,15 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       mouse_shortcuts_hbox.addWidget(self.mouse_shortcuts_checkbox)
 
       layout.addLayout(mouse_shortcuts_hbox)
-
-      self.configure_labels_button = qt.QPushButton('Configure Labels...')
-      self.configure_labels_button.setStyleSheet("background-color : yellowgreen")
-      layout.addWidget(self.configure_labels_button)
+      self.configure_segmentation_button = qt.QPushButton('Configure Segmentation...')
+      self.configure_segmentation_button.setStyleSheet("background-color : yellowgreen")
+      layout.addWidget(self.configure_segmentation_button)
 
       self.configure_classification_button = qt.QPushButton('Configure Classification...')
       self.configure_classification_button.setStyleSheet("background-color : yellowgreen")
       layout.addWidget(self.configure_classification_button)
+      
+      
 
       self.previous_button = qt.QPushButton('Previous')
       layout.addWidget(self.previous_button)
@@ -527,7 +536,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
       self.cancel_button = qt.QPushButton('Cancel')
       layout.addWidget(self.cancel_button)
 
-      self.populate_default_values()
       self.connect_buttons_to_callbacks()
 
       if self.edit_conf:
@@ -568,13 +576,14 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.smooth_ks_line_edit.textChanged.connect(self.update_smooth_ks)
        self.remove_small_holes_ks_line_edit.textChanged.connect(self.update_remove_small_holes_ks)
        self.interpolate_ks_line_edit.textChanged.connect(self.update_interpolate_ks)
-       self.configure_labels_button.clicked.connect(self.push_configure_labels)
        self.configure_classification_button.clicked.connect(self.push_configure_classification)
        self.previous_button.clicked.connect(self.push_previous)
        self.apply_button.clicked.connect(self.push_apply)
        self.cancel_button.clicked.connect(self.push_cancel)
+       self.configure_segmentation_button.clicked.connect(self.push_configure_segmentation)
    
-   def populate_default_values(self):
+       
+       
        if self.modality_selected == 'CT':
            self.ct_modality_radio_button.setChecked(True)
        elif self.modality_selected == 'MRI':
@@ -662,8 +671,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
    
    def segmentation_checkbox_state_changed(self):
        self.segmentation_selected = self.segmentation_task_checkbox.isChecked()
-       self.configure_labels_button.setEnabled(self.segmentation_selected)
-
+       self.configure_segmentation_button.setEnabled(self.segmentation_selected)
+       
    def update_interpolate_ks(self):
        self.interpolate_ks_selected = self.interpolate_ks_line_edit.text
    
@@ -721,9 +730,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
-   def push_configure_labels(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality_selected, self.edit_conf)
-       configureLabelsWindow.show()
+   def push_configure_segmentation(self):
+       self.configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality_selected, self.edit_conf)
+       self.configureSegmentationWindow.show()
 
    def push_configure_classification(self):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf)
@@ -781,7 +790,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
             shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
             shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
-
+            shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
        self.close()
 
    def push_cancel(self):
@@ -1180,19 +1189,25 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        configureClassificationWindow.show()
        self.close()
 
-class ConfigureLabelsWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, edit_conf, label_config_yaml = None, parent = None):
-      super(ConfigureLabelsWindow, self).__init__(parent)
+class ConfigureSegmentationWindow(qt.QWidget):
+   def __init__(self, segmenter, modality, edit_conf, segmentation_config_yaml = None, label_config_yaml = None, parent = None):
+      super(ConfigureSegmentationWindow, self).__init__(parent)
+      
+      with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
+        self.segmentation_config_yaml = yaml.full_load(file)
+    
 
-      self.segmenter = segmenter
-      self.modality = modality
-      self.edit_conf = edit_conf
+
 
       if label_config_yaml is None:
             with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
                     self.label_config_yaml = yaml.full_load(file)
       else:
           self.label_config_yaml = label_config_yaml
+          
+      self.segmenter = segmenter
+      self.modality = modality
+      self.edit_conf = edit_conf
 
       layout = qt.QVBoxLayout()
 
@@ -1266,22 +1281,43 @@ class ConfigureLabelsWindow(qt.QWidget):
                     cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
                     self.label_table_view.setItem(index, 6, cell)
                     self.label_table_view.setHorizontalHeaderItem(6, qt.QTableWidgetItem('Max. HU'))
+                    
+      self.label_table_view.setSizePolicy(qt.QSizePolicy.Expanding, qt.QSizePolicy.Fixed)
 
       self.add_label_button = qt.QPushButton('Add Label')
       self.add_label_button.clicked.connect(self.push_add_label)
       layout.addWidget(self.add_label_button)
 
-      self.save_button = qt.QPushButton('Save')
-      self.save_button.clicked.connect(self.push_save)
-      layout.addWidget(self.save_button)
+      display_timer_hbox = qt.QHBoxLayout()
+
+      self.display_timer_label = qt.QLabel('Display timer during segmentation? ')
+      self.display_timer_label.setStyleSheet("font-weight: bold")
+      display_timer_hbox.addWidget(self.display_timer_label)
+
+      self.display_timer_checkbox = qt.QCheckBox()
+      display_timer_hbox.addWidget(self.display_timer_checkbox)
+
+      layout.addLayout(display_timer_hbox)
+
+      self.apply_button = qt.QPushButton('Apply')
+      self.apply_button.clicked.connect(self.push_apply)
+      layout.addWidget(self.apply_button)
 
       self.cancel_button = qt.QPushButton('Cancel')
       self.cancel_button.clicked.connect(self.push_cancel)
-      layout.addWidget(self.cancel_button)
+      layout.addWidget(self.cancel_button)      
+
+      self.populate_default_values()
+      self.connect_buttons_to_callbacks()
 
       self.setLayout(layout)
-      self.setWindowTitle("Configure Labels")
-      self.resize(800, 200)
+      self.setWindowTitle("Configure Segmentation")
+      self.resize(500, 600)
+
+   def push_add_label(self):
+       self.close()
+       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSingleLabelWindow.show()
 
    def push_edit_button(self, label):
        self.close()
@@ -1289,8 +1325,8 @@ class ConfigureLabelsWindow(qt.QWidget):
        configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml, label)
        configureSingleLabelWindow.show()
 
-   def push_remove_button(self, label):
-       self.close()
+   def push_remove_button(self, label):    
+       self.close() 
        
        value_removed = -1
        for l in self.label_config_yaml['labels']:
@@ -1301,17 +1337,26 @@ class ConfigureLabelsWindow(qt.QWidget):
        for l in self.label_config_yaml['labels']:
            if l['value'] > value_removed and value_removed != -1:
                l['value'] = l['value'] - 1
+               
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.label_config_yaml, file)
+
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
+       
+   def set_default_values(self):
+       self.segmentation_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()   
+       
+   def populate_default_values(self):
+        self.display_timer_selected = self.segmentation_config_yaml['is_display_timer_requested']
+        self.display_timer_checkbox.setChecked(self.display_timer_selected)   
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
+           
+   def connect_buttons_to_callbacks(self):
+        self.apply_button.clicked.connect(self.push_apply)
+        self.cancel_button.clicked.connect(self.push_cancel)
 
-   def push_add_label(self):
-       self.close()
-
-       configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureSingleLabelWindow.show()
-   
-   def push_save(self):
+   def push_apply(self):
        if len(self.label_config_yaml['labels']) == 0:
             msg = qt.QMessageBox()
             msg.setWindowTitle('ERROR : Label list is empty')
@@ -1323,7 +1368,19 @@ class ConfigureLabelsWindow(qt.QWidget):
             with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
                 yaml.safe_dump(self.label_config_yaml, file)
 
-            self.close()
+       self.segmentation_config_yaml['is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
+
+       with open(SEGMENTATION_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.segmentation_config_yaml, file)
+
+       if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
+            shutil.copy(LABEL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{LABEL_CONFIG_COPY_FILENAME}')
+            shutil.copy(CLASSIFICATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CLASSIFICATION_CONFIG_COPY_FILENAME}')
+            shutil.copy(GENERAL_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{GENERAL_CONFIG_COPY_FILENAME}')
+            shutil.copy(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{KEYBOARD_SHORTCUTS_CONFIG_COPY_FILENAME}')
+            shutil.copy(SEGMENTATION_CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{SEGMENTATION_CONFIG_COPY_FILENAME}')
+
+       self.close()
 
    def push_error_label_list_empty(self):
        self.push_cancel()
@@ -1377,16 +1434,19 @@ class ConfigureSingleLabelWindow(qt.QWidget):
       colorValidator = qt.QIntValidator()
       colorValidator.setRange(0, 255)
       self.color_r_line_edit.setValidator(colorValidator)
+      self.color_r_line_edit.setInputMask("000")
       self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_r_line_edit)
 
       self.color_g_line_edit = qt.QLineEdit('G')
       self.color_g_line_edit.setValidator(colorValidator)
+      self.color_g_line_edit.setInputMask("000")
       self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_g_line_edit)
 
       self.color_b_line_edit = qt.QLineEdit('B')
       self.color_b_line_edit.setValidator(colorValidator)
+      self.color_b_line_edit.setInputMask("000")
       self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
       color_hbox.addWidget(self.color_b_line_edit)
 
@@ -1404,6 +1464,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
             self.min_hu_line_edit = qt.QLineEdit('')
             self.min_hu_line_edit.setValidator(qt.QIntValidator())
+            self.min_hu_line_edit.setInputMask("0000")
             min_hu_hbox.addWidget(self.min_hu_line_edit)
             
             layout.addLayout(min_hu_hbox)
@@ -1412,6 +1473,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
 
             max_hu_label = qt.QLabel('Max. HU : ')
             max_hu_label.setStyleSheet("font-weight: bold")
+            self.max_hu_line_edit.setInputMask("0000")
             max_hu_hbox.addWidget(max_hu_label)
 
             self.max_hu_line_edit = qt.QLineEdit('')
@@ -1451,6 +1513,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
        self.color_display.setStyleSheet(f"background-color:rgb{color}")
    
    def push_save(self):
+       self.close()
        current_label_name = self.name_line_edit.text
     
        label_found = False
@@ -1479,14 +1542,18 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
            self.label_config_yaml['labels'].append(new_label)
+
+       with open(LABEL_CONFIG_FILE_PATH, 'w') as file:   
+            yaml.safe_dump(self.label_config_yaml, file)
+
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
         
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
        self.close() 
        
    def push_cancel(self):
-       configureLabelsWindow = ConfigureLabelsWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
-       configureLabelsWindow.show()
+       configureSegmentationWindow = ConfigureSegmentationWindow(self.segmenter, self.modality, self.edit_conf, self.label_config_yaml)
+       configureSegmentationWindow.show()
        self.close()
 
 class LoadClassificationWindow(qt.QWidget):
@@ -2097,6 +2164,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def get_keyboard_shortcuts_config_values(self):
       with open(KEYBOARD_SHORTCUTS_CONFIG_FILE_PATH, 'r') as file:
         self.keyboard_config_yaml = yaml.safe_load(file)
+        
+
   
   def get_classification_config_values(self):
       with open(CLASSIFICATION_CONFIG_FILE_PATH, 'r') as file:
@@ -2105,6 +2174,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def get_label_config_values(self):
       with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
         self.label_config_yaml = yaml.safe_load(file)
+
+  def get_segmentation_config_values(self):
+      with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
+        self.segmentation_config_yaml = yaml.safe_load(file)
+        
+      global IS_DISPLAY_TIMER_REQUESTED
+      IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
 
   def get_general_config_values(self):
       with open(GENERAL_CONFIG_FILE_PATH, 'r') as file:
@@ -2242,6 +2318,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.get_keyboard_shortcuts_config_values()
         self.get_classification_config_values()
         self.get_general_config_values()
+        self.get_segmentation_config_values()
+        
+        if not IS_DISPLAY_TIMER_REQUESTED:
+            self.ui.PauseTimerButton.hide()
+            self.ui.StartTimerButton.hide()  
 
         if IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
@@ -2307,6 +2388,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 callback = getattr(self, callback_name)
 
                 self.connectShortcut(shortcutKey, button, callback)
+                
+        if self.segmentation_config_yaml['is_display_timer_requested']:
+            self.ui.lcdNumber.setStyleSheet("background-color : black")
+        else:
+            self.ui.lcdNumber.setVisible(False)
         
         # Display the selected color view at module startup
         if self.general_config_yaml['slice_view_color'] == "Yellow":
@@ -2413,6 +2499,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectVolumesFolderButton(self):
       self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
+      if not self.CurrentFolder:
+          return
+
       file_structure_valid = True
       if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
@@ -2475,6 +2564,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # All below is dependent on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
+      
+      if not IS_DISPLAY_TIMER_REQUESTED:
+          self.enableSegmentAndPaintButtons()      
+
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
@@ -2683,7 +2776,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCurrentPath()
       self.LB_HU = label_LB_HU
       self.UB_HU = label_UB_HU
-      self.onPushButton_Paint()
   
       if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
         self.timers[self.current_label_index] = Timer(number=self.current_label_index) # new path, new timer
@@ -2748,8 +2840,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.PauseTimerButton.setText('Pause')
         if (self.ui.PauseTimerButton.isChecked()):
             self.ui.PauseTimerButton.toggle()
+    
+        if not IS_DISPLAY_TIMER_REQUESTED:
+            self.enableSegmentAndPaintButtons()
+        else:
+            self.disableSegmentAndPaintButtons() 
         
-        self.disableSegmentAndPaintButtons() 
 
   def enableStartTimerButton(self):
     self.ui.StartTimerButton.setEnabled(True)
@@ -2763,7 +2859,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def toggleStartTimerButton(self):
       if (self.ui.SlicerDirectoryListView.count > 0):
-        if self.ui.StartTimerButton.isChecked():
             self.startTimer()
             self.timer_router()
 
@@ -2832,6 +2927,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msgboxtime = qt.QMessageBox()
           msgboxtime.setText("Segmentation not saved : revision step is not defined!  \n Please save again with revision step!")
           msgboxtime.exec()
+          
+  def startTimerForActions(self):  
+    with TIMER_MUTEX:
+        try:
+            if not self.flag2:
+                self.toggleStartTimerButton()     
+        except AttributeError:
+            self.toggleStartTimerButton() 
+
 
   def resetClassificationInformation(self):
         for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
@@ -3556,6 +3660,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         pass 
       
   def onPushLassoPaint(self):
+        self.startTimerForActions()
         self.segmentEditorWidget.setActiveEffectByName("Scissors")
         self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
         effect = self.segmentEditorWidget.activeEffect()
@@ -3564,6 +3669,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         effect.setSliceCutMode(3)
   
   def onPushButton_Paint(self):
+        self.startTimerForActions()
         selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.label_config_yaml["labels"][self.current_label_index]['name'])
         self.segmentEditorNode.SetSelectedSegmentID(selected_segment_id)
         self.segmentEditorWidget.setActiveEffectByName("Paint")
@@ -3581,6 +3687,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteAllSegments)
 
   def toggleFillButton(self):
+      self.startTimerForActions()
       if self.ui.pushButton_ToggleFill.isChecked():
           self.ui.pushButton_ToggleFill.setStyleSheet("background-color : yellowgreen")
           self.ui.pushButton_ToggleFill.setText('Fill: ON')
@@ -3591,6 +3698,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self.segmentationNode.GetDisplayNode().SetOpacity2DFill(100)
 
   def onPushButton_ToggleVisibility(self):
+      self.startTimerForActions()
       if self.ui.pushButton_ToggleVisibility.isChecked():
           self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : indianred")
           self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
@@ -3608,9 +3716,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def onPushButton_segmeditor(self):
+      self.startTimerForActions()
       slicer.util.selectModule("SegmentEditor")
 
   def onPushButton_Erase(self):
+      self.startTimerForActions()
       self.segmentEditorWidget.setActiveEffectByName("Erase")
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
@@ -3622,6 +3732,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_Smooth(self):
       # pass
       # Smoothing
+      self.startTimerForActions()
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
       effect = self.segmentEditorWidget.activeEffect()
@@ -3634,6 +3745,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing
+      self.startTimerForActions()
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
       self.segmentEditorWidget.setActiveEffectByName("Smoothing")
       effect = self.segmentEditorWidget.activeEffect()

@@ -2254,6 +2254,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
+    
+    self.lineDetails = {}
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -2286,6 +2288,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.ShowSegmentVersionLegendButton.connect('clicked(bool)', self.onPush_ShowSegmentVersionLegendButton)
+    self.ui.placeMeasurementLine.connect('clicked(bool)', self.onPlacePointsAndConnect)
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
@@ -2482,15 +2485,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.UB_HU.setValue(self.UB_HU)
       self.ui.LB_HU.setValue(self.LB_HU)
   
+  #measurement line function set as a segment and paint functionality
   def enableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(True)
     self.ui.LassoPaintButton.setEnabled(True)
     self.ui.pushButton_Erase.setEnabled(True)
+    self.ui.placeMeasurementLine.setEnabled(True)
 
   def disableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(False)
     self.ui.LassoPaintButton.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
+    self.ui.placeMeasurementLine.setEnabled(False)
 
   def onEditConfiguration(self):
       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
@@ -3174,32 +3180,59 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.exec()
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
-        tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration" 
-        for label in self.label_config_yaml["labels"]:
-            tag_str = tag_str + "," + label["name"] + " duration"
+    # Header row
+    tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration"
+
+    for label in self.label_config_yaml["labels"]:
+        tag_str += "," + label["name"] + " duration"
+
+    # Add line detail headers
+    for line_key in self.lineDetails:
+        tag_str += f",{line_key} ControlPoint1,{line_key} ControlPoint2,{line_key} Length"
+
+    data_str = self.currentCase
+    data_str += "," + currentSegmentationVersion
+    data_str += "," + self.annotator_name
+    data_str += "," + self.annotator_degree
+    data_str += "," + self.revision_step[0]
+    data_str += "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    data_str += "," + str(self.ui.lcdNumber.value)
+
+    for timer in self.timers:
+        data_str += "," + str(timer.total_time)
+
+    # Add line details, ensuring control points are kept in one cell
+    for line_key, line_data in self.lineDetails.items():
+        control_point1 = ';'.join(map(str, line_data["ControlPoint1"]))  # Join with semicolon
+        control_point2 = ';'.join(map(str, line_data["ControlPoint2"]))  # Join with semicolon
+        length = line_data["Length"]  # Length is a number, no need for conversion
+
+        # Add control points and length to the data string
+        data_str += f",{control_point1},{control_point2},{length}"
         
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentSegmentationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + str(self.ui.lcdNumber.value)
-        for timer in self.timers:
-            data_str = data_str + "," + str(timer.total_time)
+    self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
+                                                          f'{self.currentVolumeFilename}_SegmentationInformation.csv')
+
+    if os.path.isfile(self.outputSegmentationInformationFile):
+        # Read existing contents
+        with open(self.outputSegmentationInformationFile, 'r') as f:
+            existing_content = f.readlines()
+            existing_content = existing_content[1:] if len(existing_content) > 1 else []
+
+        # Rewrite the file with the new header and existing data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")  # Write the new header
+            f.writelines(existing_content)  # Write the old content
+
+        # Append the new data
+        with open(self.outputSegmentationInformationFile, 'a') as f:
+            f.write(data_str + "\n")
+    else:
+        # If the file doesn't exist, create it and write the header and data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")
+            f.write(data_str + "\n")
         
-        self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_SegmentationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputSegmentationInformationFile):
-            with open(self.outputSegmentationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputSegmentationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
-  
   def saveClassificationInformation(self, classification_information_labels_string, classification_information_data_string):
         currentClassificationInformationVersion = self.getClassificationInformationVersion()
 
@@ -3741,9 +3774,39 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("SmoothingMethod", "MEDIAN")
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
-
-
       
+  def onPlacePointsAndConnect(self):
+    self.startTimerForActions()
+    self.lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
+
+    lineName = f"Line_{slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLMarkupsLineNode')}"
+    self.lineNode.SetName(lineName)
+
+    slicer.modules.markups.logic().SetActiveListID(self.lineNode)
+    interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    self.lineNode.AddObserver(self.lineNode.PointModifiedEvent, self.onLinePlaced)
+
+  def onLinePlaced(self, caller, event):
+    if caller.GetNumberOfControlPoints() < 2:
+        return
+
+    # Retrieve the control point coordinates after the user places the points
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    caller.GetNthControlPointPosition(0, p1)  # First control point
+    caller.GetNthControlPointPosition(1, p2)  # Second control point
+
+    lineLength = caller.GetLineLengthWorld()
+    lineName = caller.GetName()
+
+    self.lineDetails[lineName] = {
+        "ControlPoint1": p1,
+        "ControlPoint2": p2,
+        "Length": lineLength
+    }
+
   def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing

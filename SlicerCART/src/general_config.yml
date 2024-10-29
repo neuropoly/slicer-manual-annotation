@@ -4,11 +4,11 @@ default_segmentation_directory: ''
 default_volume_directory: ''
 impose_bids_format: false
 input_filetype: '*.nii.gz'
-interpolate_value: 1
+interpolate_value: 0
 is_classification_requested: true
 is_display_timer_requested: false
 is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: false
 is_segmentation_requested: true
-modality: CT
+modality: MRI
 slice_view_color: Red

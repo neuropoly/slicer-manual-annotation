@@ -1190,7 +1190,9 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        self.close()
 
 class ConfigureSegmentationWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, edit_conf, segmentation_config_yaml = None, label_config_yaml = None, parent = None):
+   def __init__(self, segmenter, modality, edit_conf,
+                segmentation_config_yaml=None, label_config_yaml=None,
+                parent=None):
       super(ConfigureSegmentationWindow, self).__init__(parent)
       
       with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
@@ -2178,7 +2180,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def get_segmentation_config_values(self):
       with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
         self.segmentation_config_yaml = yaml.safe_load(file)
-        
+
       global IS_DISPLAY_TIMER_REQUESTED
       IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
 
@@ -2254,6 +2256,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
+    self.lineDetails = {}
+
+    #MB: code below added in the configuration setup since its absence
+    # created issues when trying to load cases after selecting a volume folder.
+    self.get_segmentation_config_values()
+    with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+        self.label_config_yaml = yaml.full_load(file)
+        self.current_label_index = self.label_config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -2286,6 +2296,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.ShowSegmentVersionLegendButton.connect('clicked(bool)', self.onPush_ShowSegmentVersionLegendButton)
+    self.ui.placeMeasurementLine.connect('clicked(bool)', self.onPlacePointsAndConnect)
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
@@ -2482,15 +2493,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.UB_HU.setValue(self.UB_HU)
       self.ui.LB_HU.setValue(self.LB_HU)
   
+  #measurement line function set as a segment and paint functionality
   def enableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(True)
     self.ui.LassoPaintButton.setEnabled(True)
     self.ui.pushButton_Erase.setEnabled(True)
+    self.ui.placeMeasurementLine.setEnabled(True)
 
   def disableSegmentAndPaintButtons(self):
     self.ui.pushButton_Paint.setEnabled(False)
     self.ui.LassoPaintButton.setEnabled(False)
     self.ui.pushButton_Erase.setEnabled(False)
+    self.ui.placeMeasurementLine.setEnabled(False)
 
   def onEditConfiguration(self):
       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
@@ -2511,6 +2525,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return # don't load any patient cases
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+
+      # Remove the volumes in the folder 'derivatives' (creates issues for
+      # loading cases)
+      self.CasesPaths = [item for item in self.CasesPaths if 'derivatives' not
+                         in item]
 
       if not self.CasesPaths:
             msg_box = qt.QMessageBox()
@@ -2634,6 +2653,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseAll()
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
+      # print('self volumenode get display node', self.VolumeNode.GetDisplayNode())
+      # print(' node', self.VolumeNode)
+
       Vol_displayNode.AutoWindowLevelOff()
       Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
       Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
@@ -2940,12 +2962,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def resetClassificationInformation(self):
-        for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-            self.checkboxWidgets[objectName].setChecked(False)
-        for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
-            self.comboboxWidgets[comboBoxName].currentText = list(options.items())[0][1]
-        for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
-            self.freeTextBoxes[freeTextBoxObjectName].setText("")
+        # Try/Except to prevent crashing when selecting another file in the
+        # UI case list if no classification_config_yaml file is already created.
+        try :
+            self.classification_config_yaml["checkboxes"]
+            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                self.checkboxWidgets[objectName].setChecked(False)
+            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                self.comboboxWidgets[comboBoxName].currentText = list(options.items())[0][1]
+            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                self.freeTextBoxes[freeTextBoxObjectName].setText("")
+        except:
+            pass
+
         
   
   def getClassificationInformation(self):
@@ -3174,32 +3203,59 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.exec()
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
-        tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration" 
-        for label in self.label_config_yaml["labels"]:
-            tag_str = tag_str + "," + label["name"] + " duration"
+    # Header row
+    tag_str = "Volume filename,Segmentation version,Annotator Name,Annotator degree,Revision step,Date and time,Duration"
+
+    for label in self.label_config_yaml["labels"]:
+        tag_str += "," + label["name"] + " duration"
+
+    # Add line detail headers
+    for line_key in self.lineDetails:
+        tag_str += f",{line_key} ControlPoint1,{line_key} ControlPoint2,{line_key} Length"
+
+    data_str = self.currentCase
+    data_str += "," + currentSegmentationVersion
+    data_str += "," + self.annotator_name
+    data_str += "," + self.annotator_degree
+    data_str += "," + self.revision_step[0]
+    data_str += "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    data_str += "," + str(self.ui.lcdNumber.value)
+
+    for timer in self.timers:
+        data_str += "," + str(timer.total_time)
+
+    # Add line details, ensuring control points are kept in one cell
+    for line_key, line_data in self.lineDetails.items():
+        control_point1 = ';'.join(map(str, line_data["ControlPoint1"]))  # Join with semicolon
+        control_point2 = ';'.join(map(str, line_data["ControlPoint2"]))  # Join with semicolon
+        length = line_data["Length"]  # Length is a number, no need for conversion
+
+        # Add control points and length to the data string
+        data_str += f",{control_point1},{control_point2},{length}"
         
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentSegmentationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + str(self.ui.lcdNumber.value)
-        for timer in self.timers:
-            data_str = data_str + "," + str(timer.total_time)
+    self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
+                                                          f'{self.currentVolumeFilename}_SegmentationInformation.csv')
+
+    if os.path.isfile(self.outputSegmentationInformationFile):
+        # Read existing contents
+        with open(self.outputSegmentationInformationFile, 'r') as f:
+            existing_content = f.readlines()
+            existing_content = existing_content[1:] if len(existing_content) > 1 else []
+
+        # Rewrite the file with the new header and existing data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")  # Write the new header
+            f.writelines(existing_content)  # Write the old content
+
+        # Append the new data
+        with open(self.outputSegmentationInformationFile, 'a') as f:
+            f.write(data_str + "\n")
+    else:
+        # If the file doesn't exist, create it and write the header and data
+        with open(self.outputSegmentationInformationFile, 'w') as f:
+            f.write(tag_str + "\n")
+            f.write(data_str + "\n")
         
-        self.outputSegmentationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_SegmentationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputSegmentationInformationFile):
-            with open(self.outputSegmentationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputSegmentationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
-  
   def saveClassificationInformation(self, classification_information_labels_string, classification_information_data_string):
         currentClassificationInformationVersion = self.getClassificationInformationVersion()
 
@@ -3741,9 +3797,39 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.setParameter("SmoothingMethod", "MEDIAN")
       effect.setParameter("KernelSizeMm", 3)
       effect.self().onApply()
-
-
       
+  def onPlacePointsAndConnect(self):
+    self.startTimerForActions()
+    self.lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
+
+    lineName = f"Line_{slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLMarkupsLineNode')}"
+    self.lineNode.SetName(lineName)
+
+    slicer.modules.markups.logic().SetActiveListID(self.lineNode)
+    interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    self.lineNode.AddObserver(self.lineNode.PointModifiedEvent, self.onLinePlaced)
+
+  def onLinePlaced(self, caller, event):
+    if caller.GetNumberOfControlPoints() < 2:
+        return
+
+    # Retrieve the control point coordinates after the user places the points
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    caller.GetNthControlPointPosition(0, p1)  # First control point
+    caller.GetNthControlPointPosition(1, p2)  # Second control point
+
+    lineLength = caller.GetLineLengthWorld()
+    lineName = caller.GetName()
+
+    self.lineDetails[lineName] = {
+        "ControlPoint1": p1,
+        "ControlPoint2": p2,
+        "Length": lineLength
+    }
+
   def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing

@@ -1190,7 +1190,9 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
        self.close()
 
 class ConfigureSegmentationWindow(qt.QWidget):
-   def __init__(self, segmenter, modality, edit_conf, segmentation_config_yaml = None, label_config_yaml = None, parent = None):
+   def __init__(self, segmenter, modality, edit_conf,
+                segmentation_config_yaml=None, label_config_yaml=None,
+                parent=None):
       super(ConfigureSegmentationWindow, self).__init__(parent)
       
       with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
@@ -2178,7 +2180,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def get_segmentation_config_values(self):
       with open(SEGMENTATION_CONFIG_FILE_PATH, 'r') as file:
         self.segmentation_config_yaml = yaml.safe_load(file)
-        
+
       global IS_DISPLAY_TIMER_REQUESTED
       IS_DISPLAY_TIMER_REQUESTED = self.segmentation_config_yaml["is_display_timer_requested"]
 
@@ -2254,8 +2256,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
-    
     self.lineDetails = {}
+
+    #MB: code below added in the configuration setup since its absence
+    # created issues when trying to load cases after selecting a volume folder.
+    self.get_segmentation_config_values()
+    with open(LABEL_CONFIG_FILE_PATH, 'r') as file:
+        self.label_config_yaml = yaml.full_load(file)
+        self.current_label_index = self.label_config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -2518,6 +2526,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
 
+      # Remove the volumes in the folder 'derivatives' (creates issues for
+      # loading cases)
+      self.CasesPaths = [item for item in self.CasesPaths if 'derivatives' not
+                         in item]
+
       if not self.CasesPaths:
             msg_box = qt.QMessageBox()
             msg_box.setWindowTitle("No files found")
@@ -2640,6 +2653,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.updateCaseAll()
       # Adjust windowing (no need to use self. since this is used locally)
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
+      # print('self volumenode get display node', self.VolumeNode.GetDisplayNode())
+      # print(' node', self.VolumeNode)
+
       Vol_displayNode.AutoWindowLevelOff()
       Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
       Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
@@ -2946,12 +2962,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
   def resetClassificationInformation(self):
-        for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
-            self.checkboxWidgets[objectName].setChecked(False)
-        for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
-            self.comboboxWidgets[comboBoxName].currentText = list(options.items())[0][1]
-        for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
-            self.freeTextBoxes[freeTextBoxObjectName].setText("")
+        # Try/Except to prevent crashing when selecting another file in the
+        # UI case list if no classification_config_yaml file is already created.
+        try :
+            self.classification_config_yaml["checkboxes"]
+            for i, (objectName, label) in enumerate(self.classification_config_yaml["checkboxes"].items()):
+                self.checkboxWidgets[objectName].setChecked(False)
+            for i, (comboBoxName, options) in enumerate(self.classification_config_yaml["comboboxes"].items()):
+                self.comboboxWidgets[comboBoxName].currentText = list(options.items())[0][1]
+            for i, (freeTextBoxObjectName, label) in enumerate(self.classification_config_yaml["freetextboxes"].items()):
+                self.freeTextBoxes[freeTextBoxObjectName].setText("")
+        except:
+            pass
+
         
   
   def getClassificationInformation(self):

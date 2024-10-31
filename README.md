@@ -96,6 +96,7 @@ TODO (after sufficient development has been made)
 * [3D Slicer Documentation](https://www.slicer.org/wiki/Documentation/Nightly/Training)
 
 ### Contributors
+[![Contributors](https://img.shields.io/github/contributors/neuropoly/slicer-manual-annotation/graphs/contributors)](https://github.com/neuropoly/slicer-manual-annotation/graphs/contributors), including:
 
 * Laurent Létourneau-Guillon
 * Emmanuel Montagnon

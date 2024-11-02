@@ -700,7 +700,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
        self.configureSegmentationWindow.show()
        self.close()
 
-
    def push_configure_classification(self):
        configureClassificationWindow = ConfigureClassificationWindow(self.segmenter, self.edit_conf)
        configureClassificationWindow.show()
@@ -1269,11 +1268,9 @@ class ConfigureSegmentationWindow(qt.QWidget):
       layout.addLayout(display_timer_hbox)
 
       self.apply_button = qt.QPushButton('Apply')
-      self.apply_button.clicked.connect(self.push_apply)
       layout.addWidget(self.apply_button)
 
       self.cancel_button = qt.QPushButton('Cancel')
-      self.cancel_button.clicked.connect(self.push_cancel)
       layout.addWidget(self.cancel_button)      
 
       self.populate_default_values()
@@ -1337,13 +1334,13 @@ class ConfigureSegmentationWindow(qt.QWidget):
        else:
             with open(CONFIG_FILE_PATH, 'w') as file:   
                 yaml.safe_dump(self.config_yaml, file)
-            
+        
        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'): 
             shutil.copy(CONFIG_FILE_PATH, f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
-    
-       self.close()
 
-       self.go_back_to_configuration_setup_window()
+       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter)
+       slicerCARTConfigurationSetupWindow.show()
+       self.close()
        
    def push_error_label_list_empty(self):
        self.push_cancel()
@@ -1352,7 +1349,8 @@ class ConfigureSegmentationWindow(qt.QWidget):
        slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter)
        slicerCARTConfigurationSetupWindow.show()
        self.close()
-       
+   
+   #combine the action of going back to configuration setup into one
    def go_back_to_configuration_setup_window(self):
        slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self.segmenter)
        slicerCARTConfigurationSetupWindow.show()
@@ -3299,7 +3297,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
 
-  
   def onSelectOutputFolder(self):
       self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 

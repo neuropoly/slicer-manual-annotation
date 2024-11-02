@@ -41,11 +41,7 @@ checkboxes:
   SAH_checkbox: SAH
   SDH_checkbox: SDH
   Tonsillar_herniation_checkbox: Tonsillar herniation
-  cheese: Cheese
-  cheese2: Cheese2
-  testing3: Testing3
-  testing4: Testing4
-  testing5: Testing5
+
 comboboxes:
   atrophy:
     atrophy_mild: Mild
@@ -103,26 +99,6 @@ labels:
   name: PHE
   upper_bound_HU: 33
   value: 3
-- color_b: 50
-  color_g: 200
-  color_r: 200
-  lower_bound_HU: 30
-  name: cheese
-  upper_bound_HU: 90
-  value: 4
-- color_b: 100
-  color_g: 100
-  color_r: 200
-  lower_bound_HU: 30
-  name: cheese3
-  upper_bound_HU: 90
-  value: 5
-- color_b: 40
-  color_g: 120
-  color_r: 250
-  lower_bound_HU: 30
-  name: cheese4
-  upper_bound_HU: 90
-  value: 6
+
 modality: MRI
 slice_view_color: Yellow

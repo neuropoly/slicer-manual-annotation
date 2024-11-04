@@ -17,3 +17,6 @@ def use_maxime(y):
 def other_file_same_level():
     ddd = cf.ppcheck()
     print(ddd)
+
+
+bicycle = cf.MyBicycle()

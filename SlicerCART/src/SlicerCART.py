@@ -2609,6 +2609,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print('x', aaa.other_file_same_level())
       print('test maxime ', aaa.jacques())
       bbb.ppcheck()
+      aaa.bicycle.roll_wheel()
 
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()

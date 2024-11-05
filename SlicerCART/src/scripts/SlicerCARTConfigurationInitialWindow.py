@@ -91,9 +91,8 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             REQUIRE_EMPTY = True
             self.segmenter.ui.SelectOutputFolder.setVisible(False)
             if (os.path.exists(
-                    f'{self.segmenter.outputFolder}{os.
-                            sep}{CONF_FOLDER_NAME}') and
-                    os.path.exists(
+                    f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}')
+                    and os.path.exists(
                         f'{self.segmenter.outputFolder}'
                         f'{os.sep}{CONF_FOLDER_NAME}{os.sep}'
                         f'{CONFIG_COPY_FILENAME}')):

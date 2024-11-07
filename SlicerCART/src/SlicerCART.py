@@ -119,6 +119,18 @@ CT_WINDOW_LEVEL = 45
 
 TIMER_MUTEX = RLock()
 
+
+class MyPlane():
+    def __init__(self):
+        self.wings = '6666'
+
+    def fly_wings(self):
+        print('I cant believe I can fly')
+
+
+bebe = MyPlane()
+def goodby():
+    print('asdasdasdadasdasdaskkkkk')
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
    def __init__(self, segmenter, parent = None):
       super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)

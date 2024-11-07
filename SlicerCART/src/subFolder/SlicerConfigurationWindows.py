@@ -3,8 +3,8 @@ from slicer.util import VTKObservationMixin
 
 import subFolder.CheckFunctions as cf
 
-def jacques():
-    print('helo jacques')
+def canada():
+    print('helo slidd')
 
 x = 'abcd'
 
@@ -20,3 +20,4 @@ def other_file_same_level():
 
 
 bicycle = cf.MyBicycle()
+

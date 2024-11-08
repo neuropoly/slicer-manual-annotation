@@ -44,7 +44,7 @@ def list_modules_in_folder(folder_name, filename):
 
     # return modules
 
-import importlib
+# import importlib
 
 def import_modules_from_scripts(modules_list):
     for module_name in modules_list:

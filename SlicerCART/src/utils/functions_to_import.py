@@ -46,10 +46,17 @@ def list_modules_in_folder(folder_name, filename):
 
 # import importlib
 
-def import_all_from_module(module_name):
-    # Dynamically import the module
-    module = importlib.import_module(f"scripts.{module_name}")
-    return module
+# def import_all_from_module(module_name):
+#     # Dynamically import the module
+#     module = importlib.import_module(f"scripts.{module_name}")
+#     return module
 
+def import_all_from_module(module_name):
+    # Dynamically import the module if it's not already loaded
+    if module_name not in sys.modules:
+        module = importlib.import_module(f"scripts.{module_name}")
+        return module
+    else:
+        return sys.modules[module_name]  #
 
 

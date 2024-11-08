@@ -1,6 +1,19 @@
 # add imports
 from utils import *
-from . import *
+# from scripts.SlicerCARTConfigurationSetupWindow import *
+# from scripts.SlicerCARTConfigurationSetupWindow import *
+
+# # Get actual script filepath and filename
+# filepath = os.path.abspath(__file__)
+# # filename = os.path.basename(filepath)
+# filename = 'ConfigureSegmentationWindow.py'
+#
+# # Extract and import a list of all modules in the same subFolder (e.g. scripts)
+# modules_list = list_modules_in_folder('scripts', filename)
+# for module_name in modules_list:
+#     module = import_all_from_module(module_name)
+#     # Load all attributes of the module into the current namespace
+#     # globals().update(vars(module))
 
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,

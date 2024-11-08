@@ -16,6 +16,8 @@ import sys
 from utils import *
 from . import *
 
+# from scripts.ConfigureSegmentationWindow import *
+
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     def __init__(self, segmenter, conf_folder_path=None, edit_conf=False,
                  parent=None):

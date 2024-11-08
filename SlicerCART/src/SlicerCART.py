@@ -7,6 +7,7 @@ from utils.global_variables import *
 CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CONFIG_FILENAME)
 
 from scripts.SlicerCARTConfigurationInitialWindow import *
+from scripts import *
 
 class SlicerCART(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:

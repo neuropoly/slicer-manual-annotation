@@ -23,10 +23,13 @@ from functools import partial
 import copy
 
 # MB issue40
-import subFolder.SlicerConfigurationWindows as aaa
-# from subFolder.SlicerConfigurationWindows import *
-# MB test issue40, import a second subfolder
-import subFolder.CheckFunctions as bbb
+# import subFolder.SlicerConfigurationWindows as aaa
+# # from subFolder.SlicerConfigurationWindows import *
+# # MB test issue40, import a second subfolder
+# import subFolder.CheckFunctions as bbb
+
+from subFolder import *
+# from subFolder import CheckFunctions
 
 # TODO: There is probably a more elegant way to install pacakages through the extension manager when the user installs the extension.
 # TODO: check if the package installed with error
@@ -2619,9 +2622,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onNextButton(self):
       # print('x', aaa.other_file_same_level())
-      print('test maxime ', aaa.jacques())
-      bbb.ppcheck()
-      aaa.bicycle.roll_wheel()
+      # print('test maxime ', aaa.jacques())
+      # bbb.ppcheck()
+      # aaa.bicycle.roll_wheel()
+      CheckFunctions.ppcheck()
+      MyBicycle().roll_wheel()
+
 
       # ----- ANW Addition ----- : Reset timer when change case and uncheck all checkboxes
       self.resetTimer()

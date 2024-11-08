@@ -1,16 +1,20 @@
-from utils.requirements import *
-from utils.global_variables import *
-from scripts.SlicerCARTConfigurationInitialWindow import *
+# from utils.requirements import *
+# from utils.global_variables import *
+# from scripts.SlicerCARTConfigurationInitialWindow import *
+
 import os
 import sys
-# From the global variables, CONFIG_FILE_PATH required the use of
-# os.path.join, which limits its usability in the utils.global.variables.py
-SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))[:-7]
-print('script path:,', SCRIPT_PATH)
+# # From the global variables, CONFIG_FILE_PATH required the use of
+# # os.path.join, which limits its usability in the utils.global.variables.py
+# SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))[:-7]
+# print('script path:,', SCRIPT_PATH)
+#
+#
+# # CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, CONFIG_FILENAME)
+# CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'configuration_config.yml')
 
-
-# CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, CONFIG_FILENAME)
-CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'configuration_config.yml')
+from utils import *
+from . import *
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     def __init__(self, segmenter, conf_folder_path=None, edit_conf=False,

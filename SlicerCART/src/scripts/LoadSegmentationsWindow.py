@@ -1,5 +1,6 @@
 # import add
-
+from utils import *
+from . import *
 
 
 class LoadSegmentationsWindow(qt.QWidget):

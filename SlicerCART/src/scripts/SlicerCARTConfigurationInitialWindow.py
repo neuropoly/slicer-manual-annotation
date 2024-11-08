@@ -1,7 +1,46 @@
-from utils.requirements import *
-from utils.global_variables import *
-from scripts.SlicerCARTConfigurationSetupWindow import *
+# from utils.requirements import *
+# from utils.global_variables import *
+# from scripts.SlicerCARTConfigurationSetupWindow import *
 # from SlicerCART import *
+from utils import *
+# from scripts import __init__
+# from . import *
+
+# from scripts.SlicerCARTConfigurationSetupWindow import *
+import importlib
+modules_list = list_modules_in_folder('scripts',
+                            'SlicerCARTConfigurationInitialWindow.py')
+print('modules_list', modules_list)
+
+# for element in modules_list:
+#     from scripts.element import *
+# for module_name in modules_list:
+#     # Dynamically import each module from scripts
+#     full_module_name = f"scripts.{module_name}"
+#     print('full_module_name', full_module_name)
+#     try:
+#         from importlib.import_module(full_module_name) import *
+#         # # Optionally, load all the attributes from the module into the global namespace
+#         # globals().update(vars(module))
+#     except ImportError as e:
+#         print(f"Could not import module {module_name}: {e}")
+def import_all_from_module(module_name):
+    try:
+        # Dynamically import the module
+        module = importlib.import_module(f"scripts.{module_name}")
+
+        # Load all attributes of the module into the current namespace
+        globals().update(vars(module))
+    except ImportError as e:
+        print(f"Could not import module {module_name}: {e}")
+
+
+# Example usage
+
+for module_name in modules_list:
+    module_name = module_name.split('.')[-1]
+    print('module_name', module_name)
+    import_all_from_module(module_name)
 
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):
@@ -78,8 +117,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         elif (self.reuse_configuration_selected_option ==
               self.new_config_radio_button.text):
             slicerCARTConfigurationSetupWindow = (
-                SlicerCARTConfigurationSetupWindow(
-                self.segmenter))
+                SlicerCARTConfigurationSetupWindow(self.segmenter))
             slicerCARTConfigurationSetupWindow.show()
             self.segmenter.ui.SelectOutputFolder.setVisible(True)
             self.close()

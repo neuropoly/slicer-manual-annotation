@@ -1,12 +1,18 @@
-from utils.requirements import *
-from utils.install_python_packages import *
-check_and_install_python_packages()
-from utils.global_variables import *
-# From the global variables, CONFIG_FILE_PATH required the use of
-# os.path.join, which limits its usability in the utils.global.variables.py
-CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CONFIG_FILENAME)
+# from utils.requirements import *
+# from utils.install_python_packages import *
+from utils import *
+print('utils import succeed')
+from scripts import *
+print('import scripts succeed')
 
-from scripts.SlicerCARTConfigurationInitialWindow import *
+
+check_and_install_python_packages()
+# from utils.global_variables import *
+# # From the global variables, CONFIG_FILE_PATH required the use of
+# # os.path.join, which limits its usability in the utils.global.variables.py
+# CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CONFIG_FILENAME)
+#
+# from scripts.SlicerCARTConfigurationInitialWindow import *
 from scripts import *
 
 class SlicerCART(ScriptedLoadableModule):

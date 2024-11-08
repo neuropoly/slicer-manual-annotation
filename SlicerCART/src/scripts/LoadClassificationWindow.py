@@ -1,5 +1,6 @@
 # add imports
-
+from utils import *
+from . import *
 
 class LoadClassificationWindow(qt.QWidget):
    def __init__(self, segmenter, classificationInformation_df, parent = None):

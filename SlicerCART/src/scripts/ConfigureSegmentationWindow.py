@@ -1,5 +1,6 @@
 # add imports
-
+from utils import *
+from . import *
 
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,

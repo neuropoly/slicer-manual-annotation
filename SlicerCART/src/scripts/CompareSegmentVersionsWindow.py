@@ -1,5 +1,6 @@
 # add improts
-
+from utils import *
+from . import *
 
 class CompareSegmentVersionsWindow(qt.QWidget):
    def __init__(self, segmenter, segmentationInformation_df, parent = None):

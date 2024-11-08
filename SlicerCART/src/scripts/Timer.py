@@ -1,5 +1,6 @@
 # add imports
-
+from utils import *
+from . import *
 
 class Timer():
     def __init__(self, number=None):

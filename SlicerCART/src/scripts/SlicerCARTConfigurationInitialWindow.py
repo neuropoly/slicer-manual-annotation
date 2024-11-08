@@ -1,7 +1,7 @@
 from utils.requirements import *
 from utils.global_variables import *
-from SlicerCART import *
-
+from scripts.SlicerCARTConfigurationSetupWindow import *
+# from SlicerCART import *
 
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):

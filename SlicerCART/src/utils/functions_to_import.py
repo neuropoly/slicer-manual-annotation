@@ -46,14 +46,10 @@ def list_modules_in_folder(folder_name, filename):
 
 # import importlib
 
-def import_modules_from_scripts(modules_list):
-    for module_name in modules_list:
-        try:
-            # Import each module dynamically from 'scripts'
-            full_module_name = f"scripts.{module_name}"
-            module = importlib.import_module(full_module_name)
-            # Load all contents of the module into the global namespace
-            globals().update(vars(module))
-        except ImportError as e:
-            print(f"Could not import module {module_name}: {e}")
+def import_all_from_module(module_name):
+    # Dynamically import the module
+    module = importlib.import_module(f"scripts.{module_name}")
+    return module
+
+
 

@@ -1,25 +1,32 @@
+###############################################################################
+# Those lines need to be copy-pasted in each script file and filename
+# replaced by the actual filename to make the module working
+filename = 'SlicerCARTConfigurationInitialWindow.py'
 from utils import *
-# from scripts import __init__
-# from . import *
-# from scripts.SlicerCARTConfigurationSetupWindow import *
-# import importlib
+modules_list = list_modules_in_folder('scripts', filename)
+# def import_all_from_module(module_name):
+#     try:
+#         # Dynamically import the module
+#         module = importlib.import_module(f"scripts.{module_name}")
+#
+#         # Load all attributes of the module into the current namespace
+#         globals().update(vars(module))
+#     except ImportError as e:
+#         print(f"Could not import module {module_name}: {e}")
 
-modules_list = list_modules_in_folder('scripts',
-                            'SlicerCARTConfigurationInitialWindow.py')
-
-def import_all_from_module(module_name):
-    try:
-        # Dynamically import the module
-        module = importlib.import_module(f"scripts.{module_name}")
-
-        # Load all attributes of the module into the current namespace
-        globals().update(vars(module))
-    except ImportError as e:
-        print(f"Could not import module {module_name}: {e}")
+# def import_all_from_module(module_name):
+#     # Dynamically import the module
+#     module = importlib.import_module(f"scripts.{module_name}")
+#
+#     # Load all attributes of the module into the current namespace
+#     globals().update(vars(module))
 
 for module_name in modules_list:
-    import_all_from_module(module_name)
+    module = import_all_from_module(module_name)
+    # Load all attributes of the module into the current namespace
+    globals().update(vars(module))
 
+###############################################################################
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):
         super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)

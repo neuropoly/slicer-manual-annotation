@@ -14,9 +14,9 @@ import sys
 # CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'configuration_config.yml')
 
 from utils import *
-from . import *
+# from . import *
 
-# from scripts.ConfigureSegmentationWindow import *
+from scripts.ConfigureSegmentationWindow import *
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     def __init__(self, segmenter, conf_folder_path=None, edit_conf=False,

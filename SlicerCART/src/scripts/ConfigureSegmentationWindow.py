@@ -15,6 +15,8 @@ from utils import *
 #     # Load all attributes of the module into the current namespace
 #     # globals().update(vars(module))
 
+from scripts.ConfigureSingleLabelWindow import *
+
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,
                  segmentation_config_yaml=None, label_config_yaml=None,

@@ -14,6 +14,10 @@ from utils import *
 #     globals().update(vars(module))
 #
 # ###############################################################################
+
+from scripts.SlicerCARTConfigurationSetupWindow import *
+
+
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):
         super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)

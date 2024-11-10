@@ -1,3 +1,20 @@
+###############################################################################
+# Those lines need to be copy-pasted in each script file for appropriate use.
+from utils import *
+
+# Get actual script filepath and filename
+# filepath = os.path.abspath(__file__)
+# filename = os.path.basename(filepath)
+
+# # Extract and import a list of all modules in the same subFolder (e.g. scripts)
+# modules_list = list_modules_in_folder('scripts')
+# for module_name in modules_list:
+#     module = import_all_from_module(module_name)
+#     # Load all attributes of the module into the current namespace
+#     globals().update(vars(module))
+
+###############################################################################
+
 # from utils.requirements import *
 # from utils.install_python_packages import *
 from utils import *

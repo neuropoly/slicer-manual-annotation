@@ -4,7 +4,7 @@ import glob
 from utils.requirements import *
 
 
-def list_modules_in_folder(folder_name, filename):
+def list_modules_in_folder(folder_name):
     print('in list current folder***8')
     # # Get the current file's directory
     current_folder = os.path.dirname(__file__)
@@ -21,7 +21,7 @@ def list_modules_in_folder(folder_name, filename):
         os.path.join(
         real_path, f))]
     print('list_of_files', list_of_files, 'len', len(list_of_files))
-    list_of_files.remove(filename)
+    # list_of_files.remove(filename)
     list_of_files.remove('__init__.py')
     print('list_of_files', list_of_files, 'len', len(list_of_files))
     list_of_files = [os.path.splitext(file)[0] for file in list_of_files]

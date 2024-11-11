@@ -41,7 +41,6 @@ checkboxes:
   SAH_checkbox: SAH
   SDH_checkbox: SDH
   Tonsillar_herniation_checkbox: Tonsillar herniation
-
 comboboxes:
   atrophy:
     atrophy_mild: Mild
@@ -99,6 +98,5 @@ labels:
   name: PHE
   upper_bound_HU: 33
   value: 3
-
 modality: MRI
 slice_view_color: Yellow

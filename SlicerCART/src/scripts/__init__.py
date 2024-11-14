@@ -12,3 +12,5 @@ from .SlicerCARTConfigurationInitialWindow import *
 from .SlicerCARTConfigurationSetupWindow import *
 from .Timer import *
 from .Interactions import *
+from .InteractionsItems import *
+from .InteractionsClassificationSetup import *

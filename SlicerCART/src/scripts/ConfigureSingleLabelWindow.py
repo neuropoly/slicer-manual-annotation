@@ -1,6 +1,7 @@
 # add improts
 from utils import *
 # from . import *
+from scripts.Interactions import *
 
 class ConfigureSingleLabelWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf, label_config_yaml,
@@ -130,48 +131,48 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
-    def push_save(self):
-        current_label_name = self.name_line_edit.text
-
-        label_found = False
-        for label in self.config_yaml['labels']:
-            if label['name'] == current_label_name:
-                # edit
-                label_found = True
-                label['color_r'] = int(self.color_r_line_edit.text)
-                label['color_g'] = int(self.color_g_line_edit.text)
-                label['color_b'] = int(self.color_b_line_edit.text)
-
-                if self.modality == 'CT':
-                    label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
-                    label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
-
-        if label_found == False:
-            # append
-            new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255,
-                         'lower_bound_HU': 30, 'name': 'ICH',
-                         'upper_bound_HU': 90, 'value': 1}
-            new_label['name'] = self.name_line_edit.text
-            new_label['value'] = len(self.config_yaml['labels']) + 1
-            new_label['color_r'] = int(self.color_r_line_edit.text)
-            new_label['color_g'] = int(self.color_g_line_edit.text)
-            new_label['color_b'] = int(self.color_b_line_edit.text)
-
-            if self.modality == 'CT':
-                new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
-                new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
-            self.config_yaml['labels'].append(new_label)
-
-        with open(CONFIG_FILE_PATH, 'w') as file:
-            yaml.safe_dump(self.config_yaml, file)
-
-        self.configureSegmentationWindow = ConfigureSegmentationWindow(
-            self.segmenter, self.modality, self.edit_conf)
-        self.configureSegmentationWindow.show()
-        self.close()
-
-    def push_cancel(self):
-        self.configureSegmentationWindow = ConfigureSegmentationWindow(
-            self.segmenter, self.modality, self.edit_conf)
-        self.configureSegmentationWindow.show()
-        self.close()
+    # def push_save(self):
+    #     current_label_name = self.name_line_edit.text
+    #
+    #     label_found = False
+    #     for label in self.config_yaml['labels']:
+    #         if label['name'] == current_label_name:
+    #             # edit
+    #             label_found = True
+    #             label['color_r'] = int(self.color_r_line_edit.text)
+    #             label['color_g'] = int(self.color_g_line_edit.text)
+    #             label['color_b'] = int(self.color_b_line_edit.text)
+    #
+    #             if self.modality == 'CT':
+    #                 label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+    #                 label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+    #
+    #     if label_found == False:
+    #         # append
+    #         new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255,
+    #                      'lower_bound_HU': 30, 'name': 'ICH',
+    #                      'upper_bound_HU': 90, 'value': 1}
+    #         new_label['name'] = self.name_line_edit.text
+    #         new_label['value'] = len(self.config_yaml['labels']) + 1
+    #         new_label['color_r'] = int(self.color_r_line_edit.text)
+    #         new_label['color_g'] = int(self.color_g_line_edit.text)
+    #         new_label['color_b'] = int(self.color_b_line_edit.text)
+    #
+    #         if self.modality == 'CT':
+    #             new_label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+    #             new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+    #         self.config_yaml['labels'].append(new_label)
+    #
+    #     with open(CONFIG_FILE_PATH, 'w') as file:
+    #         yaml.safe_dump(self.config_yaml, file)
+    #
+    #     self.configureSegmentationWindow = ConfigureSegmentationWindow(
+    #         self.segmenter, self.modality, self.edit_conf)
+    #     self.configureSegmentationWindow.show()
+    #     self.close()
+    #
+    # def push_cancel(self):
+    #     self.configureSegmentationWindow = ConfigureSegmentationWindow(
+    #         self.segmenter, self.modality, self.edit_conf)
+    #     self.configureSegmentationWindow.show()
+    #     self.close()

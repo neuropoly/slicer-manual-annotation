@@ -1,7 +1,7 @@
 ###############################################################################
 # Those lines need to be copy-pasted in each script file for appropriate use.
 from utils import *
-
+from scripts.Interactions import *
 # # Get actual script filepath and filename
 # filepath = os.path.abspath(__file__)
 # filename = os.path.basename(filepath)
@@ -145,43 +145,43 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         slicerCART_configuration_initial_window.show()
         self.close()
 
-    def select_template_folder_clicked(self, button):
-        if button.text == 'OK':
-            conf_folder_path = qt.QFileDialog.getExistingDirectory(None,
-                                                                   "Open a "
-                                                                   "folder",
-                                                                   '',
-                                                                   qt.QFileDialog.ShowDirsOnly)
-            if (os.path.split(conf_folder_path)[1] == CONF_FOLDER_NAME and
-                    os.path.exists(
-                        f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}')):
-
-                slicerCARTConfigurationSetupWindow = (
-                    SlicerCARTConfigurationSetupWindow(
-                    self.segmenter, conf_folder_path))
-                slicerCARTConfigurationSetupWindow.show()
-                self.segmenter.ui.SelectOutputFolder.setVisible(True)
-                self.close()
-
-            else:
-                msg = qt.QMessageBox()
-                msg.setWindowTitle('Informative Message')
-                msg.setText(
-                    'The selected output folder does not contain the required '
-                    'configuration files for SlicerCART. Please try again. ')
-                msg.setStandardButtons(
-                    qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-                msg.buttonClicked.connect(
-                    self.error_msg_for_output_folder_selection_clicked)
-                msg.exec()
-
-        else:
-            slicerCART_configuration_initial_window = (
-                SlicerCARTConfigurationInitialWindow(
-                self.segmenter))
-            slicerCART_configuration_initial_window.show()
-            self.close()
-            return
+    # def select_template_folder_clicked(self, button):
+    #     if button.text == 'OK':
+    #         conf_folder_path = qt.QFileDialog.getExistingDirectory(None,
+    #                                                                "Open a "
+    #                                                                "folder",
+    #                                                                '',
+    #                                                                qt.QFileDialog.ShowDirsOnly)
+    #         if (os.path.split(conf_folder_path)[1] == CONF_FOLDER_NAME and
+    #                 os.path.exists(
+    #                     f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}')):
+    #
+    #             slicerCARTConfigurationSetupWindow = (
+    #                 SlicerCARTConfigurationSetupWindow(
+    #                 self.segmenter, conf_folder_path))
+    #             slicerCARTConfigurationSetupWindow.show()
+    #             self.segmenter.ui.SelectOutputFolder.setVisible(True)
+    #             self.close()
+    #
+    #         else:
+    #             msg = qt.QMessageBox()
+    #             msg.setWindowTitle('Informative Message')
+    #             msg.setText(
+    #                 'The selected output folder does not contain the required '
+    #                 'configuration files for SlicerCART. Please try again. ')
+    #             msg.setStandardButtons(
+    #                 qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+    #             msg.buttonClicked.connect(
+    #                 self.error_msg_for_output_folder_selection_clicked)
+    #             msg.exec()
+    #
+    #     else:
+    #         slicerCART_configuration_initial_window = (
+    #             SlicerCARTConfigurationInitialWindow(
+    #             self.segmenter))
+    #         slicerCART_configuration_initial_window.show()
+    #         self.close()
+    #         return
 
     def push_cancel(self):
         msg = qt.QMessageBox()

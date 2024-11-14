@@ -16,10 +16,12 @@ import sys
 from utils import *
 # from . import *
 
-from scripts.ConfigureSegmentationWindow import *
-from scripts.ConfigureClassificationWindow import *
-from scripts.SlicerCARTConfigurationInitialWindow import *
+# from scripts.ConfigureSegmentationWindow import *
+# from scripts.ConfigureClassificationWindow import *
+# from scripts.SlicerCARTConfigurationInitialWindow import *
 from scripts.Interactions import *
+from scripts.InteractionsClassificationSetup import *
+
 # from scripts.ConfigureSingleLabelWindow import *
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
@@ -545,11 +547,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     #     self.configureSegmentationWindow.show()
     #     self.close()
 
-    def push_configure_classification(self):
-        configureClassificationWindow = ConfigureClassificationWindow(
-            self.segmenter, self.edit_conf)
-        configureClassificationWindow.show()
-        self.close()
+    # def push_configure_classification(self):
+    #     configureClassificationWindow = ConfigureClassificationWindow(
+    #         self.segmenter, self.edit_conf)
+    #     configureClassificationWindow.show()
+    #     self.close()
 
     # def push_previous(self):
     #     self.close()

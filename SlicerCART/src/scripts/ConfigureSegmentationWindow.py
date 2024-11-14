@@ -2,9 +2,10 @@ from utils import *
 
 # The class in this file requires the use of another class in the same
 # subfolder. Only the used file is imported (not all) to avoid circular imports
-from scripts.ConfigureSingleLabelWindow import *
+# from scripts.ConfigureSingleLabelWindow import *
 # from scripts.SlicerCARTConfigurationSetupWindow import *
 # from scripts.Interactions import *
+from scripts.Interactions import *
 
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,
@@ -205,43 +206,43 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.apply_button.clicked.connect(self.push_apply)
         self.cancel_button.clicked.connect(self.push_cancel)
 
-    def push_apply(self):
-        self.config_yaml[
-            'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
-
-        if len(self.config_yaml['labels']) == 0:
-            msg = qt.QMessageBox()
-            msg.setWindowTitle('ERROR : Label list is empty')
-            msg.setText(
-                'The label list cannot be empty. Using the previous label configuration. ')
-            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-            msg.buttonClicked.connect(self.push_error_label_list_empty)
-            msg.exec()
-        else:
-            with open(CONFIG_FILE_PATH, 'w') as file:
-                yaml.safe_dump(self.config_yaml, file)
-
-        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
-                f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
-            shutil.copy(CONFIG_FILE_PATH,
-                        f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
-
-        slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
-            self.segmenter)
-        slicerCARTConfigurationSetupWindow.show()
-        self.close()
+    # def push_apply(self):
+    #     self.config_yaml[
+    #         'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
+    #
+    #     if len(self.config_yaml['labels']) == 0:
+    #         msg = qt.QMessageBox()
+    #         msg.setWindowTitle('ERROR : Label list is empty')
+    #         msg.setText(
+    #             'The label list cannot be empty. Using the previous label configuration. ')
+    #         msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+    #         msg.buttonClicked.connect(self.push_error_label_list_empty)
+    #         msg.exec()
+    #     else:
+    #         with open(CONFIG_FILE_PATH, 'w') as file:
+    #             yaml.safe_dump(self.config_yaml, file)
+    #
+    #     if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
+    #             f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
+    #         shutil.copy(CONFIG_FILE_PATH,
+    #                     f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
+    #
+    #     slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
+    #         self.segmenter)
+    #     slicerCARTConfigurationSetupWindow.show()
+    #     self.close()
 
     def push_error_label_list_empty(self):
         self.push_cancel()
 
-    def push_cancel(self):
-        slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
-            self.segmenter)
-        slicerCARTConfigurationSetupWindow.show()
-        self.close()
-
-    # combine the action of going back to configuration setup into one
-    def go_back_to_configuration_setup_window(self):
-        slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
-            self.segmenter)
-        slicerCARTConfigurationSetupWindow.show()
+    # def push_cancel(self):
+    #     slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
+    #         self.segmenter)
+    #     slicerCARTConfigurationSetupWindow.show()
+    #     self.close()
+    #
+    # # combine the action of going back to configuration setup into one
+    # def go_back_to_configuration_setup_window(self):
+    #     slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
+    #         self.segmenter)
+    #     slicerCARTConfigurationSetupWindow.show()

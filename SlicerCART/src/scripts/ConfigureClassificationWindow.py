@@ -1,5 +1,7 @@
 from utils import *
 
+from scripts.ConfigureSingleClassificationItemWindow import *
+
 class ConfigureClassificationWindow(qt.QWidget):
     def __init__(self, segmenter, edit_conf, classification_config_yaml=None,
                  parent=None):
@@ -227,26 +229,26 @@ class ConfigureClassificationWindow(qt.QWidget):
             self.segmenter, self.edit_conf, self.config_yaml)
         configureClassificationWindow.show()
 
-    def push_add_freetextbox(self):
-        self.close()
-
-        configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
-            self.segmenter, self.config_yaml, 'freetextbox', self.edit_conf)
-        configureSingleClassificationItemWindow.show()
-
-    def push_add_combobox(self):
-        self.close()
-
-        configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
-            self.segmenter, self.config_yaml, 'combobox', self.edit_conf)
-        configureSingleClassificationItemWindow.show()
-
-    def push_add_checkbox(self):
-        self.close()
-
-        configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
-            self.segmenter, self.config_yaml, 'checkbox', self.edit_conf)
-        configureSingleClassificationItemWindow.show()
+    # def push_add_freetextbox(self):
+    #     self.close()
+    #
+    #     configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
+    #         self.segmenter, self.config_yaml, 'freetextbox', self.edit_conf)
+    #     configureSingleClassificationItemWindow.show()
+    #
+    # def push_add_combobox(self):
+    #     self.close()
+    #
+    #     configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
+    #         self.segmenter, self.config_yaml, 'combobox', self.edit_conf)
+    #     configureSingleClassificationItemWindow.show()
+    #
+    # def push_add_checkbox(self):
+    #     self.close()
+    #
+    #     configureSingleClassificationItemWindow = ConfigureSingleClassificationItemWindow(
+    #         self.segmenter, self.config_yaml, 'checkbox', self.edit_conf)
+    #     configureSingleClassificationItemWindow.show()
 
     def push_save(self):
         with open(CONFIG_FILE_PATH, 'w') as file:

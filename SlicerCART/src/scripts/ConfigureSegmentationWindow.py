@@ -4,7 +4,7 @@ from utils import *
 # subfolder. Only the used file is imported (not all) to avoid circular imports
 from scripts.ConfigureSingleLabelWindow import *
 # from scripts.SlicerCARTConfigurationSetupWindow import *
-from scripts.Interactions import *
+# from scripts.Interactions import *
 
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,
@@ -153,8 +153,6 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.setWindowTitle("Configure Segmentation")
         self.resize(500, 600)
 
-
-    Interactions
 
     # def push_add_label(self):
     #     self.close()

@@ -15,7 +15,7 @@ from utils import *
 #
 # ###############################################################################
 
-from scripts.SlicerCARTConfigurationSetupWindow import *
+# from scripts.SlicerCARTConfigurationSetupWindow import *
 
 
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
@@ -71,32 +71,32 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def update_selected_reuse_config_option(self, option):
         self.reuse_configuration_selected_option = option
 
-    def push_next(self):
-        if (self.reuse_configuration_selected_option ==
-                self.reuse_config_radio_button.text):
-            msg = qt.QMessageBox()
-            msg.setWindowTitle('Informative Message')
-            msg.setText('Please select the working output directory. ')
-            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-            msg.buttonClicked.connect(self.select_output_folder_clicked)
-            msg.exec()
-        elif (self.reuse_configuration_selected_option ==
-              self.use_template_config_radio_button.text):
-            msg = qt.QMessageBox()
-            msg.setWindowTitle('Informative Message')
-            msg.setText(
-                'Please select the _conf folder containing the template '
-                'configuration files. ')
-            msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-            msg.buttonClicked.connect(self.select_template_folder_clicked)
-            msg.exec()
-        elif (self.reuse_configuration_selected_option ==
-              self.new_config_radio_button.text):
-            slicerCARTConfigurationSetupWindow = (
-                SlicerCARTConfigurationSetupWindow(self.segmenter))
-            slicerCARTConfigurationSetupWindow.show()
-            self.segmenter.ui.SelectOutputFolder.setVisible(True)
-            self.close()
+    # def push_next(self):
+    #     if (self.reuse_configuration_selected_option ==
+    #             self.reuse_config_radio_button.text):
+    #         msg = qt.QMessageBox()
+    #         msg.setWindowTitle('Informative Message')
+    #         msg.setText('Please select the working output directory. ')
+    #         msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+    #         msg.buttonClicked.connect(self.select_output_folder_clicked)
+    #         msg.exec()
+    #     elif (self.reuse_configuration_selected_option ==
+    #           self.use_template_config_radio_button.text):
+    #         msg = qt.QMessageBox()
+    #         msg.setWindowTitle('Informative Message')
+    #         msg.setText(
+    #             'Please select the _conf folder containing the template '
+    #             'configuration files. ')
+    #         msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+    #         msg.buttonClicked.connect(self.select_template_folder_clicked)
+    #         msg.exec()
+    #     elif (self.reuse_configuration_selected_option ==
+    #           self.new_config_radio_button.text):
+    #         slicerCARTConfigurationSetupWindow = (
+    #             SlicerCARTConfigurationSetupWindow(self.segmenter))
+    #         slicerCARTConfigurationSetupWindow.show()
+    #         self.segmenter.ui.SelectOutputFolder.setVisible(True)
+    #         self.close()
 
     def select_output_folder_clicked(self, button):
         if button.text == 'OK':

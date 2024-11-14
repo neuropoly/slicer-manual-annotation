@@ -17,7 +17,10 @@ from utils import *
 # from . import *
 
 from scripts.ConfigureSegmentationWindow import *
-from scripts.ConfigureSingleLabelWindow import *
+from scripts.ConfigureClassificationWindow import *
+from scripts.SlicerCARTConfigurationInitialWindow import *
+from scripts.Interactions import *
+# from scripts.ConfigureSingleLabelWindow import *
 
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     def __init__(self, segmenter, conf_folder_path=None, edit_conf=False,
@@ -536,11 +539,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
-    def push_configure_segmentation(self):
-        self.configureSegmentationWindow = ConfigureSegmentationWindow(
-            self.segmenter, self.modality_selected, self.edit_conf)
-        self.configureSegmentationWindow.show()
-        self.close()
+    # def push_configure_segmentation(self):
+    #     self.configureSegmentationWindow = ConfigureSegmentationWindow(
+    #         self.segmenter, self.modality_selected, self.edit_conf)
+    #     self.configureSegmentationWindow.show()
+    #     self.close()
 
     def push_configure_classification(self):
         configureClassificationWindow = ConfigureClassificationWindow(
@@ -548,11 +551,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         configureClassificationWindow.show()
         self.close()
 
-    def push_previous(self):
-        self.close()
-        slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
-            self.segmenter)
-        slicerCART_configuration_initial_window.show()
+    # def push_previous(self):
+    #     self.close()
+    #     slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
+    #         self.segmenter)
+    #     slicerCART_configuration_initial_window.show()
 
     def push_apply(self):
         self.config_yaml[

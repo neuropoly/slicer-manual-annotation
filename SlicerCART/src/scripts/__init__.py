@@ -11,3 +11,4 @@ from .ShowSegmentVersionLegendWindow import *
 from .SlicerCARTConfigurationInitialWindow import *
 from .SlicerCARTConfigurationSetupWindow import *
 from .Timer import *
+from .Interactions import *

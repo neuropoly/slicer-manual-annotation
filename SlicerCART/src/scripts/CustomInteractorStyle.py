@@ -1,6 +1,6 @@
 # add imports
 from utils import *
-from . import *
+# from . import *
 
 # MB CODE BELOW: MOUSE CUSTOMIZATION CLASS
 class CustomInteractorStyle(vtk.vtkInteractorStyleImage):

@@ -1,6 +1,6 @@
 # add improts
 from utils import *
-from . import *
+# from . import *
 
 class ConfigureSingleLabelWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf, label_config_yaml,

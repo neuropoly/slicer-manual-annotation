@@ -98,3 +98,5 @@ issue on the [SlicerCART Github](https://github.com/neuropoly/slicer-manual-anno
 Thank you!
 
 The SlicerCART Team
+
+[Go back on Documentation Welcome Page](welcome.md).

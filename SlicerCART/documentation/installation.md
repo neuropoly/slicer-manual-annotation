@@ -21,11 +21,15 @@ Although it may work on other versions and/or operating system, please note that
    3. If you encounter some problems, you are encouraged to refer to:
       4. [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
       5. [3D Slicer forum](https://discourse.slicer.org/) (very active community)
-3. Clone this repository in the location of your choice.
-3. Then, go in the finder --- find the file SlicerCART.py file, and copy the pathname.
+3. Clone the [SlicerCART repository](https://github.com/neuropoly/slicer-manual-annotation) in the location of your choice.
 4. Open 3D Slicer.
 5. Activate the checkbox `Enable developer mode` in `Edit -> Application Settings -> Developer -> Enable developer mode`. 
-6. Add the path of the `SlicerCART.py` file in `Edit -> Application Settings -> Modules -> Additional module paths`.(N.B. 1) You must have the file: if it is the folder path, then the module will not work; 2) in the Additional modul path section, the path copied might be shown to the folder: this is a Slicer thing, and should not affect working property of the module if it was the file that you copied).
+6. Add the path of the `SlicerCART.py` file in `Edit -> Application Settings 
+   -> Modules -> Additional module paths`.(N.B. 1) You must have the file: 
+   if it is the folder path, then the module will not work; 2) in the 
+   Additional modul path section, the path copied might be shown to the 
+   folder: this is a Slicer thing, and should not affect working property of 
+   the module if it was the file that you copied).
 7. The module can be found under `Examples -> SlicerCART`: the module should now be opened (N.B. 1) If first use, you may have additional requirements to install. A pop-up window from Slicer advertising you should pop-up if so: just click ok).
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
 9. There might be errors. These would be seen in the Python Console: if any errors, we highly recommend you to fix them before any further use!
@@ -33,13 +37,18 @@ Although it may work on other versions and/or operating system, please note that
 **IN SUMMARY:**
 
 Install 3D Slicer --- Enable Developer Mode --- Add the PATH of SlicerCART.
-py in the modules list --- (Optional) Launch Slicer at startup
-(perso mettre image ici)
+py file in the modules list --- (Optional) Select to launch SlicerCART at 3D 
+Slicer --- restart 3D Slicer --- READY FOR USE!
+
+![](images/module_filepath.png)
+
 
 ### Troubleshooting 
 
 * Qt might need to be installed. The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac).
 
+### Other extensions that could be useful
+* `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer.
 
-GO BACK TO WELCOME DOCUMENTATION
-CONTINUE TO QUICKSTART 
+[GO BACK on Documentation Welcome Page](welcome.md). 
+[CONTINUE to QuickStart](quickstart.md).

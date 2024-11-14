@@ -1,18 +1,33 @@
 # Welcome to SlicerCART Documentation
-
 Here is useful information for using SlicerCART in 3D Slicer.
 
 Please click on the following links to get started.
 
-* Installation
-* Quick Start
-* Video Tutorials
+* [Installation](installation.md)
+* [QuickStart](quickstart.md)
+* [Video Tutorials](videotutorials.md)
+* [User Guide](userguide.md) (contains detailed information)
+* [Developer Guide](../../CONTRIBUTING.md) (Contributing Guidelines)
 
 ### Description
 
-DESCRIPTION
-ABBREVIATIONS
-SUPPORTED PLATFORMS
-CONTRIBUTORS
+SlicerCART is a 3D Slicer extension aimed to improve manual segmentation and classification 
+workflows across different teams. 
 
-README
+More information about SlicerCART Purpose can be found [here](purpose.md).
+
+**Keywords:** medical imaging, manual segmentation, manual correction, workflow, ground-truth segmentation, quality control
+
+**Abbreviations:**
+
+- MRI - Magnetic Resonance Imaging
+- CT - Computed Tomography
+- BIDS - Brain Imaging Data Structure
+- GUI - Graphical User Interface
+- QC - Quality Control
+
+
+### Other resources
+* [3D Slicer Tutorials](https://www.youtube.com/watch?v=QTEti9aY0vs&)
+* [3D Slicer Documentation](https://www.slicer.org/wiki/Documentation/Nightly/Training)
+

@@ -36,5 +36,3 @@ import pandas as pd
 import slicerio
 import yaml
 
-# MB: Others added
-import importlib

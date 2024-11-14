@@ -91,12 +91,5 @@ labels:
   name: IVH
   upper_bound_HU: 90
   value: 2
-- color_b: 255
-  color_g: 80
-  color_r: 11
-  lower_bound_HU: 5
-  name: PHE
-  upper_bound_HU: 33
-  value: 3
-modality: CT
+modality: MRI
 slice_view_color: Yellow

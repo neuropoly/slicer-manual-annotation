@@ -1,4 +1,26 @@
+"""
+    This InteractingClasses file contains all classes that iteratively
+    interact with each other. This is essential to avoid 'cirular imports'. It
+    should be the only file in scripts folder that contains more than one class.
+"""
+
+###############################################################################
+# This import needs to be done in each script file for appropriate use.
 from utils import *
+
+###############################################################################
+
+###############################################################################
+# This main script contains the following classes, used for configuration:
+#   SlicerCARTConfigurationSetupWindow
+#   SlicerCARTConfigurationInitialWindow
+#   ConfigureSegmentationWindow
+#   ConfigureSingleLabelWindow
+#   ConfigureClassificationWindow
+#   ConfigureSingleClassificationItemWindow
+
+###############################################################################
+
 class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     def __init__(self, segmenter, conf_folder_path=None, edit_conf=False,
                  parent=None):

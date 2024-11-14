@@ -1,6 +1,8 @@
-import os
-import sys
+###############################################################################
+# Import all required modules for correct use
 from utils.requirements import *
+
+###############################################################################
 
 INPUT_FILE_EXTENSION = '*.nii.gz'
 INTERPOLATE_VALUE = 0
@@ -33,16 +35,11 @@ TIMER_MUTEX = RLock()
 
 # From the global variables, CONFIG_FILE_PATH required the use of
 # os.path.join, which limits its usability in the utils.global.variables.py
+# PATHS can be adjusted automatically as follow:
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))[:-5]
-print('script path global variables:,', SCRIPT_PATH)
+print('SCRIPT_PATH used in global variables:,', SCRIPT_PATH)
 
-
-# CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, CONFIG_FILENAME)
 CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'configuration_config.yml')
-print('config file path global variables:,', CONFIG_FILE_PATH)
+print('CONFIG_FILE_PATH used in global variables:,', CONFIG_FILE_PATH)
 
-
-# From the global variables, CONFIG_FILE_PATH required the use of
-# os.path.join, which limits its usability in the utils.global.variables.py
-# CONFIG_FILE_PATH = os.path.join(Path(__file__).parent.resolve(), CONFIG_FILENAME)
 

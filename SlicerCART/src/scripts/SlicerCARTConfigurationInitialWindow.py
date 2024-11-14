@@ -1,7 +1,7 @@
 ###############################################################################
 # Those lines need to be copy-pasted in each script file for appropriate use.
 from utils import *
-from scripts.Interactions import *
+# from scripts.Interactions import *
 # # Get actual script filepath and filename
 # filepath = os.path.abspath(__file__)
 # filename = os.path.basename(filepath)
@@ -58,6 +58,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
 
         self.next_button = qt.QPushButton('Next')
         self.next_button.clicked.connect(self.push_next)
+        # self.next_button.clicked.connect(Interactions.push_next(self))
         layout.addWidget(self.next_button)
 
         self.cancel_button = qt.QPushButton('Cancel')

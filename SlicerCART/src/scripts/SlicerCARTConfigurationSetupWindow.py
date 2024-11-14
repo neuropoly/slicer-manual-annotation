@@ -19,7 +19,7 @@ from utils import *
 # from scripts.ConfigureSegmentationWindow import *
 # from scripts.ConfigureClassificationWindow import *
 # from scripts.SlicerCARTConfigurationInitialWindow import *
-from scripts.Interactions import *
+# from scripts.Interactions import *
 from scripts.InteractionsClassificationSetup import *
 
 # from scripts.ConfigureSingleLabelWindow import *

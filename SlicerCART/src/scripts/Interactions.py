@@ -1,3 +1,10 @@
+from utils import *
+
+from scripts.SlicerCARTConfigurationInitialWindow import *
+from scripts.SlicerCARTConfigurationSetupWindow import *
+from scripts.ConfigureSegmentationWindow import *
+from scripts.ConfigureSingleLabelWindow import *
+
 
 class Interactions:
     def __init__(self):

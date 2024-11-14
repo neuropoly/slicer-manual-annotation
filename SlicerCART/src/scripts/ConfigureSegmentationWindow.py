@@ -1,21 +1,10 @@
-# add imports
 from utils import *
-# from scripts.SlicerCARTConfigurationSetupWindow import *
-# from scripts.SlicerCARTConfigurationSetupWindow import *
 
-# # Get actual script filepath and filename
-# filepath = os.path.abspath(__file__)
-# # filename = os.path.basename(filepath)
-# filename = 'ConfigureSegmentationWindow.py'
-#
-# # Extract and import a list of all modules in the same subFolder (e.g. scripts)
-# modules_list = list_modules_in_folder('scripts', filename)
-# for module_name in modules_list:
-#     module = import_all_from_module(module_name)
-#     # Load all attributes of the module into the current namespace
-#     # globals().update(vars(module))
-
+# The class in this file requires the use of another class in the same
+# subfolder. Only the used file is imported (not all) to avoid circular imports
 from scripts.ConfigureSingleLabelWindow import *
+# from scripts.SlicerCARTConfigurationSetupWindow import *
+from scripts.Interactions import *
 
 class ConfigureSegmentationWindow(qt.QWidget):
     def __init__(self, segmenter, modality, edit_conf,
@@ -164,23 +153,26 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.setWindowTitle("Configure Segmentation")
         self.resize(500, 600)
 
-    def push_add_label(self):
-        self.close()
-        configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter,
-                                                                self.modality,
-                                                                self.edit_conf,
-                                                                self.config_yaml)
-        configureSingleLabelWindow.show()
 
-    def push_edit_button(self, label):
-        self.close()
+    Interactions
 
-        configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter,
-                                                                self.modality,
-                                                                self.edit_conf,
-                                                                self.config_yaml,
-                                                                label)
-        configureSingleLabelWindow.show()
+    # def push_add_label(self):
+    #     self.close()
+    #     configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter,
+    #                                                             self.modality,
+    #                                                             self.edit_conf,
+    #                                                             self.config_yaml)
+    #     configureSingleLabelWindow.show()
+    #
+    # def push_edit_button(self, label):
+    #     self.close()
+    #
+    #     configureSingleLabelWindow = ConfigureSingleLabelWindow(self.segmenter,
+    #                                                             self.modality,
+    #                                                             self.edit_conf,
+    #                                                             self.config_yaml,
+    #                                                             label)
+    #     configureSingleLabelWindow.show()
 
     def push_remove_button(self, label):
         self.close()

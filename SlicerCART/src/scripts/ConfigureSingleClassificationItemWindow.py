@@ -1,6 +1,5 @@
-# add imports
 from utils import *
-from . import *
+
 
 class ConfigureSingleClassificationItemWindow(qt.QWidget):
     def __init__(self, segmenter, classification_config_yaml, item_added,

@@ -93,10 +93,13 @@ remaining case in a list of segmentation cases to be done
 For any feedback, please add your comments on: https://docs.google.com/document/d/1RRDnYuUtevRtKzdGpOBCORbUAweMCMtD0bUfg_Qt2qE/edit?usp=sharing
 
 If you have any question and/or inquiry, please feel free to open a new 
-issue on the [SlicerCART Github](https://github.com/neuropoly/slicer-manual-annotation/issues)
+issue on the [SlicerCART Github repository](https://github.
+com/neuropoly/slicer-manual-annotation/issues)
 
 Thank you!
 
 The SlicerCART Team
 
-[Go back on Documentation Welcome Page](welcome.md).
+[GO BACK on Documentation Welcome Page](welcome.md).
+[GO BACK on Installation Page](installation.md). 
+[CONTINUE to Video Tutorials](videotutorials.md).

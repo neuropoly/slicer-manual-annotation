@@ -25,16 +25,18 @@ Although it may work on other versions and/or operating system, please note that
 4. Open 3D Slicer.
 5. Activate the checkbox `Enable developer mode` in `Edit -> Application Settings -> Developer -> Enable developer mode`. 
 6. Add the path of the `SlicerCART.py` file in `Edit -> Application Settings 
-   -> Modules -> Additional module paths`.(N.B. 1) You must have the file: 
-   if it is the folder path, then the module will not work; 2) in the 
+   -> Modules -> Additional module paths`.(N.B. 1- You must have the file: 
+   if it is the folder path, then the module will not work; 2- in the 
    Additional modul path section, the path copied might be shown to the 
    folder: this is a Slicer thing, and should not affect working property of 
    the module if it was the file that you copied).
-7. The module can be found under `Examples -> SlicerCART`: the module should now be opened (N.B. 1) If first use, you may have additional requirements to install. A pop-up window from Slicer advertising you should pop-up if so: just click ok).
+7. The module can be found under `Examples -> SlicerCART`: the module should 
+   now be opened (N.B. If first use, you may have additional requirements 
+   to install. A pop-up window from Slicer advertising you should pop-up if so: just click ok).
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
 9. There might be errors. These would be seen in the Python Console: if any errors, we highly recommend you to fix them before any further use!
 
-**IN SUMMARY:**
+**In Summary:**
 
 Install 3D Slicer --- Enable Developer Mode --- Add the PATH of SlicerCART.
 py file in the modules list --- (Optional) Select to launch SlicerCART at 3D 

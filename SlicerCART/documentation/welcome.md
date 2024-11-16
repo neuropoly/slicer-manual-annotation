@@ -16,6 +16,8 @@ workflows across different teams.
 
 More information about SlicerCART Purpose can be found [here](purpose.md).
 
+List of functionalities can be found [here](functionalities.md).
+
 **Keywords:** medical imaging, manual segmentation, manual correction, workflow, ground-truth segmentation, quality control
 
 **Abbreviations:**

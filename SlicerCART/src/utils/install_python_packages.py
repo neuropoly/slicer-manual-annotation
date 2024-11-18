@@ -1,8 +1,3 @@
-###############################################################################
-# Import all required modules for correct use
-from utils.requirements import *
-
-###############################################################################
 
 # TODO: There is probably a more elegant way to install pacakages through the
 #  extension manager when the user installs the extension.

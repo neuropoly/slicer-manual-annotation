@@ -22,13 +22,10 @@ import sys
 from functools import partial
 import copy
 
-# If issues are encountered related to the importation of modules below,
-# requirements.py could be splitted in two files (e.g. requirements.py with
-# above modules and requirements2.py with below modules), and the function
-# install_python_packages() could be executed before importing the second
-# requirements2.py file (that would reproduce the initial importation
-# pseudo-code execution install_python_packages was called before below
-# importing).
+# Check if python packages are missing due to issue with some module imports
+from utils.install_python_packages import *
+check_and_install_python_packages()
+
 from bids_validator import BIDSValidator
 import nibabel as nib
 import nrrd

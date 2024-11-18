@@ -2,6 +2,24 @@
 
 Follow the steps below to use SlicerCART.
 
+### Important Note:
+Currently, SlicerCART **works only for one task**: viewing and perform manual 
+segmentations from scratch.
+
+The current version **IS NOT** able to:
+- Edit segmentation labels
+- Continue segmentation/classification tasks from previously started work
+- Adjust by default the window width (some dataset provides blank images 
+  that need to be adjusted automatically. If it's the case, mention your 
+  concern in [issue 67](https://github.com/neuropoly/slicer-manual-annotation/issues/67))
+- Go automatically to the next case after having saved a segmentation
+- Compare multiple segments and revise them ...
+
+Essential functionalities still remain to be implemented for a release. 
+There are also significant bugs. Nevertheless, your feedback would be very 
+appreciated for 1) Installation steps 2) Loading datasets 3) General Insight.
+
+
 ### Before starting
 
 You should have:
@@ -11,9 +29,14 @@ You should have:
 Please review [Installation Steps](installation.md#installation-steps) if those criteria are not 
 fullfilled.
 
+
+
 ### Getting started
 
-Example use case: viewing different volumes in a given dataset
+**Example use case:** viewing different volumes in a given dataset and 
+perform manual segmentations
+
+
 
 ###### 1. Open 3D Slicer
 ###### 2. Launch SlicerCART

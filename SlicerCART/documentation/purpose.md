@@ -10,3 +10,7 @@ This section explains the rationale behind SlicerCART and its purpose.
 * Actual open-source solutions that enable imaging viewing and annotation are not optimal from an end-user standpoint (especially from various background), increasing the already high burden of manual segmentation and classification tasks
 * A workflow aimed to efficiently navigate through a dataset while performing manual segmentation / correction, including revision steps and robust annotation consistency assessment is crucial for handling large amount of data and provide the best ground-truth references segmentation as possible. 
 
+[GO BACK on Documentation Welcome Page](welcome.md). 
+[GO BACK on List of Functionalities Page](functionalities.md). 
+[CONTINUE to Developer Guide](../../CONTRIBUTING.md).
+

@@ -2331,10 +2331,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(self)
     slicerCART_configuration_initial_window.show()
+    
+    # Initialize variables
+    self.fiducialNode = None
+    self.lineModelNodes = []  # To store the lines between pairs
+    self.linesVisible = False
 
     self.outputFolder = None
     self.currentCasePath = None
     self.CurrentFolder = None
+    
+    self.lineDetails = {}
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -2369,6 +2376,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.pushDefaultMax.connect('clicked(bool)', self.onPushDefaultMax)
     self.ui.pushButton_undo.connect('clicked(bool)', self.onPushButton_undo)
     self.ui.ShowSegmentVersionLegendButton.connect('clicked(bool)', self.onPush_ShowSegmentVersionLegendButton)
+    
+    self.ui.placeMeasurementLine.connect('clicked(bool)', self.onPlacePointsAndConnect)
+        # Add a label to show the length
     
     self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
@@ -3859,7 +3869,52 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       effect.self().onApply()
 
 
-      
+
+  def onPlacePointsAndConnect(self):
+    # Create a new Markups Line Node
+    self.lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
+
+    # Set the line name (you can modify the naming convention as needed)
+    lineName = f"Line_{slicer.mrmlScene.GetNumberOfNodesByClass('vtkMRMLMarkupsLineNode')}"
+    self.lineNode.SetName(lineName)
+
+    # Set the interaction mode to "Place"
+    slicer.modules.markups.logic().SetActiveListID(self.lineNode)
+    interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    # Observe the completion of the point placement (use EndPlaceEvent instead)
+    self.lineNode.AddObserver(self.lineNode.PointModifiedEvent  , self.onLinePlaced)
+
+  def onLinePlaced(self, caller, event):
+    # Check if the user has placed both control points
+    if caller.GetNumberOfControlPoints() < 2:
+        print("Waiting for two control points to be placed.")
+        return
+
+    # Retrieve the control point coordinates after the user places the points
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    caller.GetNthControlPointPosition(0, p1)  # First control point
+    caller.GetNthControlPointPosition(1, p2)  # Second control point
+
+    # Calculate the length of the line
+    lineLength = caller.GetLineLengthWorld()
+
+    # Use the line name as the key in the dictionary
+    lineName = caller.GetName()
+
+    # Store details in the dictionary (for backend use)
+    self.lineDetails[lineName] = {
+        "ControlPoint1": p1,
+        "ControlPoint2": p2,
+        "Length": lineLength
+    }
+
+    # Output the details for confirmation
+    print(self.lineDetails)
+
+
   def onPushButton_Small_holes(self):
       # pass
       # Fill holes smoothing

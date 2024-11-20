@@ -18,7 +18,6 @@ If 3D Slicer has not been already installed, you can follow these steps:
 3. If you encounter some problems, you are encouraged to refer to:
    * [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
    * [3D Slicer forum](https://discourse.slicer.org/) (very active community)
-4. If Qt has not been installed
 
 ## Installation Steps
 

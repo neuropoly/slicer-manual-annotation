@@ -12,9 +12,9 @@ If 3D Slicer has not been already installed, you can follow these steps:
 1. Install [3D Slicer](https://download.slicer.org):
 2. Make sure that you are able to open and use the 3D Slicer software before 
    trying installing any extension/module. 
-   3. If you encounter some problems, you are encouraged to refer to:
-      4. [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
-      5. [3D Slicer forum](https://discourse.slicer.org/) (very active community)
+3. If you encounter some problems, you are encouraged to refer to:
+   * [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
+   * [3D Slicer forum](https://discourse.slicer.org/) (very active community)
 
 ## Installation Steps
 
@@ -30,10 +30,9 @@ If 3D Slicer has not been already installed, you can follow these steps:
    -> Modules -> Additional module paths`. See image example below:
 ![](images/module_filepath.png)
 
-(N.B. 1- You must have the file: 
-   if it is the folder path, then the module will not work; 2- in the 
-   Additional modul path section, you will see the module folder path and 
-not the SlicerCART.py file path: this is a 
+(N.B. 1- You must drag the file SlicerCART.py in the additionnal module path section: 
+   if you drag the folder path (SlicerCART folder), then the module will not work; 2- in the 
+   Additional modul path section, you will see the module folder path and not the SlicerCART.py file path: this is a 
 Slicer thing, and should not affect working property of 
    the module if it was the file that you copied).
 

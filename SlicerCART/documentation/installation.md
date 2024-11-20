@@ -1,38 +1,51 @@
 # SlicerCART Installation
 
-### Requirements
+## Requirements
 
-* MacOS Sonoma or Sequoia is recommended 
-* A working version of [3D Slicer](https://download.slicer.org).
-  * N.B. The version currently used to develop this module is the version 5.6.2 (most stable release as of 2024-10-22). The version 5.2.2 has also been used.
+* MacOS Sonoma or Sequoia (15.0.1) is recommended 
+* A working version of [3D Slicer](https://download.slicer.org) (version 5.6.2).
 
-This module is currently used on:
+*Although it may work on other versions and/or operating system, please note 
+that it has not been tested.
 
-* MacOS Sequoia 15.0.1
-* 3D Slicer version 5.6.2
-
-Although it may work on other versions and/or operating system, please note that it has not been tested.
-
-## Installation Steps
-
-1. Install [3D Slicer](https://download.slicer.org).
+If 3D Slicer has not been already installed, you can follow these steps: 
+1. Install [3D Slicer](https://download.slicer.org):
 2. Make sure that you are able to open and use the 3D Slicer software before 
    trying installing any extension/module. 
    3. If you encounter some problems, you are encouraged to refer to:
       4. [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
       5. [3D Slicer forum](https://discourse.slicer.org/) (very active community)
-3. Clone the [SlicerCART repository](https://github.com/neuropoly/slicer-manual-annotation) in the location of your choice.
-4. Open 3D Slicer.
-5. Activate the checkbox `Enable developer mode` in `Edit -> Application Settings -> Developer -> Enable developer mode`. 
-6. Add the path of the `SlicerCART.py` file in `Edit -> Application Settings 
-   -> Modules -> Additional module paths`.(N.B. 1- You must have the file: 
+
+## Installation Steps
+
+1. Clone the [SlicerCART repository](https://github.com/neuropoly/slicer-manual-annotation) in the location of your choice.
+2. Open 3D Slicer. 
+3. Activate the checkbox `Enable developer mode` in `Edit 
+   -> Application 
+    Settings -> Developer -> Enable developer mode`. 
+4. Open Finder (on macOS). Go to the location of the SlicerCART Repository. 
+   Go to the location of the python file `SlicerCART.py` (_should only have one 
+   FILE of that name. Note that if you add the path of the folder SlicerCART,
+   it will not work: you MUST add the path of SlicerCART.py FILE_)  in `Edit -> Application Settings 
+   -> Modules -> Additional module paths`. See image example below:
+![](images/module_filepath.png)
+
+(N.B. 1- You must have the file: 
    if it is the folder path, then the module will not work; 2- in the 
-   Additional modul path section, the path copied might be shown to the 
-   folder: this is a Slicer thing, and should not affect working property of 
+   Additional modul path section, you will see the module folder path and 
+not the SlicerCART.py file path: this is a 
+Slicer thing, and should not affect working property of 
    the module if it was the file that you copied).
-7. The module can be found under `Examples -> SlicerCART`: the module should 
+
+5. The Application will ask to Restart: click Ok.
+![](images/example_restart.png)
+
+6. The module can be found under `Examples -> SlicerCART`: the module should 
    now be opened (N.B. If first use, you may have additional requirements 
    to install. A pop-up window from Slicer advertising you should pop-up if so: just click ok).
+![](images/example_slicercart.png)
+
+
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
 9. There might be errors. These would be seen in the Python Console: if any errors, we highly recommend you to fix them before any further use!
 

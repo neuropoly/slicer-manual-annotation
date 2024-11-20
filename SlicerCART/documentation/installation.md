@@ -4,6 +4,9 @@
 
 * MacOS Sonoma or Sequoia (15.0.1) is recommended 
 * A working version of [3D Slicer](https://download.slicer.org) (version 5.6.2).
+* Qt: might need to be installed.
+  * The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac).
+  * You can try importing Qt in the Slicer python console (e.g. `import slicer ` then `from slicer.util import Qt`)
 
 *Although it may work on other versions and/or operating system, please note 
 that it has not been tested.
@@ -15,6 +18,7 @@ If 3D Slicer has not been already installed, you can follow these steps:
 3. If you encounter some problems, you are encouraged to refer to:
    * [3D Slicer Documentation](https://slicer.readthedocs.io/en/latest/)
    * [3D Slicer forum](https://discourse.slicer.org/) (very active community)
+4. If Qt has not been installed
 
 ## Installation Steps
 

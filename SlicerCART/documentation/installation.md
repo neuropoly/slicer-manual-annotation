@@ -33,11 +33,7 @@ If 3D Slicer has not been already installed, you can follow these steps:
    -> Modules -> Additional module paths`. See image example below:
 ![](images/module_filepath.png)
 
-(N.B. 1- You must drag the file SlicerCART.py in the additionnal module path section: 
-   if you drag the folder path (SlicerCART folder), then the module will not work; 2- in the 
-   Additional modul path section, you will see the module folder path and not the SlicerCART.py file path: this is a 
-Slicer thing, and should not affect working property of 
-   the module if it was the file that you copied).
+Warning: be sure to drag and drop `SlicerCART.py` and not `SlicerCART` (the folder). 
 
 5. The Application will ask to Restart: click Ok.
 ![](images/example_restart.png)

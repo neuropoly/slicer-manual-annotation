@@ -55,14 +55,8 @@ Install 3D Slicer --- Enable Developer Mode --- Add the PATH of SlicerCART.
 py file in the modules list --- (Optional) Select to launch SlicerCART at 3D 
 Slicer --- restart 3D Slicer --- READY FOR USE!
 
-![](images/module_filepath.png)
 
 
-### Troubleshooting 
-
-* Qt might need to be installed. The first five steps of the following procedure might be useful for this: [procedure](https://web.stanford.edu/dept/cs_edu/resources/qt/install-mac).
-
-### Other extensions that could be useful
-* `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer.
-
+[GO BACK on Documentation Welcome Page](welcome.md). 
 To continue the tutorial and start using SlicedCARD click here: [QuickStart](quickstart.md).
+

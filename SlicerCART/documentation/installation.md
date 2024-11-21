@@ -65,5 +65,4 @@ Slicer --- restart 3D Slicer --- READY FOR USE!
 ### Other extensions that could be useful
 * `SlicerJupyter` to be able to use Jupyter Notebooks connected to 3D Slicer.
 
-[GO BACK on Documentation Welcome Page](welcome.md). 
-[CONTINUE to QuickStart](quickstart.md).
+To continue the tutorial and start using SlicedCARD click here: [QuickStart](quickstart.md).

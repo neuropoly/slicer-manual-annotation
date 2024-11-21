@@ -45,7 +45,9 @@ Warning: be sure to drag and drop `SlicerCART.py` and not `SlicerCART` (the fold
 
 
 8. (Optional) Set the SlicerCART module to launch at 3DSlicer startup. To do so, go to `Edit -> Application Settings -> Modules -> Default startup module`
-9. There might be errors. These would be seen in the Python Console: if any errors, we highly recommend you to fix them before any further use!
+
+Note: There might be errors in the Python Console: if so, we highly recommend you to fix them before any further use!
+
 
 **In Summary:**
 

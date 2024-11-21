@@ -19,3 +19,6 @@ Wish to contribute to the development of this 3D Slicer module/extension? As a t
 
   * [PEP8 style guide official documentation](https://peps.python.org/pep-0008/)
   * [Polytechnique Montreal Home-Made Guide for programming style (in French)](https://github.com/INF1007-Gabarits/Guide-codage-python)
+
+[GO on Documentation Welcome Page](./SlicerCART/documentation/welcome.md). 
+[GO on README.md Page](README.md).

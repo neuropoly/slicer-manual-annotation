@@ -3,7 +3,7 @@
 SlicerCART: Configurable Annotation and Review Tool. 
 
 This is a 3D Slicer extension aimed to improve workflow in manual 
-segmentation, classification and revision tasks. For example, SlicerCART 
+segmentation, classification and revision tasks. SlicerCART 
 enables to 
 quickly load specific volumes of a dataset and navigate through them, 
 perform manual segmentation of medical images (e.g. annotating 

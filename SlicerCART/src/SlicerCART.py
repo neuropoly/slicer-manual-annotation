@@ -7,7 +7,9 @@
 ###############################################################################
 # Those imports are required to make the module working appropriately using
 # separated files
-from utils import * # Import all modules, packages and global variables
+from utils.requirements import * # Import all modules and packages
+from utils.global_variables import * # Import all global variables
+
 from scripts import * # Import all classes
 
 ###############################################################################

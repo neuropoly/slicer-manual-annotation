@@ -1,5 +1,3 @@
-import qt
-import slicer
 # TODO: There is probably a more elegant way to install pacakages through the
 #  extension manager when the user installs the extension.
 # TODO: check if the package installed with error
@@ -13,7 +11,6 @@ REQUIRED_PYTHON_PACKAGES = {
     "slicerio": "slicerio",
     "bids_validator": "bids_validator"
 }
-
 
 def check_and_install_python_packages():
     missing_packages = []

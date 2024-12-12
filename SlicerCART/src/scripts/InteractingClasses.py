@@ -1041,63 +1041,80 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.config_yaml = label_config_yaml
         self.edit_conf = edit_conf
 
-        layout = qt.QVBoxLayout()
+        layout = qt.QVBoxLayout() # Creates a vertical Box layout (Label Box)
 
-        name_hbox = qt.QHBoxLayout()
-
+        name_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         name_label = qt.QLabel('Name : ')
         name_label.setStyleSheet("font-weight: bold")
         name_hbox.addWidget(name_label)
-
         self.name_line_edit = qt.QLineEdit('')
         name_hbox.addWidget(self.name_line_edit)
-
         layout.addLayout(name_hbox)
 
-        value_hbox = qt.QHBoxLayout()
-
+        value_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         value_label = qt.QLabel('Value : ')
         value_label.setStyleSheet("font-weight: bold")
         value_hbox.addWidget(value_label)
-
         self.value_line_edit = qt.QLineEdit('')
         self.value_line_edit.setValidator(qt.QIntValidator())
         self.value_line_edit.setEnabled(
             False)  # To be changed at resolution of Issue #28
         value_hbox.addWidget(self.value_line_edit)
-
         layout.addLayout(value_hbox)
 
-        color_hbox = qt.QHBoxLayout()
+        comment_hbox = qt.QHBoxLayout()
+        # Create a QLabel to display a comment below the QLineEdit
+        self.comment_label = qt.QLabel(
+            'N.B. Label value is not editable and will be assigned '
+            'automatically.\nEnter any integer between 0 and 255 in RGB to '
+            'select label color.')
+        comment_hbox.addWidget(self.comment_label)
+        layout.addLayout(comment_hbox)
 
+        color_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         color_label = qt.QLabel('Colour : ')
         color_label.setStyleSheet("font-weight: bold")
         color_hbox.addWidget(color_label)
 
-        self.color_r_line_edit = qt.QLineEdit('R')
         colorValidator = qt.QIntValidator()
         colorValidator.setRange(0, 255)
+
+        r_label = qt.QLabel('R')
+        r_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(r_label)
+        self.color_r_line_edit = qt.QLineEdit('')
+        self.color_r_line_edit.setMaxLength(3)
         self.color_r_line_edit.setValidator(colorValidator)
-        self.color_r_line_edit.setInputMask("000")
+        # self.color_r_line_edit.setInputMask("000")
         self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_r_line_edit)
 
-        self.color_g_line_edit = qt.QLineEdit('G')
+        g_label = qt.QLabel('G')
+        g_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(g_label)
+        self.color_g_line_edit = qt.QLineEdit('')
+        self.color_g_line_edit.setMaxLength(3)
         self.color_g_line_edit.setValidator(colorValidator)
-        self.color_g_line_edit.setInputMask("000")
+        # self.color_g_line_edit.setInputMask("000")
         self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_g_line_edit)
 
-        self.color_b_line_edit = qt.QLineEdit('B')
-        # self.color_b_line_edit.setValidator(colorValidator)
-        self.color_b_line_edit.setInputMask("000")
+        b_label = qt.QLabel('B')
+        b_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(b_label)
+        self.color_b_line_edit = qt.QLineEdit('')
+        self.color_b_line_edit.setMaxLength(3)
+        self.color_b_line_edit.setValidator(colorValidator)
+        # self.color_b_line_edit.setInputMask("000")
         self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_b_line_edit)
 
+        # Display the selected color from RGB
         self.color_display = qt.QLabel('        ')
         color_hbox.addWidget(self.color_display)
-
         layout.addLayout(color_hbox)
+
+        # RENDU ICI --- ATTENTION BUGS APRES POUR ANNOTATION SI IMAGES LOADE
 
         if self.modality == 'CT':
             min_hu_hbox = qt.QHBoxLayout()
@@ -1158,8 +1175,10 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
+    @enter_function
     def push_save(self):
         current_label_name = self.name_line_edit.text
+        Debug.print(self, f'currrent_label_name: {current_label_name}')
 
         label_found = False
         for label in self.config_yaml['labels']:
@@ -1175,6 +1194,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                     label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
 
         if label_found == False:
+            Debug.print(self, 'label_found==False')
             # append
             new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255,
                          'lower_bound_HU': 30, 'name': 'ICH',

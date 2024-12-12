@@ -539,15 +539,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_width_line_edit.setEnabled(False)
 
     @enter_function
-    def set_debug(self, enable):
-        """
-        Allows to set activate or deactivate debugging mode.
-        """
-        print('set_debug: ENABLE_DEBUG =', enable)
-        global ENABLE_DEBUG
-        ENABLE_DEBUG = enable
-
-    @enter_function
     def push_configure_segmentation(self):
         self.set_debug(False)
         self.configureSegmentationWindow = ConfigureSegmentationWindow(

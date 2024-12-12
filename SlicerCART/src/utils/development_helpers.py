@@ -11,7 +11,6 @@ class Dev:
     def show_message_box(self, message,
                          box_title=None,
                          buttons=False):
-        print('asadasd')
 
         # Create a message box
         messageBox = qt.QMessageBox()

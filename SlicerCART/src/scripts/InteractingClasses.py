@@ -1085,9 +1085,27 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_r_line_edit = qt.QLineEdit('')
         self.color_r_line_edit.setMaxLength(3)
         self.color_r_line_edit.setValidator(colorValidator)
+        # print('result', colorValidator)
+        print('after validator before line edit changed')
         # self.color_r_line_edit.setInputMask("000")
         self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
+        print('after line edit changed')
         color_hbox.addWidget(self.color_r_line_edit)
+
+        # Connect the textChanged signal to a custom validation method
+        # def validate_input():
+        #     print('in validate input')
+        #     input_text = self.color_r_line_edit.text
+        #     print('input text: ', input_text)
+        #     result = colorValidator.validate(input_text, 0)
+        #     print('result: ', result)
+        #     if result == qt.QValidator.Acceptable:
+        #         print(f"'{input_text}' is valid.")
+        #     elif result == qt.QValidator.Intermediate:
+        #         print(f"'{input_text}' is intermediate.")
+        #     elif result == qt.QValidator.Invalid:
+        #         print(f"'{input_text}' is invalid.")
+
 
         g_label = qt.QLabel('G')
         g_label.setStyleSheet("font-weight: bold")
@@ -1115,6 +1133,35 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         layout.addLayout(color_hbox)
 
         # RENDU ICI --- ATTENTION BUGS APRES POUR ANNOTATION SI IMAGES LOADE
+        validator_hbox = qt.QHBoxLayout()
+        valided_result = ''
+        # Create a QLabel to display a comment below the QLineEdit
+        self.validator_label_hbox = qt.QLineEdit(f'{valided_result}')
+        validator_hbox.addWidget(self.validator_label_hbox)
+        self.validator_label_hbox.setEnabled(False)
+        layout.addLayout(validator_hbox)
+
+        def validate_input():
+            print('in validate input')
+            input_text = self.color_r_line_edit.text
+            print('input text: ', input_text)
+            result = colorValidator.validate(input_text, 0)
+            print('result: ', result)
+            if result == qt.QValidator.Acceptable:
+                print(f"'{input_text}' is valid.")
+                self.validator_label_hbox.setText('')
+                # self.validator_label_hbox = qt.QLineEdit('')
+                # self.validator_label_hbox.setEnabled(False)
+
+            else:
+                print(f"'{input_text}' is not valid.")
+                self.validator_label_hbox.setText(f'{input_text} is not valid.')
+
+                # self.validator_label_hbox = self.validator_label_hbox.setText(f"{input_text} is not valid.")
+                # self.validator_label_hbox = qt.QLineEdit(f'{input_text}')
+                # self.validator_label_hbox.setEnabled(False)
+
+        self.color_r_line_edit.textChanged.connect(validate_input)
 
         if self.modality == 'CT':
             min_hu_hbox = qt.QHBoxLayout()

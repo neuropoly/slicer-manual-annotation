@@ -540,7 +540,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
     @enter_function
     def push_configure_segmentation(self):
-        self.set_debug(False)
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality_selected, self.edit_conf)
         self.configureSegmentationWindow.show()
@@ -562,7 +561,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     @enter_function # Example that print the function name when you click on
     # apply in the Configuration Set Up Window
     def push_apply(self):
-        Dev.show_message_box(self, 'ablabla')
         self.config_yaml[
             'is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
         self.config_yaml[
@@ -991,7 +989,6 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.cancel_button.clicked.connect(self.push_cancel)
 
     def push_apply(self):
-        Dev.show_message_box(self, 'ablabla')
         self.config_yaml[
             'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
 
@@ -1162,7 +1159,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
     def push_save(self):
-        print('entering push save 1 in configure single lab el windon **')
         current_label_name = self.name_line_edit.text
 
         label_found = False
@@ -1458,7 +1454,6 @@ class ConfigureClassificationWindow(qt.QWidget):
         configureSingleClassificationItemWindow.show()
 
     def push_save(self):
-        print('ENTERING Configure classificaiton window ****2')
         with open(CONFIG_FILE_PATH, 'w') as file:
             yaml.safe_dump(self.config_yaml, file)
 

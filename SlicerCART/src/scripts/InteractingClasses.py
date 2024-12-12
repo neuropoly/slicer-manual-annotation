@@ -549,7 +549,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
     @enter_function
     def push_configure_segmentation(self):
-        self.set_debug('fgfgfgf')
+        self.set_debug(False)
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality_selected, self.edit_conf)
         self.configureSegmentationWindow.show()

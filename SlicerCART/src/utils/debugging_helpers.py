@@ -1,52 +1,119 @@
 import functools
-ENABLE_DEBUG = True
+from utils.global_variables import ENABLE_DEBUG
+
+
 class Debug:
+    """
+    This class is used for facilitating debugging using the 3D Slicer python
+    console. Feel free to add any function that is useful for debugging.
+
+    Usage: in any python that has imported the utils folder, do:
+            Debug.function_name(self, *args, **kwargs)
+            where function_name is the function in the Debug class
+    """
+
     def __init__(self):
         pass
 
 
     # def set_debug(self, enable):
-    #     print('set_debug: enable=', enable)
-    #     ENABLE_DEBUG = enable #ToDo: enventually, ENABLE_DEBUG variable might
-    #     # be moved to another python file. Ensure that the variable is still
-    #     # accessible for calling.
-    #
-    #
-    # def print_dictionary(self, dictionary, name=None):
-    #     if ENABLE_DEBUG:
-    #         if name is None:
-    #             name = "dictionary"
-    #         for element in dictionary:
-    #             print(f"{name} {element}: ", dictionary[element])
-    #
-    # def print(self, statement='', ):
-    #     if ENABLE_DEBUG:
-    #         print(statement)
+    #     """
+    #     Allows to set activate or deactivate debugging mode.
+    #     """
+    #     print('set_debug: ENABLE_DEBUG =', enable)
+    #     global ENABLE_DEBUG
+    #     ENABLE_DEBUG = enable
+
+    def print_dictionary(self, dictionary, name=None):
+        """
+        Prints out a dictionary with keys as keys and values as values on
+        multiples lines.
+        """
+        if ENABLE_DEBUG:
+            if name is None:
+                name = "dictionary"
+            for element in dictionary:
+                print(f"{name} {element}: ", dictionary[element])
+
+    def print(self, statement='', ):
+        """
+        Prints out a statement only if debugging mode is enabled. Allows to
+        keep print statement in the code without contaminating the python
+        console for non-debugging usage.
+        """
+        if ENABLE_DEBUG:
+            print(statement)
 
 
-
-
-
-# Decorator to automatically pass the function name
-# def log_function_call(func):
+# def enter_function(func):
+#     """
+#     Decorator that enables to print the function name in the python console
+#     and the name of the class that the function is associated with.
+#     """
+#
 #     @functools.wraps(func)
 #     def wrapper(self, *args, **kwargs):
-#         debug = Debug()
-#         # Automatically pass the function name to the enter_function method
-#         debug.enter_function(func.__name__)  # func.__name__ gets the name of the current function
-#         return func(self, *args, **kwargs)
+#         def print_enter_function(self_of_cls, *args, **kwargs):
+#             # This function should not return the func, but rather print the
+#             # message
+#             if ENABLE_DEBUG:
+#                 print('\n *** enter_function ***:', func.__name__,
+#                       '*** from class ***:', self_of_cls.__class__.__name__,
+#                       '\n')
+#
+#         print_enter_function(self, *args, **kwargs)
+#
+#         # Call the original function with the provided arguments and return
+#         # its result
+#         result = func(self)
+#         return result
+#
 #     return wrapper
 
 
-# Decorator to automatically pass the function name
 def enter_function(func):
+    """
+    Decorator that enables to print the function name in the python console
+    and the name of the class that the function is associated with.
+    """
+
+    @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        @functools.wraps(func)
-        def enter_function(self_of_cls, *args, **kwargs):
+        def print_enter_function(self_of_cls, *args, **kwargs):
+            # This function should not return the func, but rather print the
+            # message
             if ENABLE_DEBUG:
                 print('\n *** enter_function ***:', func.__name__,
-                      '*** from class ***:', self.__class__.__name__, '\n')
-                # print('class name to which belongs the function:', self.__class__.__name__)
-            return None
-        return enter_function(self, *args, **kwargs)
+                      '*** from class ***:', self_of_cls.__class__.__name__,
+                      '\n')
+
+        print_enter_function(self, *args, **kwargs)
+
+        # Call the original function with the provided arguments and return
+        # its result
+        print('args', args)
+        print('len args', len(args))
+        print('kwargs', kwargs)
+        print('len kwargs', len(kwargs))
+        print('type arg', type(args))
+
+        # if not (len(args) == 1 and args[0] is False):
+        #     print('arg not none')
+        #     result = func(self, *args, **kwargs)
+        #     print('function worked')
+        # else:
+        #     result = func(self)
+
+        if (len(args) == 1 and args[0] is False):
+            #ToDo: Find how to distinguish False as an argument from False
+            # from default args Tuple. This is currently a LIMITATION only
+            # if the first argument is False
+            result = func(self)
+        else:
+            print('arg not none')
+            result = func(self, *args, **kwargs)
+            print('function worked')
+
+        return result
+
     return wrapper

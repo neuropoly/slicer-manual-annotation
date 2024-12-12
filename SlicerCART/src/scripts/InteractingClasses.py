@@ -538,23 +538,31 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
+    @enter_function
+    def set_debug(self, enable):
+        """
+        Allows to set activate or deactivate debugging mode.
+        """
+        print('set_debug: ENABLE_DEBUG =', enable)
+        global ENABLE_DEBUG
+        ENABLE_DEBUG = enable
+
+    @enter_function
     def push_configure_segmentation(self):
+        self.set_debug('fgfgfgf')
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality_selected, self.edit_conf)
         self.configureSegmentationWindow.show()
         self.close()
 
-    # @enter_function
+    @enter_function
     def push_configure_classification(self):
-        # Debug.set_debug(True)
         configureClassificationWindow = ConfigureClassificationWindow(
             self.segmenter, self.edit_conf)
         configureClassificationWindow.show()
         self.close()
 
-    # @enter_function
     def push_previous(self):
-        # Debug.set_debug(False)
         self.close()
         slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
             self.segmenter)
@@ -563,6 +571,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     @enter_function # Example that print the function name when you click on
     # apply in the Configuration Set Up Window
     def push_apply(self):
+        Dev.show_message_box(self, 'ablabla')
         self.config_yaml[
             'is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
         self.config_yaml[
@@ -705,6 +714,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             self.segmenter.ui.SelectOutputFolder.setVisible(True)
             self.close()
 
+    @enter_function
     def select_output_folder_clicked(self, button):
         if button.text == 'OK':
             global REQUIRE_EMPTY
@@ -990,6 +1000,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.cancel_button.clicked.connect(self.push_cancel)
 
     def push_apply(self):
+        Dev.show_message_box(self, 'ablabla')
         self.config_yaml[
             'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
 

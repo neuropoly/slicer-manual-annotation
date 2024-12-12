@@ -67,7 +67,7 @@ freetextboxes:
   cheese: Cheese
   number_of_focal_points: Number of focal points
   other_comments: Comments
-impose_bids_format: false
+impose_bids_format: true
 input_filetype: '*.nii.gz'
 interpolate_value: 0
 is_classification_requested: true

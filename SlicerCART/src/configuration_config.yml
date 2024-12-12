@@ -91,19 +91,12 @@ labels:
   name: IVH
   upper_bound_HU: 90
   value: 2
-- color_b: 280
+- color_b: 456
   color_g: 234
   color_r: 123
   lower_bound_HU: 30
-  name: d
+  name: jacques
   upper_bound_HU: 90
   value: 3
-- color_b: 22
-  color_g: 222
-  color_r: 222
-  lower_bound_HU: 30
-  name: ass
-  upper_bound_HU: 90
-  value: 4
 modality: MRI
 slice_view_color: Yellow

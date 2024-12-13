@@ -465,6 +465,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return is_structure_valid
 
+  @enter_function
   def updateCaseAll(self):
       # All below is dependent on self.currentCase_index updates, 
       self.currentCase = self.Cases[self.currentCase_index]
@@ -478,6 +479,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
       self.update_current_segmentation_status()
 
+  @enter_function
   def update_current_segmentation_status(self):
       current_color = self.ui.SlicerDirectoryListView.currentItem().foreground().color()
       if current_color == qt.QColor('black'):
@@ -519,6 +521,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.CurrentPath.setReadOnly(True)
       self.ui.CurrentPath.setText(self.currentCasePath)
       
+  @enter_function
   def loadPatient(self):
       timer_index = 0
       self.timers = []
@@ -542,8 +545,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print(' node', self.VolumeNode)
 
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
+      if MODALITY == 'CT':
+          Debug.print(self, 'MODALITY==CT')
+          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
       self.newSegmentation()
 
@@ -1430,6 +1435,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compareSegmentVersionsWindow = CompareSegmentVersionsWindow(self, segmentationInformation_df)
       compareSegmentVersionsWindow.show()
 
+  @enter_function
   def compareSegmentVersions(self, selected_label, selected_version_file_paths):
       self.labelOfCompareSegmentVersions = selected_label
       self.colorsSelectedVersionFilePathsForCompareSegmentVersions = {}
@@ -1445,8 +1451,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
+      if MODALITY == 'CT':
+          Debug.print(self, 'MODALITY==CT')
+          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor

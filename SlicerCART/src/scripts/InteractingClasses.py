@@ -1085,27 +1085,9 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_r_line_edit = qt.QLineEdit('')
         self.color_r_line_edit.setMaxLength(3)
         self.color_r_line_edit.setValidator(colorValidator)
-        # print('result', colorValidator)
-        print('after validator before line edit changed')
         # self.color_r_line_edit.setInputMask("000")
         self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
-        print('after line edit changed')
         color_hbox.addWidget(self.color_r_line_edit)
-
-        # Connect the textChanged signal to a custom validation method
-        # def validate_input():
-        #     print('in validate input')
-        #     input_text = self.color_r_line_edit.text
-        #     print('input text: ', input_text)
-        #     result = colorValidator.validate(input_text, 0)
-        #     print('result: ', result)
-        #     if result == qt.QValidator.Acceptable:
-        #         print(f"'{input_text}' is valid.")
-        #     elif result == qt.QValidator.Intermediate:
-        #         print(f"'{input_text}' is intermediate.")
-        #     elif result == qt.QValidator.Invalid:
-        #         print(f"'{input_text}' is invalid.")
-
 
         g_label = qt.QLabel('G')
         g_label.setStyleSheet("font-weight: bold")
@@ -1132,60 +1114,28 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color_hbox.addWidget(self.color_display)
         layout.addLayout(color_hbox)
 
-        # RENDU ICI --- ATTENTION BUGS APRES POUR ANNOTATION SI IMAGES LOADE
-        validator_hbox = qt.QHBoxLayout()
+        validator_hbox = qt.QHBoxLayout() # Creates a validator horizontal Box
         valided_result = ''
-        # Create a QLabel to display a comment below the QLineEdit
         self.validator_label_hbox = qt.QLineEdit(f'{valided_result}')
         validator_hbox.addWidget(self.validator_label_hbox)
-        self.validator_label_hbox.setEnabled(False)
+        self.validator_label_hbox.setEnabled(False) # Prevent user editing
         layout.addLayout(validator_hbox)
 
-        # def validate_input():
-        #     print('in validate input')
-        #     input_text = self.color_r_line_edit.text
-        #     print('input text: ', input_text)
-        #     result = colorValidator.validate(input_text, 0)
-        #     print('result: ', result)
-        #     if result == qt.QValidator.Acceptable:
-        #         print(f"'{input_text}' is valid.")
-        #         self.validator_label_hbox.setText('')
-        #     else:
-        #         print(f"'{input_text}' is not valid.")
-        #         self.validator_label_hbox.setText(f'{input_text} is not valid.')
-        # def validate_input():
-        #     print('in validate input')
-        #     input_text = self.color_r_line_edit.text
-        #     print('input text: ', input_text)
-        #     result = colorValidator.validate(input_text, 0)
-        #     print('result: ', result)
-        #     if result == qt.QValidator.Acceptable:
-        #         print(f"'{input_text}' is valid.")
-        #         self.validator_label_hbox.setText('')
-        #     else:
-        #         print(f"'{input_text}' is not valid.")
-        #         self.validator_label_hbox.setText(f'{input_text} is not valid.')
-        #
-        #
-        #
-        # self.color_r_line_edit.textChanged.connect(validate_input)
-
         def validate_input(color_line_edit):
-            print('in validate input')
+            """
+            This functions validates if RGB value for a single color is valid.
+            Display a comment if value is out of range.
+            """
             input_text = color_line_edit.text
-            print('input text: ', input_text)
             result = colorValidator.validate(input_text, 0)
-            print('result: ', result)
             if result == qt.QValidator.Acceptable:
-                print(f"'{input_text}' is valid.")
                 self.validator_label_hbox.setText('')
             else:
                 if len(input_text) > 0:
-                    print(f"'{input_text}' is not valid.")
-                    self.validator_label_hbox.setText(f'{input_text} is not valid.')
+                    self.validator_label_hbox.setText(f'{input_text} '
+                                                      f'is not valid.')
                 else:
                     self.validator_label_hbox.setText('')
-
 
         # Connect each QLineEdit to validate_input using lambda
         self.color_r_line_edit.textChanged.connect(
@@ -1254,12 +1204,97 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
+    # def validate_rgb(self):
+    #     valid_r = self.color_r_line_edit.text
+    #     valid_g = self.color_g_line_edit.text
+    #     valid_b = self.color_b_line_edit.text
+    #     rgb_list = [valid_r, valid_g, valid_b]
+    #
+    #     # Check if all values are not None or empty
+    #     if all(value is not None and value.strip() != '' for value in rgb_list):
+    #         rgb_list = [int(value) for value in rgb_list if
+    #                         value is not None and value.strip() != '']
+    #
+    #         print("All values are not None and not empty.")
+    #         print('rbg list', rgb_list)
+    #         if all(0 <= value <= 255 for value in rgb_list):
+    #             print("All values are within the valid range (0 to 255).")
+    #         else:
+    #             print(
+    #                 "One or more values are out of the valid range (0 to 255).")
+    #     else:
+    #         print("One or more values are None or empty.")
+    def validate_rgb(self):
+        r = self.color_r_line_edit.text
+        g = self.color_g_line_edit.text
+        b = self.color_b_line_edit.text
+        rgb_dict = {'R': r,'G': g,'B': b}
+        incorrect_values = []
+        for color in rgb_dict:
+            try:
+                rgb_dict[color] = int(rgb_dict[color])
+                if 0 <= rgb_dict[color] <= 255:
+                    continue
+                else:
+                    incorrect_values.append(f"{color}: {str(rgb_dict[color])}")
+            except ValueError:
+                incorrect_values.append(f"{color}: {str(rgb_dict[color])}")
+
+        if len(incorrect_values) > 0:
+            incorrect_values = ' '.join(incorrect_values)
+            self.validator_label_hbox.setText(f'{incorrect_values} '
+                                              f'is/are not valid value/s.')
+
+        # # Check if all values are not None or empty
+        # if all(value is not None and value.strip() != '' for value in rgb_list):
+        #     rgb_list = [int(value) for value in rgb_list if
+        #                     value is not None and value.strip() != '']
+        #
+        #     print("All values are not None and not empty.")
+        #     print('rbg list', rgb_list)
+        #     if all(0 <= value <= 255 for value in rgb_list):
+        #         print("All values are within the valid range (0 to 255).")
+        #     else:
+        #         print(
+        #             "One or more values are out of the valid range (0 to 255).")
+        # else:
+        #     print("One or more values are None or empty.")
+
+
+
+        # # N.B. The line edit allows now only to enter integers, so we only
+        # # need to verify if values are between 0 and 255 and != None or ''
+        # result = all(0 <= value <= 255 if value is not None else False for value
+        #           in rgb_list)
+        # print('result ***', result)
+        # return result
+
+
+
+
+
     @enter_function
     def push_save(self):
         current_label_name = self.name_line_edit.text
         Debug.print(self, f'currrent_label_name: {current_label_name}')
 
         label_found = False
+
+        self.validate_rgb()
+        return
+
+        # for label in self.config_yaml['labels']:
+        #     if label['name'] == current_label_name:
+        #         # edit
+        #         label_found = True
+        #         label['color_r'] = int(self.color_r_line_edit.text)
+        #         label['color_g'] = int(self.color_g_line_edit.text)
+        #         label['color_b'] = int(self.color_b_line_edit.text)
+        #
+        #         if self.modality == 'CT':
+        #             label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
+        #             label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
+
         for label in self.config_yaml['labels']:
             if label['name'] == current_label_name:
                 # edit

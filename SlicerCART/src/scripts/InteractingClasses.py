@@ -538,12 +538,14 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
+    @enter_function
     def push_configure_segmentation(self):
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality_selected, self.edit_conf)
         self.configureSegmentationWindow.show()
         self.close()
 
+    @enter_function
     def push_configure_classification(self):
         configureClassificationWindow = ConfigureClassificationWindow(
             self.segmenter, self.edit_conf)
@@ -556,6 +558,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.segmenter)
         slicerCART_configuration_initial_window.show()
 
+    @enter_function # Example that print the function name when you click on
+    # apply in the Configuration Set Up Window
     def push_apply(self):
         self.config_yaml[
             'is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
@@ -699,6 +703,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             self.segmenter.ui.SelectOutputFolder.setVisible(True)
             self.close()
 
+    @enter_function
     def select_output_folder_clicked(self, button):
         if button.text == 'OK':
             global REQUIRE_EMPTY

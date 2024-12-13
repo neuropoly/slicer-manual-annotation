@@ -35,11 +35,13 @@ class Debug:
             for element in dictionary:
                 print(f"{name} {element}: ", dictionary[element])
 
-    def print(self, statement='', ):
+    def print(self, statement=''):
         """
         Prints out a statement only if debugging mode is enabled. Allows to
         keep print statement in the code without contaminating the python
         console for non-debugging usage.
+        Usage: Debug.print(self, statement) where statement is a string of a
+        statement the user wants to print only if debugging is enabled.
         """
         if ENABLE_DEBUG:
             print(statement)

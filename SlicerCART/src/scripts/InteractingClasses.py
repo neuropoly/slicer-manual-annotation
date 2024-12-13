@@ -1204,32 +1204,17 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
-    # def validate_rgb(self):
-    #     valid_r = self.color_r_line_edit.text
-    #     valid_g = self.color_g_line_edit.text
-    #     valid_b = self.color_b_line_edit.text
-    #     rgb_list = [valid_r, valid_g, valid_b]
-    #
-    #     # Check if all values are not None or empty
-    #     if all(value is not None and value.strip() != '' for value in rgb_list):
-    #         rgb_list = [int(value) for value in rgb_list if
-    #                         value is not None and value.strip() != '']
-    #
-    #         print("All values are not None and not empty.")
-    #         print('rbg list', rgb_list)
-    #         if all(0 <= value <= 255 for value in rgb_list):
-    #             print("All values are within the valid range (0 to 255).")
-    #         else:
-    #             print(
-    #                 "One or more values are out of the valid range (0 to 255).")
-    #     else:
-    #         print("One or more values are None or empty.")
-    def validate_rgb(self):
+    def incorrect_rgb(self):
         r = self.color_r_line_edit.text
         g = self.color_g_line_edit.text
         b = self.color_b_line_edit.text
         rgb_dict = {'R': r,'G': g,'B': b}
+
+        # N.B. The line edit allows now only to enter integers, so we only
+        # need to verify if values are not empty or between 0 and 255
         incorrect_values = []
+        flag_incorrect_value = False
+
         for color in rgb_dict:
             try:
                 rgb_dict[color] = int(rgb_dict[color])
@@ -1244,56 +1229,41 @@ class ConfigureSingleLabelWindow(qt.QWidget):
             incorrect_values = ' '.join(incorrect_values)
             self.validator_label_hbox.setText(f'{incorrect_values} '
                                               f'is/are not valid value/s.')
+            flag_incorrect_value = True
 
-        # # Check if all values are not None or empty
-        # if all(value is not None and value.strip() != '' for value in rgb_list):
-        #     rgb_list = [int(value) for value in rgb_list if
-        #                     value is not None and value.strip() != '']
-        #
-        #     print("All values are not None and not empty.")
-        #     print('rbg list', rgb_list)
-        #     if all(0 <= value <= 255 for value in rgb_list):
-        #         print("All values are within the valid range (0 to 255).")
-        #     else:
-        #         print(
-        #             "One or more values are out of the valid range (0 to 255).")
-        # else:
-        #     print("One or more values are None or empty.")
+        return flag_incorrect_value
 
+    def incorrect_name(self):
+        name = self.name_line_edit.text
+        flag_incorrect_name = False
+        if name != None :
+            name = name.strip()
+        if name == "":
+            self.validator_label_hbox.setText(f'Name cannot be empty.')
+            flag_incorrect_name = True
+        else:
+            if " " in name:
+                self.validator_label_hbox.setText(f'Name {name} is invalid. No '
+                                                  'space accepted in label '
+                                                  'name.')
+                flag_incorrect_name = True
+            else:
+                self.validator_label_hbox.setText('')
+                self.name_line_edit.text = name
 
-
-        # # N.B. The line edit allows now only to enter integers, so we only
-        # # need to verify if values are between 0 and 255 and != None or ''
-        # result = all(0 <= value <= 255 if value is not None else False for value
-        #           in rgb_list)
-        # print('result ***', result)
-        # return result
-
-
-
-
+        return flag_incorrect_name
 
     @enter_function
     def push_save(self):
+        label_found = False
+        if self.incorrect_rgb():
+            return
+
+        if self.incorrect_name():
+            return
+
         current_label_name = self.name_line_edit.text
         Debug.print(self, f'currrent_label_name: {current_label_name}')
-
-        label_found = False
-
-        self.validate_rgb()
-        return
-
-        # for label in self.config_yaml['labels']:
-        #     if label['name'] == current_label_name:
-        #         # edit
-        #         label_found = True
-        #         label['color_r'] = int(self.color_r_line_edit.text)
-        #         label['color_g'] = int(self.color_g_line_edit.text)
-        #         label['color_b'] = int(self.color_b_line_edit.text)
-        #
-        #         if self.modality == 'CT':
-        #             label['lower_bound_HU'] = int(self.min_hu_line_edit.text)
-        #             label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
 
         for label in self.config_yaml['labels']:
             if label['name'] == current_label_name:

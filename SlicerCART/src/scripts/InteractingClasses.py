@@ -1085,7 +1085,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_r_line_edit = qt.QLineEdit('')
         self.color_r_line_edit.setMaxLength(3)
         self.color_r_line_edit.setValidator(colorValidator)
-        # self.color_r_line_edit.setInputMask("000")
         self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_r_line_edit)
 
@@ -1095,7 +1094,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_g_line_edit = qt.QLineEdit('')
         self.color_g_line_edit.setMaxLength(3)
         self.color_g_line_edit.setValidator(colorValidator)
-        # self.color_g_line_edit.setInputMask("000")
         self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_g_line_edit)
 
@@ -1105,7 +1103,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.color_b_line_edit = qt.QLineEdit('')
         self.color_b_line_edit.setMaxLength(3)
         self.color_b_line_edit.setValidator(colorValidator)
-        # self.color_b_line_edit.setInputMask("000")
         self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_b_line_edit)
 
@@ -1256,6 +1253,8 @@ class ConfigureSingleLabelWindow(qt.QWidget):
     @enter_function
     def push_save(self):
         label_found = False
+
+        # Validate rgb and name
         if self.incorrect_rgb():
             return
 

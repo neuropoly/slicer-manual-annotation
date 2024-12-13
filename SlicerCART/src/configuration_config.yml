@@ -77,9 +77,9 @@ is_mouse_shortcuts_requested: true
 is_segmentation_requested: true
 is_semi_automatic_phe_tool_requested: true
 labels:
-- color_b: 222
-  color_g: 222
-  color_r: 12
+- color_b: 10
+  color_g: 10
+  color_r: 255
   lower_bound_HU: 30
   name: ICH
   upper_bound_HU: 90

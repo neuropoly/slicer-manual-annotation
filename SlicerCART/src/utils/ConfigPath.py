@@ -88,26 +88,28 @@ class ConfigPath():
         existing.
         """
 
-        temp_dir = tempfile.gettempdir()
-        print('temp_dir', temp_dir)
-        temp_file_path = os.path.join(temp_dir, 'output_folder_not_selected.txt')
-        print('temp_file_path', temp_file_path)
-        temp_file_exist = True
-
-        try:
-            # Write some initial data to the file
-            with open(temp_file_path, "r") as temp_file:
-                content = temp_file.read()
-                print(f"Contents of the file:\n{content}")
-        except FileNotFoundError:
-            print("File not found")
-            temp_file_exist = False
+        # temp_dir = tempfile.gettempdir()
+        # print('temp_dir', temp_dir)
+        # temp_file_path = os.path.join(temp_dir, 'output_folder_not_selected.txt')
+        # print('temp_file_path', temp_file_path)
+        # temp_file_exist = True
+        #
+        # try:
+        #     # Write some initial data to the file
+        #     with open(temp_file_path, "r") as temp_file:
+        #         content = temp_file.read()
+        #         print(f"Contents of the file:\n{content}")
+        # except FileNotFoundError:
+        #     print("File not found")
+        #     temp_file_exist = False
+        temp_file_exist = ConfigPath.get_temp_file(self)
 
         if temp_file_exist:
             with open(CONFIG_FILE_PATH, 'r') as file:
                 print('self path to config failed ************** \n  ')
                 self.config_yaml = yaml.safe_load(file)
         else:
+            temp_dir = tempfile.gettempdir()
             temp_file_path = os.path.join(temp_dir, 'output_path.txt')
             # Write some initial data to the file
             with open(temp_file_path, "r") as temp_file:
@@ -116,10 +118,34 @@ class ConfigPath():
             with open(output_path, 'r') as file:
                 print('self config yaml ###')
                 print('fil!!!!!!!!!!!!: e', file)
+                # print('self config yaml before reset', self.config_yaml)
+                self.config_yaml = {}
                 self.config_yaml = yaml.safe_load(file)
+                print('\n \n \n self config yaml after reset after',
+                      self.config_yaml)
 
         ### REBNDCU ICI METTRE DES EDEBUGS PLUS PRECIS
 
+        return self.config_yaml
+
+    @enter_function
+    def read_config_file(self):
+        temp_file_exist = ConfigPath.get_temp_file(self)
+        print('temp %%%%%%% file exists: ', temp_file_exist)
+        if temp_file_exist:
+            with open(CONFIG_FILE_PATH, 'r') as file:
+                self.config_yaml = yaml.full_load(file)
+        else:
+            outputh_path = ConfigPath.read_temp_file(self,
+                                                     name='output_path.txt')
+            print('output_path,: ', outputh_path)
+            self.path_to_config_copy = outputh_path
+            # self.config_yaml = ConfigPath.open_project_config_file(self)
+            with open(output_path, 'r') as file:
+                print('self config yaml ###')
+                print('fil!!!!!!!!!!!!: e', file)
+                self.config_yaml = yaml.safe_load(file)
+            print('DEBUG FINAL self config yaml', self.config_yaml)
         return self.config_yaml
 
 
@@ -188,6 +214,7 @@ class ConfigPath():
         else:
             print(f"File not found: {temp_file_path}")
 
+    @enter_function
     def read_temp_file(self, name='output_folder_not_selected.txt'):
         # Get the path to the temporary file
         temp_dir = tempfile.gettempdir()
@@ -199,6 +226,71 @@ class ConfigPath():
             print(f"Contents of the file:\n{content}")
             print('type content:', type(content))
             return content
+
+    # @enter_function
+    # def write_config_file(self):
+    #     temp_dir = tempfile.gettempdir()
+    #     print('temp_dir', temp_dir)
+    #     temp_file_path = os.path.join(temp_dir,
+    #                                   'output_folder_not_selected.txt')
+    #     print('temp_file_path', temp_file_path)
+    #     temp_file_exist = True
+    #
+    #     try:
+    #         # Write some initial data to the file
+    #         with open(temp_file_path, "r") as temp_file:
+    #             content = temp_file.read()
+    #             print(f"Contents of the file:\n{content}")
+    #     except FileNotFoundError:
+    #         print("File not found")
+    #         temp_file_exist = False
+    #
+    #     if temp_file_exist:
+    #         with open(CONFIG_FILE_PATH, 'w') as file:
+    #             yaml.safe_dump(self.config_yaml, file)
+    #     else:
+    #         print(' %%%%%% IN ELSE SAVE PUSH SINGLE LABEL')
+    #         output_path = ConfigPath.read_temp_file(self,
+    #                                                 name='output_path.txt')
+    #         print('output_path443', output_path)
+    #         with open(output_path, 'w') as file:
+    #             yaml.safe_dump(self.config_yaml, file)
+
+
+
+
+    @enter_function
+    def write_config_file(self):
+        # temp_dir = tempfile.gettempdir()
+        # print('temp_dir', temp_dir)
+        # temp_file_path = os.path.join(temp_dir,
+        #                               'output_folder_not_selected.txt')
+        # print('temp_file_path', temp_file_path)
+        # temp_file_exist = True
+        #
+        # try:
+        #     # Write some initial data to the file
+        #     with open(temp_file_path, "r") as temp_file:
+        #         content = temp_file.read()
+        #         print(f"Contents of the file:\n{content}")
+        # except FileNotFoundError:
+        #     print("File not found")
+        #     temp_file_exist = False
+        temp_file_exist = ConfigPath.get_temp_file(self)
+        print('temp_file_exist in write config file', temp_file_exist)
+
+        if temp_file_exist:
+            with open(CONFIG_FILE_PATH, 'w') as file:
+                yaml.safe_dump(self.config_yaml, file)
+        else:
+            print(' %%%%%% IN ELSE SAVE PUSH SINGLE LABEL')
+            output_path = ConfigPath.read_temp_file(self,
+                                                    name='output_path.txt')
+            print('output_path443', output_path)
+            with open(output_path, 'w') as file:
+                yaml.safe_dump(self.config_yaml, file)
+
+
 
 
 

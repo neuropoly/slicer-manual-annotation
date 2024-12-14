@@ -70,6 +70,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.called = False
     self.called_onLoadSegmentation = False
     ConfigPath.create_temp_file(self)
+    print('**** temp file created BE CAREFUL!')
     # ConfigPath.create_temp_file(self, name='output_path')
 
   def get_config_values(self):

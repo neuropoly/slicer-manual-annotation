@@ -32,21 +32,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}',
                         CONFIG_FILE_PATH)
 
-        # with open(CONFIG_FILE_PATH, 'r') as file:
-        #     self.config_yaml = yaml.full_load(file)
-
-        # temp_file_exist = ConfigPath.get_temp_file(self)
-        # print('temp %%%%%%% file exists: ', temp_file_exist)
-        # if temp_file_exist:
-        #     with open(CONFIG_FILE_PATH, 'r') as file:
-        #         self.config_yaml = yaml.full_load(file)
-        # else:
-        #     outputh_path = ConfigPath.read_temp_file(self,
-        #                                             name='output_path.txt')
-        #     print('output_path,: ', outputh_path)
-        #     self.path_to_config_copy = outputh_path
-        #     self.config_yaml = ConfigPath.open_project_config_file(self)
-        #     print('DEBUG FINAL self config yaml', self.config_yaml)
         self.config_yaml  = ConfigPath.open_project_config_file(self)
 
         self.set_default_values()
@@ -575,10 +560,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     @enter_function # Example that print the function name when you click on
     # apply in the Configuration Set Up Window
     def push_apply(self):
-        print('push apply entered slicer configuration setup windo')
-        test = ConfigPath.get_temp_file(self)
-        print('test succeed', test)
-        print('sef config yaml before', self.config_yaml)
         self.config_yaml[
             'is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
         self.config_yaml[
@@ -623,20 +604,10 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.config_yaml['KEYBOARD_SHORTCUTS'][6][
             'shortcut'] = self.interpolate_ks_selected
 
-        print('\n \n \n self config yaml after ', self.config_yaml)
-
-        # with open(CONFIG_FILE_PATH, 'w') as file:
-        #     yaml.safe_dump(self.config_yaml, file)
         ConfigPath.write_config_file(self)
 
         self.segmenter.setup_configuration()
 
-        print('zzzzzzzzzzz')
-
-        # if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
-        #         f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
-        #     shutil.copy(CONFIG_FILE_PATH,
-        #                 f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
         self.close()
 
     def push_cancel(self):
@@ -655,7 +626,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):
         super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)
 
-        # MB ADDED
+        # MB: Required for using the correct config file.
         self.config_yaml = ConfigPath.open_project_config_file(self)
 
         self.segmenter = segmenter
@@ -823,16 +794,10 @@ class ConfigureSegmentationWindow(qt.QWidget):
                  parent=None):
         super(ConfigureSegmentationWindow, self).__init__(parent)
 
-        # self.config_yaml  = ConfigPath.open_project_config_file(self)
-        #   with open(CONFIG_FILE_PATH, 'r') as file:
-        #     self.config_yaml = yaml.full_load(file)
-
         if label_config_yaml is None:
             Debug.print(self, 'label_config_yaml is None in '
                               'ConfigureSegmentationwindow')
             self.config_yaml  = ConfigPath.open_project_config_file(self)
-            # with open(CONFIG_FILE_PATH, 'r') as file:
-            #     self.config_yaml = yaml.full_load(file)
         else:
             Debug.print(self, 'else meaning label_config_yaml is NOT None in '
                               'ConfigureSegmentationwindow')
@@ -1001,8 +966,6 @@ class ConfigureSegmentationWindow(qt.QWidget):
             if l['value'] > value_removed and value_removed != -1:
                 l['value'] = l['value'] - 1
 
-        # with open(CONFIG_FILE_PATH, 'w') as file:
-        #     yaml.safe_dump(self.config_yaml, file)
         ConfigPath.write_config_file(self)
 
         configureSegmentationWindow = ConfigureSegmentationWindow(
@@ -1024,15 +987,8 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
     @enter_function
     def push_apply(self):
-        Debug.print(self, 'in push_apply in ConfigureSegmentationWindow')
-        print('self config yaml in push apply', self.config_yaml)
-
-
-
         self.config_yaml[
             'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
-
-
 
         if len(self.config_yaml['labels']) == 0:
             msg = qt.QMessageBox()
@@ -1043,21 +999,9 @@ class ConfigureSegmentationWindow(qt.QWidget):
             msg.buttonClicked.connect(self.push_error_label_list_empty)
             msg.exec()
         else:
-            print('in else push apply configuresaationsemgnetaionwindow')
-            print('self config yaml before', self.config_yaml)
-            # with open(CONFIG_FILE_PATH, 'w') as file:
-            #     yaml.safe_dump(self.config_yaml, file)
+            Debug.print(self, 'in else push_apply in '
+                              'ConfigureSegmentationWindow')
             ConfigPath.write_config_file(self)
-            print('\n \n \n \n self config yaml after', self.config_yaml)
-
-
-        print('xxxxxxxxx')
-
-        # if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
-        #         f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
-        #     print('in if self edit conf and self segmentater entered')
-        #     shutil.copy(CONFIG_FILE_PATH,
-        #                 f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
 
         slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
             self.segmenter)
@@ -1089,8 +1033,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.modality = modality
         self.initial_label = label
         self.config_yaml = ConfigPath.open_project_config_file(self)
-        # self.config_yaml = label_config_yaml
-        print('label_config_yaml 44444444444', label_config_yaml)
         self.edit_conf = edit_conf
 
         layout = qt.QVBoxLayout() # Creates a vertical Box layout (Label Box)
@@ -1345,19 +1287,6 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
             self.config_yaml['labels'].append(new_label)
 
-        # temp_file_exist = ConfigPath.get_temp_file(self)
-        # if temp_file_exist:
-        #
-        #     with open(CONFIG_FILE_PATH, 'w') as file:
-        #         yaml.safe_dump(self.config_yaml, file)
-        # else:
-        #     print(' %%%%%% IN ELSE SAVE PUSH SINGLE LABEL')
-        #     output_path = ConfigPath.read_temp_file(self,
-        #                                             name='output_path.txt')
-        #     print('output_path', output_path)
-        #     with open(output_path, 'w') as file:
-        #         yaml.safe_dump(self.config_yaml, file)
-
         ConfigPath.write_config_file(self)
 
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
@@ -1382,8 +1311,6 @@ class ConfigureClassificationWindow(qt.QWidget):
 
         if classification_config_yaml is None:
             self.config_yaml  = ConfigPath.open_project_config_file(self)
-            # with open(CONFIG_FILE_PATH, 'r') as file:
-            #     self.config_yaml = yaml.full_load(file)
         else:
             self.config_yaml = classification_config_yaml
 
@@ -1621,10 +1548,9 @@ class ConfigureClassificationWindow(qt.QWidget):
             self.segmenter, self.config_yaml, 'checkbox', self.edit_conf)
         configureSingleClassificationItemWindow.show()
 
+    @enter_function
     def push_save(self):
         ConfigPath.write_config_file(self)
-        # with open(CONFIG_FILE_PATH, 'w') as file:
-        #     yaml.safe_dump(self.config_yaml, file)
 
         if self.edit_conf:
             if self.segmenter.outputFolder is not None and os.path.exists(

@@ -34,4 +34,3 @@ import slicerio
 import yaml
 
 import tempfile
-

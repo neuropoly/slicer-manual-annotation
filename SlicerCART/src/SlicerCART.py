@@ -69,50 +69,62 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-    
+
+    # Create a temp file that serves as a flag to determine if output folder
+    # has been selected or not.
+    ConfigPath.create_temp_file(self)
+    Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+
+  @enter_function
   def get_config_values(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        self.config_yaml = yaml.safe_load(file)
+      # Select the appropriate configuration file.
+      ConfigPath.open_project_config_file(self)
 
-        global INPUT_FILE_EXTENSION
-        global DEFAULT_VOLUMES_DIRECTORY
-        global DEFAULT_SEGMENTATION_DIRECTORY
-        global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-        global MODALITY
-        global IS_CLASSIFICATION_REQUESTED
-        global IS_SEGMENTATION_REQUESTED
-        global IS_MOUSE_SHORTCUTS_REQUESTED
-        global IS_KEYBOARD_SHORTCUTS_REQUESTED
-        global INTERPOLATE_VALUE
-        global CT_WINDOW_WIDTH
-        global CT_WINDOW_LEVEL
-        global IS_DISPLAY_TIMER_REQUESTED
-                
-        IS_DISPLAY_TIMER_REQUESTED = self.config_yaml["is_display_timer_requested"]
+      global INPUT_FILE_EXTENSION
+      global DEFAULT_VOLUMES_DIRECTORY
+      global DEFAULT_SEGMENTATION_DIRECTORY
+      global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
+      global MODALITY
+      global IS_CLASSIFICATION_REQUESTED
+      global IS_SEGMENTATION_REQUESTED
+      global IS_MOUSE_SHORTCUTS_REQUESTED
+      global IS_KEYBOARD_SHORTCUTS_REQUESTED
+      global INTERPOLATE_VALUE
+      global CT_WINDOW_WIDTH
+      global CT_WINDOW_LEVEL
+      global IS_DISPLAY_TIMER_REQUESTED
 
-        INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-        DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-        self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-        DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml["default_segmentation_directory"]
-        MODALITY = self.config_yaml["modality"]
-        IS_CLASSIFICATION_REQUESTED = self.config_yaml["is_classification_requested"]
-        IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
-        IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml["is_mouse_shortcuts_requested"]
-        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml["is_keyboard_shortcuts_requested"]
-        INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
+      IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
+          "is_display_timer_requested"]
 
-        if MODALITY == 'CT':
-            # then BIDS not mandatory because it is not yet supported 
-            # therefore, either .nrrd or .nii.gz accepted 
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-            CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-            CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+      INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
+      DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
+      self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+      DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
+          "default_segmentation_directory"]
+      MODALITY = self.config_yaml["modality"]
+      IS_CLASSIFICATION_REQUESTED = self.config_yaml[
+          "is_classification_requested"]
+      IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
+      IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
+          "is_mouse_shortcuts_requested"]
+      IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
+          "is_keyboard_shortcuts_requested"]
+      INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
 
-        elif MODALITY == 'MRI':
-            # therefore, .nii.gz required  
-            INPUT_FILE_EXTENSION = '*.nii.gz'
-            # user can decide whether to impose bids or not
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml["impose_bids_format"]
+      if MODALITY == 'CT':
+          # then BIDS not mandatory because it is not yet supported
+          # therefore, either .nrrd or .nii.gz accepted
+          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+          CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
+          CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+
+      elif MODALITY == 'MRI':
+          # therefore, .nii.gz required
+          INPUT_FILE_EXTENSION = '*.nii.gz'
+          # user can decide whether to impose bids or not
+          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+              "impose_bids_format"]
 
   def setup(self):
     """
@@ -147,12 +159,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
 
-    #MB: code below added in the configuration setup since its absence
+    # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
     self.get_config_values()
-    with open(CONFIG_FILE_PATH, 'r') as file:
-        self.config_yaml = yaml.full_load(file)
-        self.current_label_index = self.config_yaml['labels'][0]['value']
+    ConfigPath.open_project_config_file(self)
+    self.current_label_index = self.config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -1220,37 +1231,39 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  def verify_empty(self):
-      if self.outputFolder is not None and os.path.exists(self.outputFolder):
+  @enter_function
+  def check_volume_folder_selected(self):
+      Debug.print(self, f'self.Currentfolder: {self.CurrentFolder}')
+      if self.CurrentFolder != None:
+          return True
+      return False
 
-        content_of_output_folder = os.listdir(self.outputFolder)
-        if '.DS_Store' in content_of_output_folder:
-            content_of_output_folder.remove('.DS_Store')
-        
-        if len(content_of_output_folder) > 0:
-            self.outputFolder = None
-
-            msg = qt.QMessageBox()
-            msg.setIcon(qt.QMessageBox.Critical)
-            msg.setText("Error : The output folder must be empty ")
-            msg.setInformativeText('Given that there is a new configuration of SlicerCART, the output folder must be empty. ')
-            msg.setWindowTitle("ERROR : The output folder must be empty ")
-            msg.exec()
-        else:
-            path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
-
-            if os.path.exists(path_to_saved_config_files) == False:
-                os.makedirs(path_to_saved_config_files)
-
-            path_to_config_copy = f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
-
-            shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
-
+  @enter_function
   def onSelectOutputFolder(self):
-      self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
-      if REQUIRE_EMPTY: 
-          self.verify_empty()
+      if self.check_volume_folder_selected():
+          self.outputFolder = (
+              qt.QFileDialog.getExistingDirectory(
+                  None,
+                  "Open a folder",
+                  self.DefaultDir,
+                  qt.QFileDialog.ShowDirsOnly))
+      else:
+          Dev.show_message_box(self, 'Please select volumes folder first.',
+                               box_title='ATTENTION!')
+          return
+
+
+      # MB: Deactivated related to issue 112. To discuss in team (to remove).
+      # if REQUIRE_EMPTY:
+      #     self.verify_empty()
+
+      ConfigPath.check_existing_configuration(self)
+      ConfigPath.delete_temp_file(self)
+
+      # Robust. If the next output folder selected (from a change) is empty,
+      # ensure it will select the correct output folder path
+      ConfigPath.write_correct_path(self)
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
@@ -1268,6 +1281,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.update_current_segmentation_status()
 
                 self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+      else:
+          Debug.print(self, 'No output folder selected.')
 
   def update_case_list_colors(self):
       if self.outputFolder is None or self.CurrentFolder is None:
@@ -1562,16 +1577,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return list_of_segment_names
 
   def onPushDefaultMin(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+      fresh_config = ConfigPath.open_project_config_file(self)
+      self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+      self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+      fresh_config = ConfigPath.open_project_config_file(self)
+      self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]
+      self.setUpperAndLowerBoundHU(
+          self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"],
+          self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPush_ShowSegmentVersionLegendButton(self):
       segmentationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'

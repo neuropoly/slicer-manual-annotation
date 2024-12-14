@@ -33,3 +33,4 @@ import pandas as pd
 import slicerio
 import yaml
 
+import tempfile

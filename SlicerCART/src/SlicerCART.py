@@ -69,15 +69,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-    ConfigPath.create_temp_file(self)
-    print('**** temp file created BE CAREFUL!')
-    # ConfigPath.create_temp_file(self, name='output_path')
 
+    # Create a temp file that serves as a flag to determine if output folder
+    # has been selected or not.
+    ConfigPath.create_temp_file(self)
+    Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+
+  @enter_function
   def get_config_values(self):
+      # Select the appropriate configuration file.
       ConfigPath.open_project_config_file(self)
-      # self.open_project_config_file()
-      # with open(CONFIG_FILE_PATH, 'r') as file:
-      #   self.config_yaml = yaml.safe_load(file)
 
       global INPUT_FILE_EXTENSION
       global DEFAULT_VOLUMES_DIRECTORY
@@ -158,17 +159,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
 
-    # ConfigPath.create_temp_file()
-
-
-
-    #MB: code below added in the configuration setup since its absence
+    # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
     self.get_config_values()
     ConfigPath.open_project_config_file(self)
-    # self.open_project_config_file()
-    # with open(CONFIG_FILE_PATH, 'r') as file:
-    #     self.config_yaml = yaml.full_load(file)
     self.current_label_index = self.config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -1237,110 +1231,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  # @enter_function
-  # def verify_empty(self):
-  #     if self.outputFolder is not None and os.path.exists(self.outputFolder):
-  #
-  #       content_of_output_folder = os.listdir(self.outputFolder)
-  #       if '.DS_Store' in content_of_output_folder:
-  #           content_of_output_folder.remove('.DS_Store')
-  #
-  #       if len(content_of_output_folder) > 0:
-  #           self.outputFolder = None
-  #
-  #           msg = qt.QMessageBox()
-  #           msg.setIcon(qt.QMessageBox.Critical)
-  #           msg.setText("Error : The output folder must be empty ")
-  #           msg.setInformativeText('Given that there is a new configuration of SlicerCART, the output folder must be empty. ')
-  #           msg.setWindowTitle("ERROR : The output folder must be empty ")
-  #           msg.exec()
-  #       else:
-  #           self.check_existing_configuration()
-        # else:
-        #     path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
-        #
-        #     if os.path.exists(path_to_saved_config_files) == False:
-        #         os.makedirs(path_to_saved_config_files)
-        #
-        #     path_to_config_copy = f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
-        #
-        #     shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
-
-  # @enter_function
-  # def check_existing_configuration(self):
-  #     path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
-  #     path_to_config_copy = f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
-  #
-  #     if os.path.exists(path_to_saved_config_files) == False:
-  #         print('config file does not exist')
-  #         os.makedirs(path_to_saved_config_files)
-  #
-  #         print('about to test ocnfig file path')
-  #
-  #         shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
-  #         print('CONFIG FILE PATH: ', CONFIG_FILE_PATH )
-  #
-  #     else:
-  #         print('config file fond')
-  #
-  #         self.path_to_config_copy = path_to_config_copy
-  #         print('self path to config copy$$$: ', self.path_to_config_copy)
-  #         self.config_yaml.clear()
-  #         ConfigPath.open_project_config_file(self)
-  #         self.get_config_values()
-
-
-
-          # with open(path_to_config_copy, 'r') as file:
-          #     print('self config yaml ###')
-          #     print('path to config copy, :', path_to_config_copy)
-          #     print('fil!!!!!!!!!!!!: e', file)
-          #     new_data = yaml.safe_load(file)
-          #
-          # if new_data:
-          #     print('enter new_data')
-          #     print('new data print6666666666', new_data)
-          #     # Assuming self.config_yaml is a dictionary
-          #     self.config_yaml.clear()  # Clear the existing dictionary
-          #     self.config_yaml = new_data  # Replace with new data
-          #     self.get_config_values()
-
-          # shutil.copy(path_to_config_copy, CONFIG_FILE_PATH)
-          # CONFIG_FILE_PATH = path_to_config_copy
-          # print('CONFIG FILE PATH: ', CONFIG_FILE_PATH)
-
-          # print('CONFIG_FILE_PATH', CONFIG_FILE_PATH) # shutil.copy(
-          # # path_to_config_copy, CONFIG_FILE_PATH)
-          # CONFIG_FILE_PATH = path_to_config_copy
-          # print('config file path after modified: ', CONFIG_FILE_PATH)
-          print('********%%%%%self config yaml', self.config_yaml)
-
-
-
-  # @enter_function
-  # def open_project_config_file(self):
-  #     """
-  #     Load the appropriate configuration template: from module or project if
-  #     existing.
-  #     """
-  #     try:
-  #         self.path_to_config_copy
-  #         with open(self.path_to_config_copy, 'r') as file:
-  #             print('self config yaml ###')
-  #             print('path to config copy, :', self.path_to_config_copy)
-  #             print('fil!!!!!!!!!!!!: e', file)
-  #             self.config_yaml = yaml.safe_load(file)
-  #     except AttributeError:
-  #         with open(CONFIG_FILE_PATH, 'r') as file:
-  #             self.config_yaml = yaml.safe_load(file)
-  #
-  #     return self.config_yaml
-
-
-
-
-
-
   @enter_function
   def check_volume_folder_selected(self):
       Debug.print(self, f'self.Currentfolder: {self.CurrentFolder}')
@@ -1352,31 +1242,24 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectOutputFolder(self):
 
       if self.check_volume_folder_selected():
-          print('before defintiion')
-          self.outputFolder = qt.QFileDialog.getExistingDirectory(None,
-                                                                  "Open a folder",
-                                                                  self.DefaultDir,
-                                                                  qt.QFileDialog.ShowDirsOnly)
-          print('after defintiion', self.outputFolder)
-
+          self.outputFolder = (
+              qt.QFileDialog.getExistingDirectory(
+                  None,
+                  "Open a folder",
+                  self.DefaultDir,
+                  qt.QFileDialog.ShowDirsOnly))
       else:
           Dev.show_message_box(self, 'Please select volumes folder first.',
                                box_title='ATTENTION!')
           return
 
 
-      # MB: Deactivated related to issue 112. To discuss in team.
+      # MB: Deactivated related to issue 112. To discuss in team (to remove).
       # if REQUIRE_EMPTY:
       #     self.verify_empty()
 
       ConfigPath.check_existing_configuration(self)
       ConfigPath.delete_temp_file(self)
-
-
-
-      #
-      #
-      # return
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
@@ -1690,21 +1573,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return list_of_segment_names
 
   def onPushDefaultMin(self):
-      # with open(CONFIG_FILE_PATH, 'r') as file:
-      #   fresh_config = yaml.safe_load(file)
-      # fresh_config = self.open_project_config_file()
       fresh_config = ConfigPath.open_project_config_file(self)
       self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
       self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      # with open(CONFIG_FILE_PATH, 'r') as file:
-      #   fresh_config = yaml.safe_load(file)
-      # fresh_config = self.open_project_config_file()
       fresh_config = ConfigPath.open_project_config_file(self)
       self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]
-      self.setUpperAndLowerBoundHU(self.config_yaml["labels"][
-                                       self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+      self.setUpperAndLowerBoundHU(
+          self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"],
+          self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPush_ShowSegmentVersionLegendButton(self):
       segmentationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'

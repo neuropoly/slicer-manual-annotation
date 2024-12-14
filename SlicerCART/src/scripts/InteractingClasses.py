@@ -32,8 +32,21 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}',
                         CONFIG_FILE_PATH)
 
-        with open(CONFIG_FILE_PATH, 'r') as file:
-            self.config_yaml = yaml.full_load(file)
+        # with open(CONFIG_FILE_PATH, 'r') as file:
+        #     self.config_yaml = yaml.full_load(file)
+
+        temp_file_exist = ConfigPath.get_temp_file(self)
+        print('temp %%%%%%% file exists: ', temp_file_exist)
+        if temp_file_exist:
+            with open(CONFIG_FILE_PATH, 'r') as file:
+                self.config_yaml = yaml.full_load(file)
+        else:
+            outputh_path = ConfigPath.read_temp_file(self,
+                                                    name='output_path.txt')
+            print('output_path,: ', outputh_path)
+            self.path_to_config_copy = outputh_path
+            self.config_yaml = ConfigPath.open_project_config_file(self)
+            print('DEBUG FINAL self config yaml', self.config_yaml)
 
         self.set_default_values()
 
@@ -796,12 +809,14 @@ class ConfigureSegmentationWindow(qt.QWidget):
                  parent=None):
         super(ConfigureSegmentationWindow, self).__init__(parent)
 
+        ConfigPath.open_project_config_file(self)
         #   with open(CONFIG_FILE_PATH, 'r') as file:
         #     self.config_yaml = yaml.full_load(file)
 
         if label_config_yaml is None:
-            with open(CONFIG_FILE_PATH, 'r') as file:
-                self.config_yaml = yaml.full_load(file)
+            ConfigPath.open_project_config_file(self)
+            # with open(CONFIG_FILE_PATH, 'r') as file:
+            #     self.config_yaml = yaml.full_load(file)
         else:
             self.config_yaml = label_config_yaml
 
@@ -1038,7 +1053,9 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.segmenter = segmenter
         self.modality = modality
         self.initial_label = label
-        self.config_yaml = label_config_yaml
+        self.config_yaml = ConfigPath.open_project_config_file(self)
+        # self.config_yaml = label_config_yaml
+        print('label_config_yaml 44444444444', label_config_yaml)
         self.edit_conf = edit_conf
 
         layout = qt.QVBoxLayout() # Creates a vertical Box layout (Label Box)
@@ -1317,8 +1334,9 @@ class ConfigureClassificationWindow(qt.QWidget):
         self.edit_conf = edit_conf
 
         if classification_config_yaml is None:
-            with open(CONFIG_FILE_PATH, 'r') as file:
-                self.config_yaml = yaml.full_load(file)
+            ConfigPath.open_project_config_file(self)
+            # with open(CONFIG_FILE_PATH, 'r') as file:
+            #     self.config_yaml = yaml.full_load(file)
         else:
             self.config_yaml = classification_config_yaml
 

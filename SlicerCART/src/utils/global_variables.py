@@ -42,6 +42,10 @@ print('SCRIPT_PATH used in global variables:,', SCRIPT_PATH)
 CONFIG_FILE_PATH = os.path.join(SCRIPT_PATH, 'configuration_config.yml')
 print('CONFIG_FILE_PATH used in global variables:,', CONFIG_FILE_PATH)
 
+SLICERCART_MAIN_PATH = os.path.join(SCRIPT_PATH, 'SlicerCART.py')
+
+
+
 # This variable enables/disables easier debug mode (with print) in the python
 # console (e.g. Debut.set_debug(self, True) or Debut.set_debug(self, False)
 ENABLE_DEBUG = True

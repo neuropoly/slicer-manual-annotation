@@ -404,15 +404,16 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.segmentation_checkbox_state_changed()
         self.keyboard_shortcuts_checkbox_state_changed()
 
+    @enter_function
     def set_default_values(self):
-        self.segmentation_selected = self.config_yaml[
-            'is_segmentation_requested']
-        self.classification_selected = self.config_yaml[
-            'is_classification_requested']
-        self.mouse_shortcuts_selected = self.config_yaml[
-            'is_mouse_shortcuts_requested']
-        self.keyboard_shortcuts_selected = self.config_yaml[
-            'is_keyboard_shortcuts_requested']
+        self.segmentation_selected = (
+            self.config_yaml)['is_segmentation_requested']
+        self.classification_selected = (
+            self.config_yaml)['is_classification_requested']
+        self.mouse_shortcuts_selected = (
+            self.config_yaml)['is_mouse_shortcuts_requested']
+        self.keyboard_shortcuts_selected = (
+            self.config_yaml)['is_keyboard_shortcuts_requested']
 
         self.modality_selected = self.config_yaml['modality']
 

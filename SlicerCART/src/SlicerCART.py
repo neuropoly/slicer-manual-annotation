@@ -1260,6 +1260,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       ConfigPath.check_existing_configuration(self)
       ConfigPath.delete_temp_file(self)
+
+      # Robust. If the next output folder selected (from a change) is empty,
+      # ensure it will select the correct output folder path
+      ConfigPath.write_correct_path(self)
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

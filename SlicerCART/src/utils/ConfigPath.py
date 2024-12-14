@@ -12,6 +12,7 @@ class ConfigPath():
         """
         Check if a configuration file already exists in selected output folder.
         """
+
         path_to_saved_config_files = \
             f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
         path_to_config_copy = \
@@ -20,10 +21,6 @@ class ConfigPath():
         if os.path.exists(path_to_saved_config_files) == False:
             os.makedirs(path_to_saved_config_files)
             shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
-            # Write the updated YAML data back to the file
-            with open(path_to_config_copy, 'w') as file:
-                yaml.dump({'project_conf': 'True'}, file,
-                          default_flow_style=False)
         else:
             self.path_to_config_copy = path_to_config_copy
             self.config_yaml.clear()
@@ -87,6 +84,7 @@ class ConfigPath():
         folder has een selected or not 2) saving the path of the config file
         in the selected output folder if selected (so it can be used).
         """
+
         # Create a temporary file
         temp_dir = tempfile.gettempdir()
         temp_file_path = os.path.join(temp_dir, name)
@@ -100,6 +98,7 @@ class ConfigPath():
         Verify if a specific temp file exists or not. By default, allows to
         detect if output folder has een selected or not.
         """
+
         temp_dir = tempfile.gettempdir()
         temp_file_path = os.path.join(temp_dir, name)
 
@@ -117,6 +116,7 @@ class ConfigPath():
         """
         Delete a specific temp file if it exists.
         """
+
         # Get the path to the temporary file
         temp_dir = tempfile.gettempdir()
         temp_file_path = os.path.join(temp_dir, name)
@@ -131,6 +131,7 @@ class ConfigPath():
         """
         Read a specific temp file and return the contents.
         """
+
         # Get the path to the temporary file
         temp_dir = tempfile.gettempdir()
         temp_file_path = os.path.join(temp_dir, name)
@@ -157,3 +158,18 @@ class ConfigPath():
                                                     name=OUTPUT_CONFIG_PATH)
             with open(output_path, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
+
+    @enter_function
+    def write_correct_path(self):
+        """
+        Ensure the temp file has the appropriate config file path,
+        """
+
+        path_to_saved_config_files = \
+            f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
+        path_to_config_copy = \
+            f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
+
+        ConfigPath.create_temp_file(self,
+                                    name=OUTPUT_CONFIG_PATH,
+                                    text=path_to_config_copy)

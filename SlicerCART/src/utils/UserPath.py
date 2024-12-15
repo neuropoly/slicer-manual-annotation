@@ -83,6 +83,10 @@ class UserPath():
         content = UserPath.read_filepath(self, 'last_selected_paths.yml')
         print('content', content)
         UserPath.reset_last_selected(self, filepath)
+        UserPath.set_selected_existing_folder(self)
+
+        ### METTRE LE FLAG RESETER LE FALG TRUE OU FALSE SELECTED)EXISTING
+        # FOLDER
         return content
 
     def set_selected_existing_folder(self):

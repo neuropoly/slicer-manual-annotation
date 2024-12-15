@@ -406,6 +406,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
       slicerCARTConfigurationSetupWindow.show()
 
+  @enter_function
   def onSelectVolumesFolderButton(self):
 
       if UserPath.get_selected_existing_folder(self):
@@ -414,10 +415,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
-          UserPath.set_selected_existing_folder(self)
+          # UserPath.set_selected_existing_folder(self)
 
       else:
+          print('else on select volumes folder button')
           self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
+      # If output folder has already been selected from continue from
+      # existing folder, this code update the volume folders of output folder.
+      if self.outputFolder != None:
+          UserPath.write_in_filepath(self, self.outputFolder,
+                                     self.CurrentFolder)
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
@@ -428,6 +436,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
     
       if file_structure_valid == False:
+          print('#####file structure_valid false')
           return # don't load any patient cases
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
@@ -454,6 +463,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
 
       self.ui.pushButton_Interpolate.setEnabled(True)
+
+      print('!!!!!@@@@@@@before uploading selected volume folder')
 
       self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.updateCaseAll()

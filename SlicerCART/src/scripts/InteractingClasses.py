@@ -682,10 +682,12 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         if self.reuse_configuration_selected_option == self.reuse_config_radio_button.text:
             msg = qt.QMessageBox()
             msg.setWindowTitle('Informative Message')
-            msg.setText('Please select the working output directory. ')
+            msg.setText('Please select the output folder. ')
             msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
             msg.buttonClicked.connect(self.select_output_folder_clicked)
             msg.exec()
+            print(';acques 33234')
+
         elif self.reuse_configuration_selected_option == self.use_template_config_radio_button.text:
             msg = qt.QMessageBox()
             msg.setWindowTitle('Informative Message')
@@ -780,7 +782,10 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             UserPath.save_selected_paths(self, self.outputFolder, self.CurrentFolder)
             UserPath.set_selected_existing_folder(self)
 
+            print(' ****** before enterinr onselect volumes folder button '
+                  'from interatinc class \n \n \n\n')
 
+            self.segmenter.onSelectVolumesFolderButton()
 
             self.close()
             return

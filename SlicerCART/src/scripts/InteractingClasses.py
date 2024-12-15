@@ -686,8 +686,6 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
             msg.buttonClicked.connect(self.select_output_folder_clicked)
             msg.exec()
-            print(';acques 33234')
-
         elif self.reuse_configuration_selected_option == self.use_template_config_radio_button.text:
             msg = qt.QMessageBox()
             msg.setWindowTitle('Informative Message')
@@ -703,46 +701,8 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             self.segmenter.ui.SelectOutputFolder.setVisible(True)
             self.close()
 
-    # @enter_function
-    # def select_output_folder_clicked(self, button):
-    #     print('select output folder clicked, enter', button)
-    #     if button.text == 'OK':
-    #         global REQUIRE_EMPTY
-    #         REQUIRE_EMPTY = False
-    #         self.segmenter.onSelectOutputFolder()
-    #         REQUIRE_EMPTY = True
-    #         self.segmenter.ui.SelectOutputFolder.setVisible(False)
-    #         if (os.path.exists(
-    #                 f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
-    #                 os.path.exists(
-    #                     f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')):
-    #             # use this configuration directly
-    #             shutil.copy(
-    #                 f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}',
-    #                 CONFIG_FILE_PATH)
-    #             self.segmenter.setup_configuration()
-    #             self.close()
-    #         else:
-    #             msg = qt.QMessageBox()
-    #             msg.setWindowTitle('Informative Message')
-    #             msg.setText(
-    #                 'The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
-    #             msg.setStandardButtons(
-    #                 qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-    #             msg.buttonClicked.connect(
-    #                 self.error_msg_for_output_folder_selection_clicked)
-    #             msg.exec()
-    #
-    #     else:
-    #         slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
-    #             self.segmenter)
-    #         slicerCART_configuration_initial_window.show()
-    #         self.close()
-    #         return
-
     @enter_function
     def select_output_folder_clicked(self, button):
-        print('select output folder clicked, enter', button)
         if button.text == 'OK':
             self.outputFolder = (
                 qt.QFileDialog.getExistingDirectory(
@@ -750,79 +710,40 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                     "Open a folder",
                     DEFAULT_VOLUMES_DIRECTORY,
                     qt.QFileDialog.ShowDirsOnly))
-
-            print('output folder selected,: ', self.outputFolder)
-
             content = UserPath.read_filepath(self)
             if self.outputFolder in content:
                 self.CurrentFolder = content[self.outputFolder]
-                print('self output folder selected,: ', self.outputFolder)
-                print('\n \n\n\nself currentfolder volume selecte',
-                      self.CurrentFolder)
             else:
                 Dev.show_message_box(self,
                                      'Please select volumes folder.',
                                      box_title='ATTENTION!')
                 self.CurrentFolder = (
-                    qt.QFileDialog.getExistingDirectory(None,
-                                                        "Open a folder",
-                                                        DEFAULT_VOLUMES_DIRECTORY,
-                                                        qt.QFileDialog.ShowDirsOnly))
-
-                print('self output folder selected no previous volume,: ',
-                      self.outputFolder)
-                print('\n \n\n\nself currentfolder volume selected no '
-                      'preivous',
-                      self.CurrentFolder)
-
-                # Save the associated volume_folder_path with the output_folder selected.
+                    qt.QFileDialog.getExistingDirectory(
+                        None, "Open a folder",
+                        DEFAULT_VOLUMES_DIRECTORY,
+                        qt.QFileDialog.ShowDirsOnly))
+                # Save the associated volume_folder_path with the output_folder
+                # selected.
                 UserPath.write_in_filepath(self, self.outputFolder,
                                            self.CurrentFolder)
 
-            UserPath.save_selected_paths(self, self.outputFolder, self.CurrentFolder)
+            UserPath.save_selected_paths(self,
+                                         self.outputFolder,
+                                         self.CurrentFolder)
             UserPath.set_selected_existing_folder(self)
 
-            print(' ****** before enterinr onselect volumes folder button '
-                  'from interatinc class \n \n \n\n')
-
+            # self.segmenter corresponds to SlicerCART UI in Slicer.
             self.segmenter.onSelectVolumesFolderButton()
-
             self.close()
+
             return
 
-            # global REQUIRE_EMPTY
-            # REQUIRE_EMPTY = False
-            # self.segmenter.onSelectOutputFolder()
-            # REQUIRE_EMPTY = True
-            # self.segmenter.ui.SelectOutputFolder.setVisible(False)
-            # if (os.path.exists(
-            #         f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
-            #         os.path.exists(
-            #             f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')):
-            #     # use this configuration directly
-            #     shutil.copy(
-            #         f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}',
-            #         CONFIG_FILE_PATH)
-            #     self.segmenter.setup_configuration()
-            #     self.close()
-            # else:
-            #     msg = qt.QMessageBox()
-            #     msg.setWindowTitle('Informative Message')
-            #     msg.setText(
-            #         'The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
-            #     msg.setStandardButtons(
-            #         qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-            #     msg.buttonClicked.connect(
-            #         self.error_msg_for_output_folder_selection_clicked)
-            #     msg.exec()
-
         else:
-            slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
-                self.segmenter)
+            slicerCART_configuration_initial_window = (
+                SlicerCARTConfigurationInitialWindow(self.segmenter))
             slicerCART_configuration_initial_window.show()
             self.close()
             return
-
 
     def error_msg_for_output_folder_selection_clicked(self, button):
         slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
@@ -831,7 +752,6 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         self.close()
 
     def select_template_folder_clicked(self, button):
-        print('continue from existing folder ......')
         if button.text == 'OK':
             conf_folder_path = qt.QFileDialog.getExistingDirectory(None,
                                                                    "Open a folder",

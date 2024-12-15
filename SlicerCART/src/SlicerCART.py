@@ -407,7 +407,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicerCARTConfigurationSetupWindow.show()
 
   def onSelectVolumesFolderButton(self):
-      self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
+      if UserPath.get_selected_existing_folder(self):
+          content = UserPath.get_selected_paths(self)
+          print('content in onselect ovlumes fodler after exisitng', content)
+          for element in content:
+              self.outputFolder = element
+              self.CurrentFolder = content[self.outputFolder]
+          UserPath.set_selected_existing_folder(self)
+
+      else:
+          self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
@@ -1264,6 +1274,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Robust. If the next output folder selected (from a change) is empty,
       # ensure it will select the correct output folder path
       ConfigPath.write_correct_path(self)
+
+      # Save the associated volume_folder_path with the output_folder selected.
+      UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

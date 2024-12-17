@@ -27,6 +27,9 @@ CONFIG_COPY_FILENAME = CONFIG_FILENAME.split('.')[0] + '--do-not-modify.yml'
 
 CONF_FOLDER_NAME = '_conf'
 
+WORKING_LIST_FILENAME = 'working_list.yaml'
+REMAINING_LIST_FILENAME = 'remaining_list.yaml'
+
 CT_WINDOW_WIDTH = 90
 CT_WINDOW_LEVEL = 45
 

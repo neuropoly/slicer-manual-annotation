@@ -414,6 +414,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
+
+
       else:
           self.CurrentFolder= (
               qt.QFileDialog.getExistingDirectory(
@@ -427,6 +429,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.outputFolder != None:
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
+          ### Worklist/Remaining list management section
+          self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
+          jacques = self.WorkFiles.check_working_list()
+          print('jacques 2 preselcted already output', jacques)
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:

@@ -8,12 +8,16 @@ from utils import *
 #
 # INPUT_FILE_EXTENSION = '*.nii.gz'
 
+global ADJUST_WORKING_LIST
+ADJUST_WORKING_LIST  = False
+
 
 class WorkFiles():
     def __init__(self, currentFolder, outputFolder):
         self.CurrentFolder = currentFolder
         self.outputFolder = outputFolder
 
+    @enter_function
     def check_working_list(self):
         """
         Check in already selected output folder if a working list is defined.
@@ -60,6 +64,16 @@ class WorkFiles():
                                          all_cases_filenames)
                     return False
 
+            else:
+                print('discordances found')
+                if ADJUST_WORKING_LIST:
+                    print('in if adjust correpsondance')
+                    WorkFiles.check_working_list_in_volumes(
+                        self, working_list_filepath, all_cases_filenames)
+                else:
+                    print('in else adjust correspondence')
+                    pass
+
         else:
             # Create initial working list and remaining list.
             self.write_file_list(working_list_filepath, all_cases_filenames)
@@ -67,6 +81,7 @@ class WorkFiles():
 
         return True
 
+    @enter_function
     def get_working_list(self):
         """
         Get all files that have the correct file extension.
@@ -76,6 +91,7 @@ class WorkFiles():
                                            recursive=True))
         return self.CasesPaths
 
+    @enter_function
     def filter_working_list(self, working_list):
         """
         Filter all files that have the correct working_list.
@@ -89,6 +105,7 @@ class WorkFiles():
                 filtered_list.append(element)
         return filtered_list
 
+    @enter_function
     def get_filenames_in_working_list(self, all_cases_path):
         """
         Get all filenames from filepaths.
@@ -96,6 +113,7 @@ class WorkFiles():
         cases = sorted([os.path.split(i)[-1] for i in all_cases_path])
         return cases
 
+    @enter_function
     def check_correspondence(self, working_list_filepath, all_cases_filenames):
         """
         Verify if the first element of the working list is in the volumes
@@ -105,6 +123,16 @@ class WorkFiles():
             elements = yaml.safe_load(file)['CASES']
 
         if elements == all_cases_filenames:
+            if WorkFiles.check_remaining_list(self, self.outputFolder):
+                print('a;l cases in folder')
+                pass
+            else:
+                print('not all cases in folder will create remaing list')
+                remaining_list_filepath = os.path.join(self.outputFolder,
+                                                       REMAINING_LIST_FILENAME)
+                WorkFiles.write_file_list(self, remaining_list_filepath,
+                                          all_cases_filenames)
+
             return True
 
         else:
@@ -135,18 +163,33 @@ class WorkFiles():
             # print("Missing in 'all_cases_filenames':", missing_in_all_cases)
             # Dev.show_message_box(self, message,
             #              box_title='ATTENTION!')
+            # def print_message(elements):
+            #     """
+            #     Formats a list of elements into a string with each element on a new line.
+            #     """
+            #     return "\n".join(f"{element}" for element in
+            #                      elements)  # Add optional bullet points for clarity
             def print_message(elements):
                 """
                 Formats a list of elements into a string with each element on a new line.
                 """
-                return "\n".join(f"{element}" for element in
+                if len(elements) > 10:
+                    return "\n".join(f"{element}" for element in
+                                     elements[:10]) + "\n..."  # Add optional bullet
+                    # points for clarity
+                else:
+                    return "\n".join(f"{element}" for element in
                                  elements)  # Add optional bullet points for clarity
 
             # Print differing elements
             message = (
-                f"Missing in 'working_list_filepath':\n"
+                f"WORKING_LIST AND VOLUMES FOLDER ARE INCONSISTENT.\n"
+                f"PLEASE DOUBLE CHECK:\n\n"
+                f"{WORKING_LIST_FILENAME} misses cases from volumes folder\n"
+                f"that should be included in the working list:\n\n"
                 f"{print_message(missing_in_elements)}\n\n"
-                f"Missing in 'all_cases_filenames':\n"
+                f"Cases that should not be included in {WORKING_LIST_FILENAME}\n"
+                f"according to configuration:\n\n"
                 f"{print_message(missing_in_all_cases)}"
             )
 
@@ -160,6 +203,7 @@ class WorkFiles():
 
         return False
 
+    @enter_function
     def check_remaining_list(self, outputFolder):
 
         # List all files in the folder
@@ -170,12 +214,33 @@ class WorkFiles():
 
         return False
 
+    @enter_function
     def write_file_list(self, filepath, filenames):
         all_cases_data = {
             'CASES': filenames
         }
         with open(filepath, 'w') as file:
             yaml.dump(all_cases_data, file)
+
+    @enter_function
+    def check_working_list_in_volumes(self, working_list_filepath,
+                               all_cases_filenames):
+        """
+        Verify if the first element of the working list is in the volumes
+        folder.
+        """
+
+        with open(working_list_filepath, 'r') as file:
+            elements = yaml.safe_load(file)['CASES']
+        for element in elements:
+            if element in all_cases_filenames:
+                continue
+            else:
+                Dev.show_message_box(self, f'INVALID WORKING LIST FILE')
+                return False
+        return True
+
+
 
 
 # currentFolder1 = '/Users/maximebouthillier/gitmax/data_confid/praxis/site_007'

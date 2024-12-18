@@ -3,7 +3,16 @@
 import os
 import logging
 import slicer
-import qt
+
+# Qt installation may lead the module to fail.
+try:
+    print('try import qt.')
+    import qt
+except ImportError:
+    print('import qt failed. PLEASE VERIFY QT INSTALLATION INTO 3D SLICER '
+          'BEFORE ANY FURTHER USE..')
+    #ToDo: add code to install Qt on all operating systems
+
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 from glob import glob

@@ -25,8 +25,8 @@ class WorkFiles():
 
         output_folder_files = os.listdir(self.outputFolder)
 
-        all_cases_path = WorkFiles.get_working_list()
-        all_cases_path = WorkFiles.filter_working_list(all_cases_path)
+        all_cases_path = WorkFiles.get_working_list(self)
+        all_cases_path = WorkFiles.filter_working_list(self, all_cases_path)
 
         all_cases_filenames = self.get_filenames_in_working_list(all_cases_path)
 
@@ -71,7 +71,7 @@ class WorkFiles():
         """
         Get all files that have the correct file extension.
         """
-        self.CasesPaths = sorted(glob.glob(f'{self.CurrentFolder}{os.sep}*'
+        self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}*'
                                            f'*{os.sep}{INPUT_FILE_EXTENSION}',
                                            recursive=True))
         return self.CasesPaths
@@ -113,9 +113,50 @@ class WorkFiles():
                                    f not in elements]
             missing_in_all_cases = [f for f in elements if
                                     f not in all_cases_filenames]
+
+            # def print_message(message):
+            #     message = message.join(message)
+            #     return message
+            #
+            #     # ele = ''
+            #     # for element in message:
+            #     #     ele = ele.join(print(element))
+            #     # return ele
+            #
+            #
+            #
+            # # Print differing elements
+            # message = (f"Missing in 'working_list_filepath': "
+            #            f"{print_message(missing_in_elements)} \n"
+            #            f"Missing in 'all_cases_filenames': "
+            #            f"{print_message(missing_in_all_cases)} ")
+            #
+            # print("Missing in 'working_list_filepath':", missing_in_elements)
+            # print("Missing in 'all_cases_filenames':", missing_in_all_cases)
+            # Dev.show_message_box(self, message,
+            #              box_title='ATTENTION!')
+            def print_message(elements):
+                """
+                Formats a list of elements into a string with each element on a new line.
+                """
+                return "\n".join(f"{element}" for element in
+                                 elements)  # Add optional bullet points for clarity
+
             # Print differing elements
+            message = (
+                f"Missing in 'working_list_filepath':\n"
+                f"{print_message(missing_in_elements)}\n\n"
+                f"Missing in 'all_cases_filenames':\n"
+                f"{print_message(missing_in_all_cases)}"
+            )
+
+            # For console debugging (optional)
             print("Missing in 'working_list_filepath':", missing_in_elements)
             print("Missing in 'all_cases_filenames':", missing_in_all_cases)
+
+            # Display message box in 3D Slicer
+            Dev.show_message_box(self, message, box_title='ATTENTION!')
+
 
         return False
 

@@ -1286,6 +1286,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
+
+      ### Worklist/Remaining list management section
+      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
+      jacques = self.WorkFiles.check_working_list()
+      print('jacques', jacques)
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

@@ -1,17 +1,8 @@
 import shutil
-
 from utils import *
-# import os
-# import yaml
-# import glob
-#
-# WORKING_LIST_FILENAME = 'working_list.yaml'
-# REMAINING_LIST_FILENAME = 'remaining_list.yaml'
-#
-# INPUT_FILE_EXTENSION = '*.nii.gz'
 
 global KEEP_WORKING_LIST
-KEEP_WORKING_LIST = True
+KEEP_WORKING_LIST = False
 
 
 class WorkFiles():
@@ -104,7 +95,11 @@ class WorkFiles():
                         return False
                 else:
                     print('in else adjust correspondence')
-                    self.create_backup(self.working_list_filepath, self.remaining_list_filepath)
+                    print('RESET WORKING LIST AND ')
+                    self.create_backup()
+
+
+
                     # # Create backup of working list
                     # working_list_backup_path = (f'{self.outputFolder}{os.sep}ol'
                     #                        f'd_{WORKING_LIST_FILENAME}')
@@ -354,15 +349,21 @@ class WorkFiles():
 
 
     @enter_function
-    def create_backup(self, working_list_filepath):
+    def create_backup(self):
         # Create backup of working list
         working_list_backup_path = (f'{self.outputFolder}{os.sep}ol'
                                     f'd_{WORKING_LIST_FILENAME}')
         remaining_list_backup_path = \
             (f'{self.outputFolder}'
              f'{os.sep}old_{REMAINING_LIST_FILENAME}')
-        shutil.copy(working_list_filepath, working_list_backup_path)
-        shutil.copy(self.remaining_list_filepath, remaining_list_backup_path)
+        if os.path.exists(self.working_list_filepath):
+            shutil.copy(self.working_list_filepath, working_list_backup_path)
+        if os.path.exists(self.remaining_list_filepath):
+            shutil.copy(self.remaining_list_filepath,
+                        remaining_list_backup_path)
+
+        # shutil.copy(self.working_list_filepath, working_list_backup_path)
+        # shutil.copy(self.remaining_list_filepath, remaining_list_backup_path)
         print('copied old version')
 
     @enter_function

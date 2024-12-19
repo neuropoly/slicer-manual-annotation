@@ -465,14 +465,25 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
-      self.ui.SlicerDirectoryListView.clear()
-      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+      # self.ui.SlicerDirectoryListView.clear()
+      # self.ui.SlicerDirectoryListView.addItems(self.Cases)
+
+      self.update_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
+
+      # self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      # self.updateCaseAll()
+      # self.loadPatient()
+
+  def update_ui(self):
+      self.ui.SlicerDirectoryListView.clear()
+      self.ui.SlicerDirectoryListView.addItems(self.Cases)
 
       self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
       self.updateCaseAll()
       self.loadPatient()
+
 
   def validateBIDS(self, path):
         validator = BIDSValidator()
@@ -501,18 +512,32 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return is_structure_valid
 
+  # @enter_function
+  # def updateCaseAll(self):
+  #     # All below is dependent on self.currentCase_index updates,
+  #     self.currentCase = self.Cases[self.currentCase_index]
+  #     self.currentCasePath = self.CasesPaths[self.currentCase_index]
+  #
+  #     if not IS_DISPLAY_TIMER_REQUESTED:
+  #         self.enableSegmentAndPaintButtons()
+  #
+  #     self.updateCurrentPatient()
+  #     # Highlight the current case in the list view (when pressing on next o)
+  #     self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+  #     self.update_current_segmentation_status()
   @enter_function
   def updateCaseAll(self):
-      # All below is dependent on self.currentCase_index updates, 
+      # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-      
+
       if not IS_DISPLAY_TIMER_REQUESTED:
-          self.enableSegmentAndPaintButtons()      
+          self.enableSegmentAndPaintButtons()
 
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
-      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.ui.SlicerDirectoryListView.setCurrentItem(
+          self.ui.SlicerDirectoryListView.item(self.currentCase_index))
       self.update_current_segmentation_status()
 
   @enter_function
@@ -1300,6 +1325,25 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(' check if remaining list is not empty')
       # grincheux = self.WorkFiles.check_remaining_first_element()
       # print('grincheux', grincheux)
+
+      ###### re-assignation
+      print('self.CasesPath before len', len(self.CasesPaths))
+      self.Cases = self.WorkFiles.get_working_list_filenames(self)
+      # print('working lkist filename sin select ouput', working_list_filenames)
+
+      self.CasesPaths = self.WorkFiles.get_working_list_filepaths(
+                                                                  self.Cases)
+      # print('working list filepaths', len(working_list_filepaths))
+      print('len self cases', len(self.Cases))
+      print('len cases path', len(self.CasesPaths))
+      print('self casers path after len', len(self.CasesPaths))
+
+      self.update_ui()
+
+      # next step = re ajuster le remaining list
+      # result = self.WorkFiles.check_remaining_list(self.Cases)
+      # print('succed check remainig list working', result)
+
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

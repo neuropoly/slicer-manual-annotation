@@ -79,7 +79,6 @@ class Dev:
             if element in list2:
                 continue
             else:
-                # print('working list not in volume folder')
-                # Dev.show_message_box(self, f'INVALID WORKING LIST FILE')
+
                 return False
         return True

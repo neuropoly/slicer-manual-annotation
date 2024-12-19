@@ -242,14 +242,6 @@ class WorkFiles():
                         print('remaining list empty but ok')
                         return True
 
-
-            # print(' 3456837465843 first element', first_element)
-            # print('working list filneames', working_list_filenames)
-
-
-
-
-
             # Check if first element of remaining list is in working list
             # before looping (optimize performance).
             if first_element in working_list_filenames:
@@ -271,13 +263,6 @@ class WorkFiles():
                     return False
 
             else:
-                # message = ('First element of the remaining list IS NOT in '
-                #       'the working list. Please double check list '
-                #       'correspondences.')
-                # Debug.print(self, message)
-                # Dev.show_message_box(self, message)
-                #
-                # return False
                 print('in else else 3342')
                 message = ('First element of the remaining list IS NOT in '
                       'the working list. Please double check list '
@@ -312,9 +297,6 @@ class WorkFiles():
             self.write_file_list(self.remaining_list_filepath,
                                  working_list_filenames)
 
-
-
-
         return True
 
     @enter_function
@@ -328,15 +310,6 @@ class WorkFiles():
         with open(filepath, 'w') as file:
             yaml.dump(all_cases_data, file)
 
-    # @enter_function
-    # def check_working_list_in_volumes(self, working_list_filepath,
-    #                            all_cases_filenames):
-    #     """
-    #     Verify if elements of the working list are in the volumes folder list.
-    #     """
-    #     with open(working_list_filepath, 'r') as file:
-    #         elements = yaml.safe_load(file)['CASES']
-    #     return Dev.check_list_in_another(self, elements, all_cases_filenames)
     @enter_function
     def check_working_list_in_volumes(self, all_cases_filenames):
         """
@@ -392,13 +365,6 @@ class WorkFiles():
         print('len filenames path', len(filenames_path))
         return filenames_path
 
-    # @enter_function
-    # def check_if_remaining_list_empty(self):
-    #     with open(self.remaining_list_filepath, 'r') as file:
-    #         elements = yaml.safe_load(file)['CASES']
-    #         print('elements', len(elements))
-    #     return len(elements) <= 0
-
     @enter_function
     def check_remaining_first_element(self, remaining_list):
         if remaining_list != None and remaining_list != []:
@@ -406,33 +372,21 @@ class WorkFiles():
                 print('remainign list 0 1st el: ', remaining_list[0], "888")
                 print('first element remaining list != None')
                 return True
-            # else:
-            #     print(' first element none')
-            #     if len(remaining_list) > 1:
-            #         print('problme!!!!!')
-            #         pass
-            #     else:
-            #         return True
+
         return False
 
-            # print('remaining_list', remaining_list)
-            # print('len remaining list', len(remaining_list))
-            # print('remaining list first element', remaining_list[0])
-        # return (remaining_list != None) and (len(remaining_list) > 0)
-
-    ## STEP TO DO from filenames in working list
 
     @enter_function
     def get_all_cases_path(self):
 
         print('len all cases case in workfile', len(self.working_list_filepath))
-        print('working list filepah', self.working_list_filepath)
+        # print('working list filepah', self.working_list_filepath)
         return self.working_list_filepath
 
     @enter_function
     def find_index_from_filename(self, filename, list):
         print('filename', filename)
-        print('list', list)
+        # print('list', list)
         index = list.index(filename)
         return index
 

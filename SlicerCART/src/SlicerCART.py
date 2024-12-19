@@ -410,14 +410,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onSelectVolumesFolderButton(self):
 
       if UserPath.get_selected_existing_folder(self):
-          print('in if userpath get selected form slect volume')
           content = UserPath.get_selected_paths(self)
-          print('content', content)
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
-
-
       else:
           self.CurrentFolder= (
               qt.QFileDialog.getExistingDirectory(
@@ -426,24 +422,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
 
-      # # If output folder has already been selected from continue from
-      # # existing folder, this code updates the volume folders of output folder.
-      # if self.outputFolder != None:
-      #     print('self outpuf doelr diff of none')
-      #     print('self output folder', self.outputFolder)
-      #     print('self currentfolder', self.CurrentFolder)
-      #
-      #     UserPath.write_in_filepath(self, self.outputFolder,
-      #                                self.CurrentFolder)
-      #     # ### Worklist/Remaining list management section
-      #     # self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
-      #     # jacques = self.WorkFiles.check_working_list()
-      #     # ##fonction a insere pour oader le reminaing list
-      #     # print('jacques 2 preselcted already output', jacques)
-      #
-      #     print('33322222222 self working list', len(self.Cases))
-      #
-      #     self.manage_workflow()
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
@@ -476,33 +454,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
-      # self.ui.SlicerDirectoryListView.clear()
-      # self.ui.SlicerDirectoryListView.addItems(self.Cases)
-
       self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
 
-      # self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
-      # self.updateCaseAll()
-      # self.loadPatient()
       # If output folder has already been selected from continue from
       # existing folder, this code updates the volume folders of output folder.
       if self.outputFolder != None:
-          print('self outpuf doelr diff of none')
-          print('self output folder', self.outputFolder)
-          print('self currentfolder', self.CurrentFolder)
-
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
-          # ### Worklist/Remaining list management section
-          # self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
-          # jacques = self.WorkFiles.check_working_list()
-          # ##fonction a insere pour oader le reminaing list
-          # print('jacques 2 preselcted already output', jacques)
-
-          print('33322222222 self working list', len(self.Cases))
-
           self.manage_workflow()
 
   @enter_function
@@ -511,8 +471,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.SlicerDirectoryListView.addItems(self.Cases)
 
       self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
-      # self.updateCaseAll()
-      # self.loadPatient()
       self.update_ui()
 
   @enter_function
@@ -540,30 +498,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       ### Worklist/Remaining list management section
       self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
       workflow_valid = self.WorkFiles.check_working_list()
-      print('jworkflow is valid', workflow_valid )
-      print(' check if remaining list is not empty')
-      # grincheux = self.WorkFiles.check_remaining_first_element()
-      # print('grincheux', grincheux)
 
       ###### re-assignation
-      # print('self.CasesPath before len', len(self.CasesPaths))
       self.Cases = self.WorkFiles.get_working_list_filenames(self)
-      # print('working lkist filename sin select ouput', working_list_filenames)
 
       self.CasesPaths = self.WorkFiles.get_working_list_filepaths(
                                                                   self.Cases)
-      # print('working list filepaths', len(working_list_filepaths))
       print('len self cases', len(self.Cases))
       print('len cases path', len(self.CasesPaths))
       print('self casers path after len', len(self.CasesPaths))
 
       self.reset_ui()
-
-      # update le self. current case path
-
-      # next step = re ajuster le remaining list
-      # result = self.WorkFiles.check_remaining_list(self.Cases)
-      # print('succed check remainig list working', result)
 
       # aller chercher le 1er cas dans remining list
       remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
@@ -571,27 +516,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.set_patient(remaining_list_first)
 
-      # print('1er cas remianing list', remaining_list_first)
-      # index = self.WorkFiles.find_index_from_filename(remaining_list_first,
-      #                                         self.Cases)
-      # print('jac', index)
-      #
-      # current_casepath = self.WorkFiles.find_path_from_filename(
-      #     remaining_list_first)
-      #
-      # print('filepath of remaining case',
-      #       self.WorkFiles.find_path_from_filename(remaining_list_first))
-
-
-      # self.currentCase = remaining_list_first
-      # self.currentCase_index = index
-      # self.currentCasePath = current_casepath
-
       self.update_ui()
-
-
-
-
 
   def validateBIDS(self, path):
         validator = BIDSValidator()
@@ -620,19 +545,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return is_structure_valid
 
-  # @enter_function
-  # def updateCaseAll(self):
-  #     # All below is dependent on self.currentCase_index updates,
-  #     self.currentCase = self.Cases[self.currentCase_index]
-  #     self.currentCasePath = self.CasesPaths[self.currentCase_index]
-  #
-  #     if not IS_DISPLAY_TIMER_REQUESTED:
-  #         self.enableSegmentAndPaintButtons()
-  #
-  #     self.updateCurrentPatient()
-  #     # Highlight the current case in the list view (when pressing on next o)
-  #     self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-  #     self.update_current_segmentation_status()
   @enter_function
   def updateCaseAll(self):
       # All below is dependent on self.currentCase_index updates,
@@ -1426,64 +1338,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
 
-
-
-      ### Worklist/Remaining list management section
-      # self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
-      # workflow_valid = self.WorkFiles.check_working_list()
-      # print('jworkflow is valid', workflow_valid )
-      # print(' check if remaining list is not empty')
-      # grincheux = self.WorkFiles.check_remaining_first_element()
-      # print('grincheux', grincheux)
-      #
-      # ###### re-assignation
-      # print('self.CasesPath before len', len(self.CasesPaths))
-      # self.Cases = self.WorkFiles.get_working_list_filenames(self)
-      # # print('working lkist filename sin select ouput', working_list_filenames)
-      #
-      # self.CasesPaths = self.WorkFiles.get_working_list_filepaths(
-      #                                                             self.Cases)
-      # # print('working list filepaths', len(working_list_filepaths))
-      # print('len self cases', len(self.Cases))
-      # print('len cases path', len(self.CasesPaths))
-      # print('self casers path after len', len(self.CasesPaths))
-      #
-      # self.reset_ui()
-      #
-      # # update le self. current case path
-      #
-      # # next step = re ajuster le remaining list
-      # # result = self.WorkFiles.check_remaining_list(self.Cases)
-      # # print('succed check remainig list working', result)
-      #
-      # # aller chercher le 1er cas dans remining list
-      # remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
-      #     self)[0]
-      #
-      # self.set_patient(remaining_list_first)
-      #
-      # # print('1er cas remianing list', remaining_list_first)
-      # # index = self.WorkFiles.find_index_from_filename(remaining_list_first,
-      # #                                         self.Cases)
-      # # print('jac', index)
-      # #
-      # # current_casepath = self.WorkFiles.find_path_from_filename(
-      # #     remaining_list_first)
-      # #
-      # # print('filepath of remaining case',
-      # #       self.WorkFiles.find_path_from_filename(remaining_list_first))
-      #
-      #
-      # # self.currentCase = remaining_list_first
-      # # self.currentCase_index = index
-      # # self.currentCasePath = current_casepath
-      #
-      # self.update_ui()
       self.manage_workflow()
 
-      # find index of 1st remaining case in global loist
-
-      
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
           self.ui.LoadSegmentation.setEnabled(True)

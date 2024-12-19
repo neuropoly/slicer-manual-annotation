@@ -733,6 +733,10 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             UserPath.set_selected_existing_folder(self)
 
             # self.segmenter corresponds to SlicerCART UI in Slicer.
+            print('before entertirng on select volumes folder button from '
+                  'interacting classes')
+            print('self coutpuf doler', self.outputFolder)
+            print('self currentfolder', self.CurrentFolder)
             self.segmenter.onSelectVolumesFolderButton()
             self.close()
 

@@ -1,6 +1,8 @@
 from utils import *
 
 global KEEP_WORKING_LIST
+# ToDo: define this flag in the initial configuration UI and in globales
+#  variables
 KEEP_WORKING_LIST = True
 
 

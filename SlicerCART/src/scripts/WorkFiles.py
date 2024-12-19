@@ -243,6 +243,12 @@ class WorkFiles():
                         return True
 
 
+            # print(' 3456837465843 first element', first_element)
+            # print('working list filneames', working_list_filenames)
+
+
+
+
 
             # Check if first element of remaining list is in working list
             # before looping (optimize performance).
@@ -265,13 +271,34 @@ class WorkFiles():
                     return False
 
             else:
+                # message = ('First element of the remaining list IS NOT in '
+                #       'the working list. Please double check list '
+                #       'correspondences.')
+                # Debug.print(self, message)
+                # Dev.show_message_box(self, message)
+                #
+                # return False
+                print('in else else 3342')
                 message = ('First element of the remaining list IS NOT in '
                       'the working list. Please double check list '
-                      'correspondences.')
+                      'correspondences. A backup is created')
                 Debug.print(self, message)
-                Dev.show_message_box(self, message)
+                # Dev.show_message_box(self, message)
+                # Any old file (e.g. previous backup of working or
+                # remaining list will be overwritten).
+                self.create_backup()
 
-                return False
+                working_list_filenames = WorkFiles.get_working_list_filenames(
+                    self)
+                print('working list filenames in else kepep wokring',
+                      len(working_list_filenames))
+                print('self remainig list filepath', self.remaining_list_filepath)
+
+                # Overwrite any working list and/or remaining list.
+                self.write_file_list(self.remaining_list_filepath,
+                                     working_list_filenames)
+
+
 
         else:
             message = (' *** ATTENTION! *** No remaining list file found '
@@ -279,11 +306,14 @@ class WorkFiles():
                   'any manipulation errors. A new remaining file is '
                   'created right now corresponding to the working '
                   'list.')
-            Debut.print(self, message)
+            Debug.print(self, message)
 
             working_list_filenames = WorkFiles.get_working_list_filenames(self)
             self.write_file_list(self.remaining_list_filepath,
                                  working_list_filenames)
+
+
+
 
         return True
 
@@ -351,6 +381,17 @@ class WorkFiles():
             remaining_list_filenames = yaml.safe_load(file)['CASES']
             return remaining_list_filenames
 
+    @enter_function
+    def get_working_list_filepaths(self, working_list_filenames):
+        filenames_path = []
+        for element in working_list_filenames:
+            for path in self.all_cases_path:
+                if element in path:
+                    filenames_path.append(path)
+        # print('filenames path', filenames_path)
+        print('len filenames path', len(filenames_path))
+        return filenames_path
+
     # @enter_function
     # def check_if_remaining_list_empty(self):
     #     with open(self.remaining_list_filepath, 'r') as file:
@@ -378,4 +419,13 @@ class WorkFiles():
             # print('len remaining list', len(remaining_list))
             # print('remaining list first element', remaining_list[0])
         # return (remaining_list != None) and (len(remaining_list) > 0)
+
+    ## STEP TO DO from filenames in working list
+
+    @enter_function
+    def get_all_cases_path(self):
+
+        print('len all cases case in workfile', len(self.working_list_filepath))
+        print('working list filepah', self.working_list_filepath)
+        return self.working_list_filepath
 

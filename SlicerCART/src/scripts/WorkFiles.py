@@ -18,31 +18,41 @@ class WorkFiles():
     def __init__(self, currentFolder, outputFolder):
         self.CurrentFolder = currentFolder
         self.outputFolder = outputFolder
+        self.working_list_filepath = os.path.join(self.outputFolder,
+                                             WORKING_LIST_FILENAME)
+        self.remaining_list_filepath = os.path.join(self.outputFolder,
+                                               REMAINING_LIST_FILENAME)
+
+        self.output_folder_files = os.listdir(self.outputFolder)
+
+        self.all_cases_path = WorkFiles.get_working_list(self)
+        self.all_cases_path = WorkFiles.filter_working_list(self, self.all_cases_path)
+
+        self.all_cases_filenames = self.get_filenames_in_working_list(self.all_cases_path)
 
     @enter_function
     def check_working_list(self):
         """
         Check in already selected output folder if a working list is defined.
         """
-        working_list_filepath = os.path.join(self.outputFolder,
-                                             WORKING_LIST_FILENAME)
-        remaining_list_filepath = os.path.join(self.outputFolder,
-                                               REMAINING_LIST_FILENAME)
+        # working_list_filepath = os.path.join(self.outputFolder,
+        #                                      WORKING_LIST_FILENAME)
+        # remaining_list_filepath = os.path.join(self.outputFolder,
+        #                                        REMAINING_LIST_FILENAME)
+        #
+        # output_folder_files = os.listdir(self.outputFolder)
+        #
+        # all_cases_path = WorkFiles.get_working_list(self)
+        # all_cases_path = WorkFiles.filter_working_list(self, all_cases_path)
+        #
+        # all_cases_filenames = self.get_filenames_in_working_list(all_cases_path)
 
-        output_folder_files = os.listdir(self.outputFolder)
-
-        all_cases_path = WorkFiles.get_working_list(self)
-        all_cases_path = WorkFiles.filter_working_list(self, all_cases_path)
-
-        all_cases_filenames = self.get_filenames_in_working_list(all_cases_path)
-
-        if WORKING_LIST_FILENAME in output_folder_files:
-            good_match = self.check_correspondence(working_list_filepath,
-                                                   all_cases_filenames)
+        if WORKING_LIST_FILENAME in self.output_folder_files:
+            good_match = self.check_correspondence(self.working_list_filepath,
+                                                   self.all_cases_filenames)
             if good_match:
                 if self.check_remaining_list(
-                    self.outputFolder, remaining_list_filepath,
-                        all_cases_filenames):
+                        self.all_cases_filenames):
                     print('in good match self check remianing list ready to '
                           'start')
                     pass
@@ -78,14 +88,13 @@ class WorkFiles():
                 if KEEP_WORKING_LIST:
                     print('in  adjust correpsondance')
                     if WorkFiles.check_working_list_in_volumes(
-                            self, working_list_filepath, all_cases_filenames):
+                            self, self.working_list_filepath, self.all_cases_filenames):
                         print('workling list ok with volume folder although '
                               'discordant')
-                        with open(working_list_filepath, 'r') as file:
+                        with open(self.working_list_filepath, 'r') as file:
                             working_list_filenames = yaml.safe_load(file)[
                                 'CASES']
-                        if self.check_remaining_list(
-                                self.outputFolder, remaining_list_filepath,
+                        if WorkFiles.check_remaining_list(self,
                                 working_list_filenames):
                             print(' keep working list remaining list ok')
                             pass
@@ -95,7 +104,7 @@ class WorkFiles():
                         return False
                 else:
                     print('in else adjust correspondence')
-                    self.create_backup(working_list_filepath, remaining_list_filepath)
+                    self.create_backup(self.working_list_filepath, self.remaining_list_filepath)
                     # # Create backup of working list
                     # working_list_backup_path = (f'{self.outputFolder}{os.sep}ol'
                     #                        f'd_{WORKING_LIST_FILENAME}')
@@ -107,18 +116,36 @@ class WorkFiles():
                     # print('copied old version')
                     # create new working list
                     # Create initial working list and remaining list.
-                    self.write_file_list(working_list_filepath,
-                                         all_cases_filenames)
-                    self.write_file_list(remaining_list_filepath,
-                                         all_cases_filenames)
+                    self.write_file_list(self.working_list_filepath,
+                                         self.all_cases_filenames)
+                    self.write_file_list(self.remaining_list_filepath,
+                                         self.all_cases_filenames)
 
                     pass
 
 
         else:
             # Create initial working list and remaining list.
-            self.write_file_list(working_list_filepath, all_cases_filenames)
-            self.write_file_list(remaining_list_filepath, all_cases_filenames)
+            self.write_file_list(self.working_list_filepath, self.all_cases_filenames)
+
+            working_list_filenames = WorkFiles.get_working_list_filenames(self)
+            print('got working list filenames in else', working_list_filenames)
+
+            if os.path.exists(self.remaining_list_filepath):
+                if self.check_remaining_list(working_list_filenames):
+                    print('check remianing files else ok 3332')
+                else:
+                    print('There is a remaining list file in the output '
+                          'folder, but it is inconsistent with working '
+                          'list. \n\n Please double check. ')
+                    return False
+                    # message = ('There is a remaining list file in the output '
+                    #            'folder, but it is inconsistent with working '
+                    #            'list. \n\n Please double check.')
+                    # Dev.show_message_box(self, message)
+            else:
+                print(' no remaining file exit. one is being created')
+                self.write_file_list(self.remaining_list_filepath, self.all_cases_filenames)
 
         return True
 
@@ -161,20 +188,16 @@ class WorkFiles():
         folder.
         """
         with open(working_list_filepath, 'r') as file:
-            elements = yaml.safe_load(file)['CASES']
+            working_list_filenames = yaml.safe_load(file)['CASES']
 
-        remaining_list_filepath = os.path.join(self.outputFolder,
-                                               REMAINING_LIST_FILENAME)
 
-        if elements == all_cases_filenames:
-            if WorkFiles.check_remaining_list(self, self.outputFolder, remaining_list_filepath ):
+        if working_list_filenames == all_cases_filenames:
+            if WorkFiles.check_remaining_list(self, working_list_filenames):
                 print('a;l cases in folder')
                 pass
             else:
                 print('not all cases in folder will create remaing list')
-                remaining_list_filepath = os.path.join(self.outputFolder,
-                                                       REMAINING_LIST_FILENAME)
-                WorkFiles.write_file_list(self, remaining_list_filepath,
+                WorkFiles.write_file_list(self, self.remaining_list_filepath,
                                           all_cases_filenames)
 
             return True
@@ -182,8 +205,8 @@ class WorkFiles():
         else:
             # Find differing elements
             missing_in_elements = [f for f in all_cases_filenames if
-                                   f not in elements]
-            missing_in_all_cases = [f for f in elements if
+                                   f not in working_list_filenames]
+            missing_in_all_cases = [f for f in working_list_filenames if
                                     f not in all_cases_filenames]
 
             # def print_message(message):
@@ -248,14 +271,13 @@ class WorkFiles():
         return False
 
     @enter_function
-    def check_remaining_list(self, outputFolder, remaining_list_filepath,
-                             working_list_filenames):
+    def check_remaining_list(self, working_list_filenames):
 
-        # List all files in the folder
-        output_folder_files = os.listdir(outputFolder)
+        # # List all files in the folder
+        # output_folder_files = os.listdir(outputFolder)
 
-        if REMAINING_LIST_FILENAME in output_folder_files:
-            with open(remaining_list_filepath, 'r') as file:
+        if REMAINING_LIST_FILENAME in self.output_folder_files:
+            with open(self.remaining_list_filepath, 'r') as file:
                 elements = yaml.safe_load(file)['CASES']
                 first_element = elements[0]
             print('first element555', first_element)
@@ -268,7 +290,15 @@ class WorkFiles():
                     print('all element sin remainign liust are in volumes')
                     pass
                 else:
-                    print(' not all element in remaining list are in volume')
+                    print(' *** ATTENTION! *** Not all elements in remaining '
+                          'list file found in working list. Please double '
+                          'check.')
+                    message = ('INVALID REMAINING LIST FILE!\n\n'
+                               ' *** ATTENTION! *** Not all elements '
+                               'in remaining list file found in working list. \n \n '
+                               'Please double check.')
+                    Dev.show_message_box(self, message)
+
                     return False
 
 
@@ -276,6 +306,8 @@ class WorkFiles():
                 print('First element of the remaining list IS NOT in '
                       'the working list. Please double check list '
                       'correspondences.')
+                Dev.show_message_box(self, f'INVALID REMAINING LIST FILE!')
+
                 return False
 
         else:
@@ -284,8 +316,10 @@ class WorkFiles():
                   'any manipulation errors. A new remaining file is '
                   'created right now corresponding to the working '
                   'list.')
-            self.write_file_list(remaining_list_filepath,
-                                 all_cases_filenames)
+            with open(self.working_list_filepath, 'r') as file:
+                working_list_filenames = yaml.safe_load(file)['CASES']
+            self.write_file_list(self.remaining_list_filepath,
+                                 working_list_filenames)
 
         return True
 
@@ -320,7 +354,7 @@ class WorkFiles():
 
 
     @enter_function
-    def create_backup(self, working_list_filepath, remaining_list_filepath):
+    def create_backup(self, working_list_filepath):
         # Create backup of working list
         working_list_backup_path = (f'{self.outputFolder}{os.sep}ol'
                                     f'd_{WORKING_LIST_FILENAME}')
@@ -328,7 +362,7 @@ class WorkFiles():
             (f'{self.outputFolder}'
              f'{os.sep}old_{REMAINING_LIST_FILENAME}')
         shutil.copy(working_list_filepath, working_list_backup_path)
-        shutil.copy(remaining_list_filepath, remaining_list_backup_path)
+        shutil.copy(self.remaining_list_filepath, remaining_list_backup_path)
         print('copied old version')
 
     @enter_function
@@ -344,6 +378,12 @@ class WorkFiles():
     #             # print('working list not in volume folder')
     #             # Dev.show_message_box(self, f'INVALID WORKING LIST FILE')
     #             return False
+
+    @enter_function
+    def get_working_list_filenames(self):
+        with open(self.working_list_filepath, 'r') as file:
+            working_list_filenames = yaml.safe_load(file)['CASES']
+            return working_list_filenames
 
 
 

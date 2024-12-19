@@ -1340,9 +1340,35 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.update_ui()
 
+      # update le self. current case path
+
       # next step = re ajuster le remaining list
       # result = self.WorkFiles.check_remaining_list(self.Cases)
       # print('succed check remainig list working', result)
+
+      # aller chercher le 1er cas dans remining list
+      remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
+          self)[0]
+      print('1er cas remianing list', remaining_list_first)
+      index = self.WorkFiles.find_index_from_filename(remaining_list_first,
+                                              self.Cases)
+      print('jac', index)
+
+      current_casepath = self.WorkFiles.find_path_from_filename(
+          remaining_list_first)
+
+      print('filepath of remaining case',
+            self.WorkFiles.find_path_from_filename(remaining_list_first))
+
+
+      self.currentCase = remaining_list_first
+      self.currentCase_index = index
+      self.currentCasePath = current_casepath
+
+      self.updateCaseAll()
+      self.loadPatient()
+
+      # find index of 1st remaining case in global loist
 
       
       if self.outputFolder is not None:

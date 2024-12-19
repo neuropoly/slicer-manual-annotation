@@ -3,7 +3,7 @@ from utils import *
 global KEEP_WORKING_LIST
 # ToDo: define this flag in the initial configuration UI and in globales
 #  variables
-KEEP_WORKING_LIST = True
+KEEP_WORKING_LIST = False
 
 
 class WorkFiles():
@@ -428,4 +428,21 @@ class WorkFiles():
         print('len all cases case in workfile', len(self.working_list_filepath))
         print('working list filepah', self.working_list_filepath)
         return self.working_list_filepath
+
+    @enter_function
+    def find_index_from_filename(self, filename, list):
+        print('filename', filename)
+        print('list', list)
+        index = list.index(filename)
+        return index
+
+    @enter_function
+    def find_path_from_filename(self, filename):
+         print('filenamesdsd', filename)
+         for filepath in self.all_cases_path:
+             if filename in filepath:
+                 return filepath
+
+
+
 

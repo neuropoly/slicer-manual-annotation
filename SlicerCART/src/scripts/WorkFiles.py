@@ -319,3 +319,9 @@ class WorkFiles():
             working_list_filenames = yaml.safe_load(file)['CASES']
             return working_list_filenames
 
+    def check_if_remaining_list_empty(self):
+        with open(self.remaining_list_filepath, 'r') as file:
+            elements = yaml.safe_load(file)['CASES']
+            print('elements', len(elements))
+        return len(elements) <= 0
+

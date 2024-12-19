@@ -1298,8 +1298,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       workflow_valid = self.WorkFiles.check_working_list()
       print('jworkflow is valid', workflow_valid )
       print(' check if remaining list is not empty')
-      grincheux = self.WorkFiles.check_if_remaining_list_empty()
-      print('grincheux', grincheux)
+      # grincheux = self.WorkFiles.check_remaining_first_element()
+      # print('grincheux', grincheux)
       
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)

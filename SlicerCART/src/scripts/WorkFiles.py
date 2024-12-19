@@ -166,10 +166,17 @@ class WorkFiles():
                 pass
 
             else:
-                Debug.print(self, ('Issues with remaining list. Creating one '
-                                   'from the working list.'))
-                WorkFiles.write_file_list(self, self.remaining_list_filepath,
-                                          all_cases_filenames)
+                remaining_list_filenames = (
+                    WorkFiles.get_remaining_list_filenames(self))
+                if WorkFiles.check_remaining_first_element(self,
+                                                          remaining_list_filenames):
+
+                    Debug.print(self, ('Issues with remaining list. Creating one '
+                                       'from the working list.'))
+                    WorkFiles.write_file_list(self, self.remaining_list_filepath,
+                                              all_cases_filenames)
+                else:
+                    print('remaining list is empty not creating remainig list.')
 
             return True
 
@@ -219,7 +226,23 @@ class WorkFiles():
         if REMAINING_LIST_FILENAME in self.output_folder_files:
             with open(self.remaining_list_filepath, 'r') as file:
                 elements = yaml.safe_load(file)['CASES']
-                first_element = elements[0]
+                if WorkFiles.check_remaining_first_element(self,
+                                                                   elements):
+                    first_element = elements[0]
+                else:
+                    print(' first element none')
+                    if len(elements) > 1:
+                        message = (' !!! PROBLEM !!! Remaining list might be '
+                                   'corrupted. Please double check.')
+                        Debug.print(self, message)
+                        # Dev.show_message_box(self, message,
+                        #                      box_title='ATTENTION!')
+                        return False
+                    else:
+                        print('remaining list empty but ok')
+                        return True
+
+
 
             # Check if first element of remaining list is in working list
             # before looping (optimize performance).
@@ -319,9 +342,40 @@ class WorkFiles():
             working_list_filenames = yaml.safe_load(file)['CASES']
             return working_list_filenames
 
-    def check_if_remaining_list_empty(self):
+    @enter_function
+    def get_remaining_list_filenames(self):
+        """
+        Get all filenames from the remaining list.
+        """
         with open(self.remaining_list_filepath, 'r') as file:
-            elements = yaml.safe_load(file)['CASES']
-            print('elements', len(elements))
-        return len(elements) <= 0
+            remaining_list_filenames = yaml.safe_load(file)['CASES']
+            return remaining_list_filenames
+
+    # @enter_function
+    # def check_if_remaining_list_empty(self):
+    #     with open(self.remaining_list_filepath, 'r') as file:
+    #         elements = yaml.safe_load(file)['CASES']
+    #         print('elements', len(elements))
+    #     return len(elements) <= 0
+
+    @enter_function
+    def check_remaining_first_element(self, remaining_list):
+        if remaining_list != None and remaining_list != []:
+            if remaining_list[0] != None:
+                print('remainign list 0 1st el: ', remaining_list[0], "888")
+                print('first element remaining list != None')
+                return True
+            # else:
+            #     print(' first element none')
+            #     if len(remaining_list) > 1:
+            #         print('problme!!!!!')
+            #         pass
+            #     else:
+            #         return True
+        return False
+
+            # print('remaining_list', remaining_list)
+            # print('len remaining list', len(remaining_list))
+            # print('remaining list first element', remaining_list[0])
+        # return (remaining_list != None) and (len(remaining_list) > 0)
 

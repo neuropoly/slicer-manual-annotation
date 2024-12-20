@@ -1,12 +1,17 @@
 from utils import *
 
 global KEEP_WORKING_LIST
-# ToDo: define this flag in the initial configuration UI and in globales
-#  variables
-KEEP_WORKING_LIST = False
+# ToDo: define this flag in the initial configuration UI and in global variables
+KEEP_WORKING_LIST = True
 
 
 class WorkFiles():
+    """
+    This class is intended to manipulate different cases list in order to
+    continue/facilitate the workflow from, for example when continuing from
+    previous work sessions.
+    """
+
     def __init__(self, currentFolder, outputFolder):
         self.CurrentFolder = currentFolder
         self.outputFolder = outputFolder
@@ -135,6 +140,7 @@ class WorkFiles():
         Filter all files that have the correct working list configuration.
         Can use elif to build up and handle different inclusion criteria.
         """
+        # ToDo: see issue 118
         filtered_list = []
         for element in working_list:
             if 'derivatives' in element:
@@ -168,15 +174,20 @@ class WorkFiles():
             else:
                 remaining_list_filenames = (
                     WorkFiles.get_remaining_list_filenames(self))
-                if WorkFiles.check_remaining_first_element(self,
-                                                          remaining_list_filenames):
+                if WorkFiles.check_remaining_first_element(
+                        self, remaining_list_filenames):
 
-                    Debug.print(self, ('Issues with remaining list. Creating one '
+                    Debug.print(
+                        self, ('Issues with remaining list. Creating one '
                                        'from the working list.'))
-                    WorkFiles.write_file_list(self, self.remaining_list_filepath,
+                    WorkFiles.write_file_list(
+                        self, self.remaining_list_filepath,
                                               all_cases_filenames)
                 else:
-                    print('remaining list is empty not creating remainig list.')
+                    Debug.print(self, 'Remaining list is empty, but a new one '
+                                      'will not be created '
+                                      '(according to user preferences).')
+                    pass
 
             return True
 
@@ -192,6 +203,7 @@ class WorkFiles():
                 Formats a list of elements into a string with
                 each element on a new line.
                 """
+                # Limit to 10 elements the displayed pop-up.
                 if len(elements) > 10:
                     return "\n".join(f"{element}" for element in
                                      elements[:10]) + "\n..."
@@ -222,24 +234,34 @@ class WorkFiles():
 
     @enter_function
     def check_remaining_list(self, working_list_filenames):
+        """
+        Important function related to this class. Check the validity of the
+        remaining list and create or not a new one depending on the scenario.
+
+        Param: working_list_filenames: list of filenames in the working list
+        (Attention! It is not the remaining list.)
+        """
 
         if REMAINING_LIST_FILENAME in self.output_folder_files:
             with open(self.remaining_list_filepath, 'r') as file:
                 elements = yaml.safe_load(file)['CASES']
-                if WorkFiles.check_remaining_first_element(self,
-                                                                   elements):
+                if WorkFiles.check_remaining_first_element(self, elements):
                     first_element = elements[0]
                 else:
-                    print(' first element none')
+                    Debug.print(self, 'First element in remaining list is '
+                                      'none.')
                     if len(elements) > 1:
                         message = (' !!! PROBLEM !!! Remaining list might be '
                                    'corrupted. Please double check.')
                         Debug.print(self, message)
                         # Dev.show_message_box(self, message,
                         #                      box_title='ATTENTION!')
+                        pass
                         return False
                     else:
-                        print('remaining list empty but ok')
+                        Debug.print(self, 'Remaining list is empty, but this '
+                                          'is ok for now.')
+                        pass
                         return True
 
             # Check if first element of remaining list is in working list
@@ -259,31 +281,26 @@ class WorkFiles():
                                'Please double check.')
                     Debug.print(self, message)
                     Dev.show_message_box(self, message)
-
+                    pass
                     return False
 
             else:
-                print('in else else 3342')
                 message = ('First element of the remaining list IS NOT in '
                       'the working list. Please double check list '
                       'correspondences. A backup is created')
                 Debug.print(self, message)
                 # Dev.show_message_box(self, message)
+
                 # Any old file (e.g. previous backup of working or
                 # remaining list will be overwritten).
                 self.create_backup()
 
-                working_list_filenames = WorkFiles.get_working_list_filenames(
-                    self)
-                print('working list filenames in else kepep wokring',
-                      len(working_list_filenames))
-                print('self remainig list filepath', self.remaining_list_filepath)
+                working_list_filenames = (
+                    WorkFiles.get_working_list_filenames(self))
 
                 # Overwrite any working list and/or remaining list.
                 self.write_file_list(self.remaining_list_filepath,
                                      working_list_filenames)
-
-
 
         else:
             message = (' *** ATTENTION! *** No remaining list file found '
@@ -329,11 +346,13 @@ class WorkFiles():
         remaining_list_backup_path = \
             (f'{self.outputFolder}'
              f'{os.sep}old_{REMAINING_LIST_FILENAME}')
+
         if os.path.exists(self.working_list_filepath):
             shutil.copy(self.working_list_filepath, working_list_backup_path)
         if os.path.exists(self.remaining_list_filepath):
             shutil.copy(self.remaining_list_filepath,
                         remaining_list_backup_path)
+
         Debug.print(self, 'Old versions created.')
 
     @enter_function
@@ -352,83 +371,76 @@ class WorkFiles():
         """
         with open(self.remaining_list_filepath, 'r') as file:
             remaining_list_filenames = yaml.safe_load(file)['CASES']
-            print('in get remaining list filenames', remaining_list_filenames)
             return remaining_list_filenames
 
     @enter_function
     def get_working_list_filepaths(self, working_list_filenames):
+        """
+        Get all working list filepaths.
+        """
         filenames_path = []
         for element in working_list_filenames:
             for path in self.all_cases_path:
                 if element in path:
                     filenames_path.append(path)
-        # print('filenames path', filenames_path)
-        print('len filenames path', len(filenames_path))
         return filenames_path
 
     @enter_function
     def get_remaining_list_filepaths(self, remaining_list_filenames):
+        """
+        Get all remaining list filepaths.
+        """
         filenames_path = []
         for element in remaining_list_filenames:
             for path in self.all_cases_path:
                 if element in path:
                     filenames_path.append(path)
-        # print('filenames path', filenames_path)
-        print('len filenames path', len(filenames_path))
         return filenames_path
 
     @enter_function
     def check_remaining_first_element(self, remaining_list):
+        """
+        Check validity of the remaining list, based on first element.
+        """
         if remaining_list != None and remaining_list != []:
             if remaining_list[0] != None:
-                print('remainign list 0 1st el: ', remaining_list[0], "888")
-                print('first element remaining list != None')
+                Debug.print(self, f"Remaining list 1st element is: "
+                                  f"{remaining_list[0]}")
+                pass
                 return True
-
         return False
-
 
     @enter_function
     def get_all_cases_path(self):
-
-        print('len all cases case in workfile', len(self.working_list_filepath))
-        # print('working list filepah', self.working_list_filepath)
+        """
+        Get all cases path from the working list filepaths.
+        """
         return self.working_list_filepath
 
     @enter_function
     def find_index_from_filename(self, filename, list):
-        print('filename', filename)
-        # print('list', list)
+        """
+        Allow to find the index of an element (e.g. filename) in a list.
+        """
         index = list.index(filename)
         return index
 
     @enter_function
     def find_path_from_filename(self, filename):
-         print('filenamesdsd', filename)
-         for filepath in self.all_cases_path:
-             if filename in filepath:
-                 return filepath
+        """
+        Find path from a filename.
+        """
+        for filepath in self.all_cases_path:
+            if filename in filepath:
+                return filepath
 
     @enter_function
     def adjust_remaining_list(self, filename):
+        """
+        Adjust the remaining list by removing a specific filename.
+        """
         remaining_list_filenames = WorkFiles.get_remaining_list_filenames(self)
-        print('remaining list filenames', len(remaining_list_filenames))
         remaining_list_filenames.remove(filename)
-        print('minus 1 remiang list filename', len(remaining_list_filenames))
-        WorkFiles.write_file_list(self, self.remaining_list_filepath, remaining_list_filenames)
-        with open(self.remaining_list_filepath, 'r') as file:
-            after = yaml.safe_load(file)['CASES']
 
-        print('after', len(after))
-
-
-        # # Adjust the path
-        # filepath = WorkFiles.find_path_from_filename(self, filename)
-        # filepath_list = WorkFiles.get_remaining_list_filepaths(self, remaining_list_filenames)
-        # filepath_list = filepath_list.remove(filepath)
-
-
-
-
-
-
+        WorkFiles.write_file_list(self, self.remaining_list_filepath,
+                                  remaining_list_filenames)

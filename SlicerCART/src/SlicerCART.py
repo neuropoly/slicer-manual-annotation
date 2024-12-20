@@ -158,8 +158,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CurrentFolder = None
     self.lineDetails = {}
     self.previousAction = None
-    print('self selected saved after')
-    self.saved_selected = False
+    self.saved_selected = False # Flag to load correctly the first case
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
@@ -424,7 +423,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
 
-
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
           return
@@ -482,14 +480,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def set_patient(self, filename):
-      #Todo : add statement if when remainign case is empty or filnemae
+      """
+      Set the patient to be displayed in UI case list and Slicer Viewer from
+      filename.
+      """
       index = self.WorkFiles.find_index_from_filename(filename,
                                               self.Cases)
-      print('jac', index)
-      currentCasePath = self.WorkFiles.find_path_from_filename(
-          filename)
-      print('filepath of remaining case',
-            self.WorkFiles.find_path_from_filename(filename))
+      currentCasePath = self.WorkFiles.find_path_from_filename(filename)
 
       self.currentCase = filename
       self.currentCase_index = index
@@ -497,37 +494,36 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def manage_workflow(self):
-      ### Worklist/Remaining list management section
+      """
+      Allows to work from appropriate working list and remaining list.
+      """
+
+      # Instantiate a WorkFiles class object to facilitate cases lists
+      # management.
       self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
-      workflow_valid = self.WorkFiles.check_working_list()
 
-      ###### re-assignation
+      # Set up working list appropriateness compared to volumes folder selected.
+      self.WorkFiles.check_working_list()
+
+      # Re-assignation of self.Cases and self.CasesPath based on working list.
       self.Cases = self.WorkFiles.get_working_list_filenames(self)
-
-      self.CasesPaths = self.WorkFiles.get_working_list_filepaths(
-                                                                  self.Cases)
-      print('len self cases', len(self.Cases))
-      print('len cases path', len(self.CasesPaths))
-      print('self casers path after len', len(self.CasesPaths))
-
+      self.CasesPaths = self.WorkFiles.get_working_list_filepaths(self.Cases)
       self.reset_ui()
 
-      # aller chercher le 1er cas dans remining list
-      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames(
-          self)
-      print('remaining list filenames', remaining_list_filenames)
+      # Get the first case of remaining list (considers if empty).
+      remaining_list_filenames = (
+          self.WorkFiles.get_remaining_list_filenames(self))
 
       if self.WorkFiles.check_remaining_first_element(remaining_list_filenames):
-          print('remainig lsit filename ok')
+          Debug.print(self, 'First case in remaining list ok.')
           remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
               self)[0]
       else:
-          print('remainig list filename empty 3333')
-          # remaining_list_first = self.WorkFiles.get_working_list_filenames()[0]
+          Debug.print(self, 'Remaining list empty. Select case from working '
+                            'list (working list should never be empty).')
           remaining_list_first = self.select_next_working_case()
 
       self.set_patient(remaining_list_first)
-
       self.update_ui()
 
   def validateBIDS(self, path):
@@ -1091,188 +1087,111 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if is_valid == False:
           return
 
-      # ToDo: NOT DELETE; TO BE REACTIVATED LATER
-      # # Save if annotator_name is not empty and timer started:
-      # if self.annotator_name and self.time is not None:
-      #
-      #     self.saveSegmentationInformation(currentSegmentationVersion)
-      #
-      #     if 'nrrd' in INPUT_FILE_EXTENSION:
-      #       self.saveNrrdSegmentation(currentSegmentationVersion)
-      #
-      #     if 'nii' in INPUT_FILE_EXTENSION:
-      #       self.saveNiiSegmentation(currentSegmentationVersion)
-      #
-      #     msg_box = qt.QMessageBox()
-      #     msg_box.setWindowTitle("Success")
-      #     msg_box.setIcon(qt.QMessageBox.Information)
-      #     msg_box.setText("Segmentation saved successfully!")
-      #     msg_box.exec()
-      #
-      # # If annotator_name empty or timer not started.
-      # else:
-      #     if not self.annotator_name:
-      #         msgboxtime = qt.QMessageBox()
-      #         msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
-      #         msgboxtime.exec()
-      #     elif self.time is None:
-      #         print("Error: timer is not started for some unknown reason.")
-
       # Save if annotator_name is not empty and timer started:
+      if self.annotator_name and self.time is not None:
 
+          self.saveSegmentationInformation(currentSegmentationVersion)
 
-      self.saveSegmentationInformation(currentSegmentationVersion)
+          if 'nrrd' in INPUT_FILE_EXTENSION:
+            self.saveNrrdSegmentation(currentSegmentationVersion)
 
-      if 'nrrd' in INPUT_FILE_EXTENSION:
-          self.saveNrrdSegmentation(currentSegmentationVersion)
+          if 'nii' in INPUT_FILE_EXTENSION:
+            self.saveNiiSegmentation(currentSegmentationVersion)
 
-      if 'nii' in INPUT_FILE_EXTENSION:
-          self.saveNiiSegmentation(currentSegmentationVersion)
+          msg_box = qt.QMessageBox()
+          msg_box.setWindowTitle("Success")
+          msg_box.setIcon(qt.QMessageBox.Information)
+          msg_box.setText("Segmentation saved successfully!")
+          msg_box.exec()
 
-      msg_box = qt.QMessageBox()
-      msg_box.setWindowTitle("Success")
-      msg_box.setIcon(qt.QMessageBox.Information)
-      msg_box.setText("Segmentation saved successfully!")
-      msg_box.exec()
-      
+      # If annotator_name empty or timer not started.
+      else:
+          if not self.annotator_name:
+              msgboxtime = qt.QMessageBox()
+              msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
+              msgboxtime.exec()
+          elif self.time is None:
+              print("Error: timer is not started for some unknown reason.")
+
       self.cast_segmentation_to_uint8()
 
       self.update_case_list_colors()
 
-      # we start from here
-      print('bedore self select next remaining case')
-      # set flag for first case
+      # One segment has been saved, which allows to load the next case from now.
       self.saved_selected = True
-      # next_remaining_case = self.select_next_remaining_case()
       self.select_next_remaining_case()
-
-
-
-      # print('next remaining case in save', next_remaining_case)
-      # self.set_patient(next_remaining_case)
 
   @enter_function
   def select_next_remaining_case(self):
-      print('current index', self.currentCase_index)
-      print('currentCase', self.currentCase)
-      print('self current case path', self.currentCasePath)
-      print(' index+1', self.currentCase_index + 1)
-      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
-      #verify if null or none
-      # if ((remaining_list_filenames == [] )
-      #     or (remaining_list_filenames == None)
-      #     or (len(remaining_list_filenames) == 0)):
-      #     print('remainig list empty !!!@')
-      #     # update the slicer cart with the new case naem
-      #     self.set_patient(self.currentCase)
-      #     self.update_ui()
-      #     return
+      Debug.print(self, f'self.currentCase_index: {self.currentCase_index}')
+      Debug.print(self, f'self.currentCase: {self.currentCase}')
+      Debug.print(self, f'self.currentCasePath: {self.currentCasePath}')
+      Debug.print(self,
+                  f'self.currentCase_index + 1 = {self.currentCase_index + 1}')
 
-      if ((remaining_list_filenames == [] )
+      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
+
+      if ((remaining_list_filenames == [])
           or (remaining_list_filenames == None)
           or (len(remaining_list_filenames) == 0)):
-          # working_list_filenames = self.WorkFiles.get_working_list_filenames()
-          # if ((working_list_filenames == [])
-          #         or (working_list_filenames == None)
-          #         or (len(remaining_list_filenames) == 0)):
+
+          Debug.print(self, 'Remaining list empty!')
           next_case_name = self.select_next_working_case()
-          print('remainig list empty !!!@')
-          # update the slicer cart with the new case naem
+
+          # Update SlicerCART UI with the appropriate case.
           self.set_patient(next_case_name)
           self.update_ui()
+
           return
 
       if self.currentCase in remaining_list_filenames:
           current_case_index = self.WorkFiles.find_index_from_filename(
-              self.currentCase,
-                                                                remaining_list_filenames)
-          print('current case index', current_case_index)
+              self.currentCase, remaining_list_filenames)
           next_case_index = current_case_index + 1
-          # Todo: we will need to verify that the next case index do not exced
-          # reminaing list
 
-          # if next_case_index >= len(remaining_list_filenames):
-          #     print('last case')
-          #     self.WorkFiles.adjust_remaining_list(self.currentCase)
-          #
-          #     return
-          if next_case_index >= len(
-                  remaining_list_filenames):  # this is the last
-              # case
-              print('last case')
-              next_case_name = self.currentCase
+          if next_case_index >= len(remaining_list_filenames):
+              Debug.print(self, 'This is the last case!')
+              next_case_name = self.currentCase #So, remain on the last case.
+
           else:
               next_case_name = remaining_list_filenames[next_case_index]
 
           self.WorkFiles.adjust_remaining_list(self.currentCase)
+
       else:
+          # self.CurrentCase not in remaining list: going to the next case in
+          # the working list.
           next_case_name = self.select_next_working_case()
-          # print('current case not in remaining list!!!!!')
-          # working_list_filenames = self.WorkFiles.get_working_list_filenames()
-          # index_in_working_list = self.WorkFiles.find_index_from_filename(
-          #     self.currentCase, working_list_filenames)
-          # next_case_index = index_in_working_list + 1
-          # if next_case_index >= len(
-          #         working_list_filenames):  # this is the last
-          #     # case
-          #     print('last case working')
-          #     next_case_name = self.currentCase
-          # else:
-          #   next_case_name = working_list_filenames[next_case_index]
-
-
-
           # define next case index
 
-      # # Todo: we will need to verify that the next case index do not exced
-      # # reminaing list
-      #
-      # # if next_case_index >= len(remaining_list_filenames):
-      # #     print('last case')
-      # #     self.WorkFiles.adjust_remaining_list(self.currentCase)
-      # #
-      # #     return
-      # if next_case_index >= len(remaining_list_filenames): # this is the last
-      #     # case
-      #     print('last case')
-      #     next_case_name = self.currentCase
-      # else:
-      #   next_case_name = remaining_list_filenames[next_case_index]
-
-      # print('next case index', next_case_index)
-      print('next case name', next_case_name)
-      # remove the old case
-      # self.WorkFiles.adjust_remaining_list(self.currentCase)
-      # update the slicer cart with the new case naem
       self.set_patient(next_case_name)
       self.update_ui()
 
+  @enter_function
   def select_next_working_case(self):
-      print('current case not in remaining list!!!!!')
+      """
+      Select the next case to be displayed from the working list.
+      """
+
       working_list_filenames = self.WorkFiles.get_working_list_filenames()
       index_in_working_list = self.WorkFiles.find_index_from_filename(
           self.currentCase, working_list_filenames)
+
+      # Means that segmentation have already been saved.
       if self.saved_selected:
-        print('goin to next case first saved already done')
-        next_case_index = index_in_working_list + 1
+          next_case_index = index_in_working_list + 1
+
       else:
-          print('initial first case')
           next_case_index = index_in_working_list
 
-      if next_case_index >= len(
-              working_list_filenames):  # this is the last
-          # case
-          print('last case working')
+      if next_case_index >= len(working_list_filenames):
+          Debug.print(self, 'This is the last case of working list.')
           next_case_name = self.currentCase
+
       else:
           next_case_name = working_list_filenames[next_case_index]
+
       return next_case_name
-
-#### TO DO IN SELECT NEXT WORKING CVASE = AJUSTER LE INCREMENTQUAND
-  # WOREMAINIGN LIST = []
-
-
-
 
   def qualityControlOfLabels(self):
       is_valid = True 

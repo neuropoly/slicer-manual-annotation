@@ -79,6 +79,5 @@ class Dev:
             if element in list2:
                 continue
             else:
-
                 return False
         return True

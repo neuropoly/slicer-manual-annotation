@@ -9,4 +9,3 @@ from .SlicerCARTLogic import *
 from .SlicerCARTTest import *
 from .Timer import *
 from .WorkFiles import *
-from .UITheme import *

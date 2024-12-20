@@ -25,7 +25,7 @@ class CompareSegmentVersionsWindow(qt.QWidget):
       buttonLayout.addWidget(labelLabel)
 
       self.labelDropdown = qt.QComboBox()
-      for label in self.segmenter.label_config_yaml['labels']:
+      for label in self.segmenter.config_yaml['labels']:
           self.labelDropdown.addItem(label['name'])
       buttonLayout.addWidget(self.labelDropdown)
 
@@ -45,32 +45,32 @@ class CompareSegmentVersionsWindow(qt.QWidget):
                 checkboxItem = qt.QTableWidgetItem()
                 checkboxItem.setFlags(qt.Qt.ItemIsUserCheckable | qt.Qt.ItemIsEnabled)
                 checkboxItem.setCheckState(qt.Qt.Unchecked)
-                checkboxItem.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                checkboxItem.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 0, checkboxItem)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Select'))
                 self.versionCheckboxWidgets[index] = checkboxItem
 
                 cell = qt.QTableWidgetItem(row['Segmentation version'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 1, cell)
                 self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Version'))
 
                 cell = qt.QTableWidgetItem(row['Annotator Name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 2, cell)
                 self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Annotator'))
 
                 cell = qt.QTableWidgetItem(row['Annotator degree'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 3, cell)
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Degree'))
 
                 cell = qt.QTableWidgetItem(row['Date and time'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 4, cell)
                 self.versionTableView.setHorizontalHeaderItem(4, qt.QTableWidgetItem('Date and Time'))
 

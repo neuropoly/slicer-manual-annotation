@@ -70,7 +70,7 @@ freetextboxes:
 impose_bids_format: false
 input_filetype: '*.nii.gz'
 interpolate_value: 0
-is_classification_requested: true
+is_classification_requested: false
 is_display_timer_requested: false
 is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: true
@@ -92,4 +92,4 @@ labels:
   upper_bound_HU: 90
   value: 2
 modality: MRI
-slice_view_color: Yellow
+slice_view_color: Red

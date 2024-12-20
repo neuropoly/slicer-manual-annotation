@@ -1,6 +1,7 @@
 from utils import *
 
 class CompareSegmentVersionsWindow(qt.QWidget):
+   @enter_function
    def __init__(self, segmenter, segmentationInformation_df, parent = None):
       super(CompareSegmentVersionsWindow, self).__init__(parent)
 
@@ -25,7 +26,8 @@ class CompareSegmentVersionsWindow(qt.QWidget):
       buttonLayout.addWidget(labelLabel)
 
       self.labelDropdown = qt.QComboBox()
-      for label in self.segmenter.label_config_yaml['labels']:
+      print('before for label in self.segmenter.labe')
+      for label in self.segmenter.config_yaml['labels']:
           self.labelDropdown.addItem(label['name'])
       buttonLayout.addWidget(self.labelDropdown)
 

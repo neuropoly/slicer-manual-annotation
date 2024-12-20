@@ -1425,22 +1425,28 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.manage_workflow()
 
+      self.set_ui_enabled_options()
+
+  @enter_function
+  def set_ui_enabled_options(self):
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
           self.ui.LoadSegmentation.setEnabled(True)
 
           self.ui.SaveSegmentationButton.setEnabled(True)
           self.ui.SaveClassificationButton.setEnabled(True)
-          
+
           if self.CurrentFolder is not None:
-                self.updateCurrentOutputPathAndCurrentVolumeFilename()
+              self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
-                self.update_case_list_colors()
+              self.update_case_list_colors()
 
-                self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-                self.update_current_segmentation_status()
+              self.ui.SlicerDirectoryListView.setCurrentItem(
+                  self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+              self.update_current_segmentation_status()
 
-                self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+              self.predictions_paths = sorted(glob(
+                  os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
       else:
           Debug.print(self, 'No output folder selected.')
 

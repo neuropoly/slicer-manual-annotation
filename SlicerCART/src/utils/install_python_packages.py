@@ -10,8 +10,7 @@ REQUIRED_PYTHON_PACKAGES = {
     "PyYAML": "yaml",
     "pynrrd": "nrrd",
     "slicerio": "slicerio",
-    "bids_validator": "bids_validator",
-    "darkdetect": "darkdetect"
+    "bids_validator": "bids_validator"
 }
 
 

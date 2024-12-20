@@ -74,11 +74,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # has been selected or not.
     ConfigPath.create_temp_file(self)
     Debug.print(self, '*** temp file created. BE CAREFUL! ***')
-    print('test mode detection')
+
+    # Auto-Detect the Slicer theme, so specific foreground can be used
     self.theme  = Theme.get_mode(self)
-    print('dark mode', self.theme)
     self.foreground = Theme.set_foreground(self, self.theme)
-    print('mode ddd', self.foreground)
 
   @enter_function
   def get_config_values(self):
@@ -1488,8 +1487,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             item = qt.QListWidgetItem(case_id)
  
             currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
-            # if currentCaseSegmentationStatus == 0:
-            #     item.setForeground(qt.QColor('black'))
             if currentCaseSegmentationStatus == 0:
                 item.setForeground(qt.QColor(self.foreground))
             elif currentCaseSegmentationStatus == 1:

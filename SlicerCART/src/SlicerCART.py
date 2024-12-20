@@ -1055,6 +1055,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           else:
               raise ValueError('The input segmentation file must be in nii, nii.gz or nrrd format.')
   
+  @enter_function
   def onSaveSegmentationButton(self):
       # By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
@@ -1078,35 +1079,89 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if is_valid == False:
           return
 
-      # Save if annotator_name is not empty and timer started:
-      if self.annotator_name and self.time is not None: 
-          
-          self.saveSegmentationInformation(currentSegmentationVersion)
-          
-          if 'nrrd' in INPUT_FILE_EXTENSION:
-            self.saveNrrdSegmentation(currentSegmentationVersion)
-          
-          if 'nii' in INPUT_FILE_EXTENSION:
-            self.saveNiiSegmentation(currentSegmentationVersion)
-        
-          msg_box = qt.QMessageBox()
-          msg_box.setWindowTitle("Success")
-          msg_box.setIcon(qt.QMessageBox.Information)
-          msg_box.setText("Segmentation saved successfully!")
-          msg_box.exec()
+      # ToDo: NOT DELETE; TO BE REACTIVATED LATER
+      # # Save if annotator_name is not empty and timer started:
+      # if self.annotator_name and self.time is not None:
+      #
+      #     self.saveSegmentationInformation(currentSegmentationVersion)
+      #
+      #     if 'nrrd' in INPUT_FILE_EXTENSION:
+      #       self.saveNrrdSegmentation(currentSegmentationVersion)
+      #
+      #     if 'nii' in INPUT_FILE_EXTENSION:
+      #       self.saveNiiSegmentation(currentSegmentationVersion)
+      #
+      #     msg_box = qt.QMessageBox()
+      #     msg_box.setWindowTitle("Success")
+      #     msg_box.setIcon(qt.QMessageBox.Information)
+      #     msg_box.setText("Segmentation saved successfully!")
+      #     msg_box.exec()
+      #
+      # # If annotator_name empty or timer not started.
+      # else:
+      #     if not self.annotator_name:
+      #         msgboxtime = qt.QMessageBox()
+      #         msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
+      #         msgboxtime.exec()
+      #     elif self.time is None:
+      #         print("Error: timer is not started for some unknown reason.")
 
-      # If annotator_name empty or timer not started.
-      else:
-          if not self.annotator_name:
-              msgboxtime = qt.QMessageBox()
-              msgboxtime.setText("Segmentation not saved : no annotator name !  \n Please save again with your name!")
-              msgboxtime.exec()
-          elif self.time is None:
-              print("Error: timer is not started for some unknown reason.")
+      # Save if annotator_name is not empty and timer started:
+
+
+      self.saveSegmentationInformation(currentSegmentationVersion)
+
+      if 'nrrd' in INPUT_FILE_EXTENSION:
+          self.saveNrrdSegmentation(currentSegmentationVersion)
+
+      if 'nii' in INPUT_FILE_EXTENSION:
+          self.saveNiiSegmentation(currentSegmentationVersion)
+
+      msg_box = qt.QMessageBox()
+      msg_box.setWindowTitle("Success")
+      msg_box.setIcon(qt.QMessageBox.Information)
+      msg_box.setText("Segmentation saved successfully!")
+      msg_box.exec()
       
       self.cast_segmentation_to_uint8()
 
       self.update_case_list_colors()
+
+      # we start from here
+      print('bedore self select next remaining case')
+      # next_remaining_case = self.select_next_remaining_case()
+      self.select_next_remaining_case()
+
+      # print('next remaining case in save', next_remaining_case)
+      # self.set_patient(next_remaining_case)
+
+  @enter_function
+  def select_next_remaining_case(self):
+      print('current index', self.currentCase_index)
+      print('currentCase', self.currentCase)
+      print('self current case path', self.currentCasePath)
+      print(' index+1', self.currentCase_index + 1)
+      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
+      current_case_index = self.WorkFiles.find_index_from_filename(
+          self.currentCase,
+                                                            remaining_list_filenames)
+      print('current case index', current_case_index)
+      next_case_index = current_case_index + 1
+      # Todo: we will need to verify that the next case index do not exced
+      # reminaing list
+      next_case_name = remaining_list_filenames[next_case_index]
+      print('next case index', next_case_index)
+      print('next case name', next_case_name)
+      # remove the old case
+      self.WorkFiles.adjust_remaining_list(self.currentCase)
+      # update the slicer cart with the new case naem
+      self.set_patient(next_case_name)
+      self.update_ui()
+
+
+
+
+
 
   def qualityControlOfLabels(self):
       is_valid = True 

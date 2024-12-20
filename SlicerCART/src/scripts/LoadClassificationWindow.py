@@ -35,25 +35,25 @@ class LoadClassificationWindow(qt.QWidget):
           for index, row in classificationInformation_df.iterrows():
                 cell = qt.QTableWidgetItem(row['Classification version'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 0, cell)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Version'))
 
                 cell = qt.QTableWidgetItem(row['Annotator Name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 1, cell)
                 self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator'))
 
                 cell = qt.QTableWidgetItem(row['Annotator degree'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 2, cell)
                 self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Degree'))
 
                 cell = qt.QTableWidgetItem(row['Date and time'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 3, cell)
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Date and Time'))
 

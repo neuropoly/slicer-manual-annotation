@@ -34,3 +34,4 @@ import slicerio
 import yaml
 
 import tempfile
+from qt import QApplication, QPalette # Required for color detection

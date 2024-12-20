@@ -75,6 +75,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     ConfigPath.create_temp_file(self)
     Debug.print(self, '*** temp file created. BE CAREFUL! ***')
 
+    # Auto-Detect the Slicer theme, so specific foreground can be used
+    self.theme  = Theme.get_mode(self)
+    self.foreground = Theme.set_foreground(self, self.theme)
+
   @enter_function
   def get_config_values(self):
       # Select the appropriate configuration file.
@@ -571,7 +575,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def update_current_segmentation_status(self):
       current_color = self.ui.SlicerDirectoryListView.currentItem().foreground().color()
-      if current_color == qt.QColor('black'):
+      if current_color == qt.QColor(self.foreground):
           self.ui.CurrentStatus.setText('Segmentation Status : Not done')
       elif current_color == qt.QColor('orange'):
           self.ui.CurrentStatus.setText('Segmentation Status : Done by another annotator')
@@ -1484,7 +1488,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
  
             currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
             if currentCaseSegmentationStatus == 0:
-                item.setForeground(qt.QColor('black'))
+                item.setForeground(qt.QColor(self.foreground))
             elif currentCaseSegmentationStatus == 1:
                 item.setForeground(qt.QColor('orange'))
             elif currentCaseSegmentationStatus == 2:

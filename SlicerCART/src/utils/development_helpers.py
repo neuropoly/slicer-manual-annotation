@@ -72,3 +72,12 @@ class Dev:
         else:
             print("Folder does not exist: ", folder_path)
             return False
+
+    @enter_function
+    def check_list_in_another(self, list1, list2):
+        for element in list1:
+            if element in list2:
+                continue
+            else:
+                return False
+        return True

@@ -158,6 +158,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CurrentFolder = None
     self.lineDetails = {}
     self.previousAction = None
+    self.saved_selected = False # Flag to load correctly the first case
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
@@ -422,12 +423,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
 
-      # If output folder has already been selected from continue from
-      # existing folder, this code updates the volume folders of output folder.
-      if self.outputFolder != None:
-          UserPath.write_in_filepath(self, self.outputFolder,
-                                     self.CurrentFolder)
-
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
           return
@@ -459,14 +454,77 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
-      self.ui.SlicerDirectoryListView.clear()
-      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+      self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
 
+      # If output folder has already been selected from continue from
+      # existing folder, this code updates the volume folders of output folder.
+      if self.outputFolder != None:
+          UserPath.write_in_filepath(self, self.outputFolder,
+                                     self.CurrentFolder)
+          self.manage_workflow()
+
+  @enter_function
+  def reset_ui(self):
+      self.ui.SlicerDirectoryListView.clear()
+      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+
       self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      self.update_ui()
+
+  @enter_function
+  def update_ui(self):
       self.updateCaseAll()
       self.loadPatient()
+
+  @enter_function
+  def set_patient(self, filename):
+      """
+      Set the patient to be displayed in UI case list and Slicer Viewer from
+      filename.
+      """
+      index = self.WorkFiles.find_index_from_filename(filename,
+                                              self.Cases)
+      currentCasePath = self.WorkFiles.find_path_from_filename(filename)
+
+      self.currentCase = filename
+      self.currentCase_index = index
+      self.currentCasePath = currentCasePath
+
+  @enter_function
+  def manage_workflow(self):
+      """
+      Allows to work from appropriate working list and remaining list.
+      """
+
+      # Instantiate a WorkFiles class object to facilitate cases lists
+      # management.
+      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
+
+      # Set up working list appropriateness compared to volumes folder selected.
+      self.WorkFiles.check_working_list()
+
+      # Re-assignation of self.Cases and self.CasesPath based on working list.
+      self.Cases = self.WorkFiles.get_working_list_filenames(self)
+      self.CasesPaths = self.WorkFiles.get_working_list_filepaths(self.Cases)
+      self.reset_ui()
+
+      # Get the first case of remaining list (considers if empty).
+      remaining_list_filenames = (
+          self.WorkFiles.get_remaining_list_filenames(self))
+
+      if self.WorkFiles.check_remaining_first_element(remaining_list_filenames):
+          Debug.print(self, 'First case in remaining list ok.')
+          remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
+              self)[0]
+      else:
+          Debug.print(self, 'Remaining list empty. Select case from working '
+                            'list (working list should never be empty).')
+          remaining_list_first = self.select_next_working_case()
+
+      self.set_patient(remaining_list_first)
+      self.update_ui()
 
   def validateBIDS(self, path):
         validator = BIDSValidator()
@@ -497,16 +555,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def updateCaseAll(self):
-      # All below is dependent on self.currentCase_index updates, 
+      # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-      
+
       if not IS_DISPLAY_TIMER_REQUESTED:
-          self.enableSegmentAndPaintButtons()      
+          self.enableSegmentAndPaintButtons()
 
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
-      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.ui.SlicerDirectoryListView.setCurrentItem(
+          self.ui.SlicerDirectoryListView.item(self.currentCase_index))
       self.update_current_segmentation_status()
 
   @enter_function
@@ -1004,6 +1063,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           else:
               raise ValueError('The input segmentation file must be in nii, nii.gz or nrrd format.')
   
+  @enter_function
   def onSaveSegmentationButton(self):
       # By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
@@ -1028,16 +1088,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       # Save if annotator_name is not empty and timer started:
-      if self.annotator_name and self.time is not None: 
-          
+      if self.annotator_name and self.time is not None:
+
           self.saveSegmentationInformation(currentSegmentationVersion)
-          
+
           if 'nrrd' in INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)
-          
+
           if 'nii' in INPUT_FILE_EXTENSION:
             self.saveNiiSegmentation(currentSegmentationVersion)
-        
+
           msg_box = qt.QMessageBox()
           msg_box.setWindowTitle("Success")
           msg_box.setIcon(qt.QMessageBox.Information)
@@ -1052,10 +1112,86 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msgboxtime.exec()
           elif self.time is None:
               print("Error: timer is not started for some unknown reason.")
-      
+
       self.cast_segmentation_to_uint8()
 
       self.update_case_list_colors()
+
+      # One segment has been saved, which allows to load the next case from now.
+      self.saved_selected = True
+      self.select_next_remaining_case()
+
+  @enter_function
+  def select_next_remaining_case(self):
+      Debug.print(self, f'self.currentCase_index: {self.currentCase_index}')
+      Debug.print(self, f'self.currentCase: {self.currentCase}')
+      Debug.print(self, f'self.currentCasePath: {self.currentCasePath}')
+      Debug.print(self,
+                  f'self.currentCase_index + 1 = {self.currentCase_index + 1}')
+
+      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
+
+      if ((remaining_list_filenames == [])
+          or (remaining_list_filenames == None)
+          or (len(remaining_list_filenames) == 0)):
+
+          Debug.print(self, 'Remaining list empty!')
+          next_case_name = self.select_next_working_case()
+
+          # Update SlicerCART UI with the appropriate case.
+          self.set_patient(next_case_name)
+          self.update_ui()
+
+          return
+
+      if self.currentCase in remaining_list_filenames:
+          current_case_index = self.WorkFiles.find_index_from_filename(
+              self.currentCase, remaining_list_filenames)
+          next_case_index = current_case_index + 1
+
+          if next_case_index >= len(remaining_list_filenames):
+              Debug.print(self, 'This is the last case!')
+              next_case_name = self.currentCase #So, remain on the last case.
+
+          else:
+              next_case_name = remaining_list_filenames[next_case_index]
+
+          self.WorkFiles.adjust_remaining_list(self.currentCase)
+
+      else:
+          # self.CurrentCase not in remaining list: going to the next case in
+          # the working list.
+          next_case_name = self.select_next_working_case()
+          # define next case index
+
+      self.set_patient(next_case_name)
+      self.update_ui()
+
+  @enter_function
+  def select_next_working_case(self):
+      """
+      Select the next case to be displayed from the working list.
+      """
+
+      working_list_filenames = self.WorkFiles.get_working_list_filenames()
+      index_in_working_list = self.WorkFiles.find_index_from_filename(
+          self.currentCase, working_list_filenames)
+
+      # Means that segmentation have already been saved.
+      if self.saved_selected:
+          next_case_index = index_in_working_list + 1
+
+      else:
+          next_case_index = index_in_working_list
+
+      if next_case_index >= len(working_list_filenames):
+          Debug.print(self, 'This is the last case of working list.')
+          next_case_name = self.currentCase
+
+      else:
+          next_case_name = working_list_filenames[next_case_index]
+
+      return next_case_name
 
   def qualityControlOfLabels(self):
       is_valid = True 
@@ -1286,7 +1422,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
-      
+
+      self.manage_workflow()
+
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
           self.ui.LoadSegmentation.setEnabled(True)

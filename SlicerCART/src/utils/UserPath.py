@@ -11,10 +11,12 @@ class UserPath():
     def __init__(self):
         pass
 
+    @enter_function
     def get_user_path(self):
         user_path = Path.home()
         return user_path
 
+    @enter_function
     def check_or_create_filepath(self, filename='slicercart.yml'):
         user_path = UserPath.get_user_path(self)
         folder_path = f'{user_path}{os.sep}.hslicercart{os.sep}'
@@ -29,6 +31,7 @@ class UserPath():
 
         return filepath
 
+    @enter_function
     def read_filepath(self, filename='slicercart.yml'):
         filepath = UserPath.check_or_create_filepath(self, filename)
 
@@ -37,19 +40,22 @@ class UserPath():
 
         return content
 
+    @enter_function
     def write_in_filepath(self, output_folder_path, volume_folder_path,
                           filename='slicercart.yml'):
         filepath = UserPath.check_or_create_filepath(self, filename)
-        content = UserPath.read_filepath(self)
+        content = UserPath.read_filepath(self, filename)
         content[output_folder_path] = volume_folder_path
 
         with open(filepath, 'w') as file:
             yaml.dump(content, file)
 
+    @enter_function
     def reset_last_selected(self, filepath):
         with open(filepath, 'w') as file:
             yaml.dump({}, file)
 
+    @enter_function
     def save_selected_paths(self, output_folder_path, volume_folder_path):
         filepath = UserPath.check_or_create_filepath(self,
                                                      'last_selected_paths.yml')
@@ -58,6 +64,7 @@ class UserPath():
                                    volume_folder_path,
                                    'last_selected_paths.yml')
 
+    @enter_function
     def get_selected_paths(self):
         filepath = UserPath.check_or_create_filepath(self,
                                                      'last_selected_paths.yml')
@@ -67,10 +74,12 @@ class UserPath():
 
         return content
 
+    @enter_function
     def set_selected_existing_folder(self):
         global SELECTED_EXISTING_FOLDER
         SELECTED_EXISTING_FOLDER = not SELECTED_EXISTING_FOLDER
 
+    @enter_function
     def get_selected_existing_folder(self):
         global SELECTED_EXISTING_FOLDER
         return SELECTED_EXISTING_FOLDER

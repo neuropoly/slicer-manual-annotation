@@ -3,7 +3,7 @@ from utils import *
 global KEEP_WORKING_LIST
 # ToDo: define this flag in the initial configuration UI and in globales
 #  variables
-KEEP_WORKING_LIST = False
+KEEP_WORKING_LIST = True
 
 
 class WorkFiles():
@@ -366,6 +366,17 @@ class WorkFiles():
         return filenames_path
 
     @enter_function
+    def get_remaining_list_filepaths(self, remaining_list_filenames):
+        filenames_path = []
+        for element in remaining_list_filenames:
+            for path in self.all_cases_path:
+                if element in path:
+                    filenames_path.append(path)
+        # print('filenames path', filenames_path)
+        print('len filenames path', len(filenames_path))
+        return filenames_path
+
+    @enter_function
     def check_remaining_first_element(self, remaining_list):
         if remaining_list != None and remaining_list != []:
             if remaining_list[0] != None:
@@ -396,6 +407,26 @@ class WorkFiles():
          for filepath in self.all_cases_path:
              if filename in filepath:
                  return filepath
+
+    @enter_function
+    def adjust_remaining_list(self, filename):
+        remaining_list_filenames = WorkFiles.get_remaining_list_filenames(self)
+        print('remaining list filenames', len(remaining_list_filenames))
+        remaining_list_filenames.remove(filename)
+        print('minus 1 remiang list filename', len(remaining_list_filenames))
+        WorkFiles.write_file_list(self, self.remaining_list_filepath, remaining_list_filenames)
+        with open(self.remaining_list_filepath, 'r') as file:
+            after = yaml.safe_load(file)['CASES']
+
+        print('after', len(after))
+
+
+        # # Adjust the path
+        # filepath = WorkFiles.find_path_from_filename(self, filename)
+        # filepath_list = WorkFiles.get_remaining_list_filepaths(self, remaining_list_filenames)
+        # filepath_list = filepath_list.remove(filepath)
+
+
 
 
 

@@ -872,7 +872,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(label['name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.label_table_view.setItem(index, 2, cell)
                 self.label_table_view.setHorizontalHeaderItem(2,
                                                               qt.QTableWidgetItem(
@@ -880,7 +880,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(str(label['value']))
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.label_table_view.setItem(index, 3, cell)
                 self.label_table_view.setHorizontalHeaderItem(3,
                                                               qt.QTableWidgetItem(
@@ -899,7 +899,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
                 if self.modality == 'CT':
                     cell = qt.QTableWidgetItem(str(label['lower_bound_HU']))
                     cell.setFlags(qt.Qt.NoItemFlags)
-                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                     self.label_table_view.setItem(index, 5, cell)
                     self.label_table_view.setHorizontalHeaderItem(5,
                                                                   qt.QTableWidgetItem(
@@ -907,7 +907,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                     cell = qt.QTableWidgetItem(str(label['upper_bound_HU']))
                     cell.setFlags(qt.Qt.NoItemFlags)
-                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                     self.label_table_view.setItem(index, 6, cell)
                     self.label_table_view.setHorizontalHeaderItem(6,
                                                                   qt.QTableWidgetItem(
@@ -1362,7 +1362,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(checkbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.checkbox_table_view.setItem(index, 1, cell)
                 self.checkbox_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(
@@ -1411,7 +1411,7 @@ class ConfigureClassificationWindow(qt.QWidget):
                 cell = qt.QTableWidgetItem(
                     combo_box_name.replace('_', ' ').capitalize())
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.combobox_table_view.setItem(index, 1, cell)
                 self.combobox_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(
@@ -1472,7 +1472,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(freetextbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.freetext_table_view.setItem(index, 1, cell)
                 self.freetext_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(

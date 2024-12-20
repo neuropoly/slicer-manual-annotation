@@ -34,3 +34,5 @@ import slicerio
 import yaml
 
 import tempfile
+import darkdetect
+from qt import QApplication, QPalette

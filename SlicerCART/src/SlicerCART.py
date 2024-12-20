@@ -74,6 +74,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # has been selected or not.
     ConfigPath.create_temp_file(self)
     Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+    print('test mode detection')
 
   @enter_function
   def get_config_values(self):

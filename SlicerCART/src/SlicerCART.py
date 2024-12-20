@@ -158,6 +158,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CurrentFolder = None
     self.lineDetails = {}
     self.previousAction = None
+    print('self selected saved after')
+    self.saved_selected = False
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
@@ -522,7 +524,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           print('remainig list filename empty 3333')
           # remaining_list_first = self.WorkFiles.get_working_list_filenames()[0]
-          remaining_list_first = self.select_next_working_case(0)
+          remaining_list_first = self.select_next_working_case()
 
       self.set_patient(remaining_list_first)
 
@@ -1139,8 +1141,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # we start from here
       print('bedore self select next remaining case')
+      # set flag for first case
+      self.saved_selected = True
       # next_remaining_case = self.select_next_remaining_case()
       self.select_next_remaining_case()
+
+
 
       # print('next remaining case in save', next_remaining_case)
       # self.set_patient(next_remaining_case)
@@ -1153,12 +1159,26 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print(' index+1', self.currentCase_index + 1)
       remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
       #verify if null or none
+      # if ((remaining_list_filenames == [] )
+      #     or (remaining_list_filenames == None)
+      #     or (len(remaining_list_filenames) == 0)):
+      #     print('remainig list empty !!!@')
+      #     # update the slicer cart with the new case naem
+      #     self.set_patient(self.currentCase)
+      #     self.update_ui()
+      #     return
+
       if ((remaining_list_filenames == [] )
           or (remaining_list_filenames == None)
           or (len(remaining_list_filenames) == 0)):
+          # working_list_filenames = self.WorkFiles.get_working_list_filenames()
+          # if ((working_list_filenames == [])
+          #         or (working_list_filenames == None)
+          #         or (len(remaining_list_filenames) == 0)):
+          next_case_name = self.select_next_working_case()
           print('remainig list empty !!!@')
           # update the slicer cart with the new case naem
-          self.set_patient(self.currentCase)
+          self.set_patient(next_case_name)
           self.update_ui()
           return
 
@@ -1227,12 +1247,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.set_patient(next_case_name)
       self.update_ui()
 
-  def select_next_working_case(self, increment=1):
+  def select_next_working_case(self):
       print('current case not in remaining list!!!!!')
       working_list_filenames = self.WorkFiles.get_working_list_filenames()
       index_in_working_list = self.WorkFiles.find_index_from_filename(
           self.currentCase, working_list_filenames)
-      next_case_index = index_in_working_list + increment
+      if self.saved_selected:
+        print('goin to next case first saved already done')
+        next_case_index = index_in_working_list + 1
+      else:
+          print('initial first case')
+          next_case_index = index_in_working_list
+
       if next_case_index >= len(
               working_list_filenames):  # this is the last
           # case

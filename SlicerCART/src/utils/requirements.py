@@ -34,5 +34,4 @@ import slicerio
 import yaml
 
 import tempfile
-import darkdetect
-from qt import QApplication, QPalette
+from qt import QApplication, QPalette # Required for color detection

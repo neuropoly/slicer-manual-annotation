@@ -643,10 +643,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.updateCurrentOutputPathAndCurrentVolumeFilename()
   
+  @enter_function
   def updateCurrentOutputPathAndCurrentVolumeFilename(self):
-      if self.currentCasePath == None or self.CurrentFolder == None or self.outputFolder == None:
+      if (self.currentCasePath == None
+              or self.CurrentFolder == None
+              or self.outputFolder == None):
           return
-      
+
       i = 0
       relativePath = ''
       for c in self.currentCasePath:
@@ -654,11 +657,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               relativePath = relativePath + c
           i = i + 1
 
-      self.currentOutputPath = os.path.split(self.outputFolder + relativePath)[0]
-      self.currentVolumeFilename = os.path.split(self.outputFolder + relativePath)[1].split(".")[0]
+      self.currentOutputPath = (
+          os.path.split(self.outputFolder + relativePath))[0]
+      self.currentVolumeFilename = (
+          os.path.split(self.outputFolder + relativePath)[1].split("."))[0]
   
 
-  # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
+  # Getter method to get the segmentation node name
+  # - Not sure if this is really useful here.
   @property
   def segmentationNodeName(self):
     return f"{os.path.split(self.currentCasePath)[1].split('.')[0]}_segmentation"
@@ -913,6 +919,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               timer.stop()
           timer_index = timer_index + 1
             
+  @enter_function
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
       if len(self.revision_step) != 0:
@@ -1038,6 +1045,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       return label_string, data_string
   
+  @enter_function
   def cast_segmentation_to_uint8(self):
       for case in self.predictions_paths:
           # Load the segmentation
@@ -1077,8 +1085,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Create folders if not exist
       self.createFolders()
       
-      # Make sure to select the first segmentation node  (i.e. the one that was created when the module was loaded, not the one created when the user clicked on the "Load mask" button)
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # Make sure to select the first segmentation node
+      # (i.e. the one that was created when the module was loaded,
+      # not the one created when the user clicked on the "Load mask" button)
+      self.segmentationNode = (
+          slicer.util.getNodesByClass('vtkMRMLSegmentationNode'))[0]
 
       currentSegmentationVersion = self.getCurrentSegmentationVersion()
 
@@ -1193,6 +1204,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       return next_case_name
 
+  @enter_function
   def qualityControlOfLabels(self):
       is_valid = True 
 
@@ -1353,17 +1365,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           version = f'{version}{next_version_number:02d}'
 
       return version 
-  
+
+  @enter_function
   def getCurrentSegmentationVersion(self):
-      list_of_segmentation_filenames = glob(f'{self.currentOutputPath}{os.sep}{INPUT_FILE_EXTENSION}')
-      
+      # Adjust the version according to each individual file.
+      list_of_segmentation_filenames = glob(
+          f'{self.currentOutputPath}{os.sep}'
+          f'{self.currentVolumeFilename}{INPUT_FILE_EXTENSION}')
+
       version = 'v'
       if list_of_segmentation_filenames == []:
           version = version + "01"
       else:
-          existing_versions = [(int)(filename.split('_v')[1].split(".")[0]) for filename in list_of_segmentation_filenames]
-          next_version_number =  max(existing_versions) + 1
-          next_version_number = min(next_version_number, 99) # max 99 versions
+          existing_versions = [(int)(filename.split('_v')[1].split(".")[0]) for
+                               filename in list_of_segmentation_filenames]
+          next_version_number = max(existing_versions) + 1
+          next_version_number = min(next_version_number, 99)  # max 99 versions
           version = f'{version}{next_version_number:02d}'
       return version
       
@@ -1450,6 +1467,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           Debug.print(self, 'No output folder selected.')
 
+  @enter_function
   def update_case_list_colors(self):
       if self.outputFolder is None or self.CurrentFolder is None:
           return

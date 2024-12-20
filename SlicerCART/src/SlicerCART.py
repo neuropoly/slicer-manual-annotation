@@ -511,8 +511,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.reset_ui()
 
       # aller chercher le 1er cas dans remining list
-      remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
-          self)[0]
+      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames(
+          self)
+      print('remaining list filenames', remaining_list_filenames)
+
+      if self.WorkFiles.check_remaining_first_element(remaining_list_filenames):
+          print('remainig lsit filename ok')
+          remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
+              self)[0]
+      else:
+          print('remainig list filename empty 3333')
+          # remaining_list_first = self.WorkFiles.get_working_list_filenames()[0]
+          remaining_list_first = self.select_next_working_case(0)
 
       self.set_patient(remaining_list_first)
 
@@ -1142,23 +1152,98 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('self current case path', self.currentCasePath)
       print(' index+1', self.currentCase_index + 1)
       remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
-      current_case_index = self.WorkFiles.find_index_from_filename(
-          self.currentCase,
-                                                            remaining_list_filenames)
-      print('current case index', current_case_index)
-      next_case_index = current_case_index + 1
-      # Todo: we will need to verify that the next case index do not exced
-      # reminaing list
-      next_case_name = remaining_list_filenames[next_case_index]
-      print('next case index', next_case_index)
+      #verify if null or none
+      if ((remaining_list_filenames == [] )
+          or (remaining_list_filenames == None)
+          or (len(remaining_list_filenames) == 0)):
+          print('remainig list empty !!!@')
+          # update the slicer cart with the new case naem
+          self.set_patient(self.currentCase)
+          self.update_ui()
+          return
+
+      if self.currentCase in remaining_list_filenames:
+          current_case_index = self.WorkFiles.find_index_from_filename(
+              self.currentCase,
+                                                                remaining_list_filenames)
+          print('current case index', current_case_index)
+          next_case_index = current_case_index + 1
+          # Todo: we will need to verify that the next case index do not exced
+          # reminaing list
+
+          # if next_case_index >= len(remaining_list_filenames):
+          #     print('last case')
+          #     self.WorkFiles.adjust_remaining_list(self.currentCase)
+          #
+          #     return
+          if next_case_index >= len(
+                  remaining_list_filenames):  # this is the last
+              # case
+              print('last case')
+              next_case_name = self.currentCase
+          else:
+              next_case_name = remaining_list_filenames[next_case_index]
+
+          self.WorkFiles.adjust_remaining_list(self.currentCase)
+      else:
+          next_case_name = self.select_next_working_case()
+          # print('current case not in remaining list!!!!!')
+          # working_list_filenames = self.WorkFiles.get_working_list_filenames()
+          # index_in_working_list = self.WorkFiles.find_index_from_filename(
+          #     self.currentCase, working_list_filenames)
+          # next_case_index = index_in_working_list + 1
+          # if next_case_index >= len(
+          #         working_list_filenames):  # this is the last
+          #     # case
+          #     print('last case working')
+          #     next_case_name = self.currentCase
+          # else:
+          #   next_case_name = working_list_filenames[next_case_index]
+
+
+
+          # define next case index
+
+      # # Todo: we will need to verify that the next case index do not exced
+      # # reminaing list
+      #
+      # # if next_case_index >= len(remaining_list_filenames):
+      # #     print('last case')
+      # #     self.WorkFiles.adjust_remaining_list(self.currentCase)
+      # #
+      # #     return
+      # if next_case_index >= len(remaining_list_filenames): # this is the last
+      #     # case
+      #     print('last case')
+      #     next_case_name = self.currentCase
+      # else:
+      #   next_case_name = remaining_list_filenames[next_case_index]
+
+      # print('next case index', next_case_index)
       print('next case name', next_case_name)
       # remove the old case
-      self.WorkFiles.adjust_remaining_list(self.currentCase)
+      # self.WorkFiles.adjust_remaining_list(self.currentCase)
       # update the slicer cart with the new case naem
       self.set_patient(next_case_name)
       self.update_ui()
 
+  def select_next_working_case(self, increment=1):
+      print('current case not in remaining list!!!!!')
+      working_list_filenames = self.WorkFiles.get_working_list_filenames()
+      index_in_working_list = self.WorkFiles.find_index_from_filename(
+          self.currentCase, working_list_filenames)
+      next_case_index = index_in_working_list + increment
+      if next_case_index >= len(
+              working_list_filenames):  # this is the last
+          # case
+          print('last case working')
+          next_case_name = self.currentCase
+      else:
+          next_case_name = working_list_filenames[next_case_index]
+      return next_case_name
 
+#### TO DO IN SELECT NEXT WORKING CVASE = AJUSTER LE INCREMENTQUAND
+  # WOREMAINIGN LIST = []
 
 
 

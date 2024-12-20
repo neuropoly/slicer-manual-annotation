@@ -352,6 +352,7 @@ class WorkFiles():
         """
         with open(self.remaining_list_filepath, 'r') as file:
             remaining_list_filenames = yaml.safe_load(file)['CASES']
+            print('in get remaining list filenames', remaining_list_filenames)
             return remaining_list_filenames
 
     @enter_function

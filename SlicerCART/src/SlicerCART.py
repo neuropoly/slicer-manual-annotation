@@ -163,6 +163,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
     self.saved_selected = False # Flag to load correctly the first case
+    self.save_multiple = True
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
@@ -1251,6 +1252,30 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg2.buttonClicked.connect(self.msg2_clicked)
             msg2.exec()
   
+  # @enter_function
+  # def saveNiiSegmentation(self, currentSegmentationVersion):
+  #       # Export segmentation to a labelmap volume
+  #       # Note to save to nifti you need to convert to labelmapVolumeNode
+  #       self.labelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLabelMapVolumeNode')
+  #       slicer.modules.segmentations.logic().ExportVisibleSegmentsToLabelmapNode(self.segmentationNode,
+  #                                                                               self.labelmapVolumeNode,
+  #                                                                               self.VolumeNode)
+  #
+  #       self.outputSegmFileNifti = os.path.join(self.currentOutputPath,
+  #                                               "{}_{}.nii.gz".format(self.currentVolumeFilename, currentSegmentationVersion))
+  #
+  #       if not os.path.isfile(self.outputSegmFileNifti):
+  #           slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+  #       else:
+  #           msg3 = qt.QMessageBox()
+  #           msg3.setWindowTitle('Save As')
+  #           msg3.setText(
+  #               f'The file {self.currentCase}_{self.annotator_name}_{self.revision_step[0]}.nii.gz already exists \n Do you want to replace the existing file?')
+  #           msg3.setIcon(qt.QMessageBox.Warning)
+  #           msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
+  #           msg3.buttonClicked.connect(self.msg3_clicked)
+  #           msg3.exec()
+  @enter_function
   def saveNiiSegmentation(self, currentSegmentationVersion):
         # Export segmentation to a labelmap volume
         # Note to save to nifti you need to convert to labelmapVolumeNode
@@ -1263,7 +1288,87 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                                 "{}_{}.nii.gz".format(self.currentVolumeFilename, currentSegmentationVersion))
 
         if not os.path.isfile(self.outputSegmFileNifti):
-            slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+
+            print(' in if not path nifti segmentation save multiple', self.save_multiple)
+            if self.save_multiple:
+                slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+
+                def split_segmentation_mask(input_file, output_dir):
+                    # Load the original .nii.gz file
+                    nii = nib.load(input_file)
+                    data = nii.get_fdata()
+                    affine = nii.affine
+                    header = nii.header
+
+                    # Get unique labels (excluding 0 for background)
+                    labels = np.unique(data)
+                    labels = labels[labels != 0]
+
+                    if not os.path.exists(output_dir):
+                        os.makedirs(output_dir)
+
+                    for label in labels:
+                        # Create a binary mask for the current label
+                        binary_mask = (data == label).astype(np.uint8)
+
+                        # Save the binary mask as a new .nii.gz file
+                        output_file = os.path.join(output_dir,
+                                                   f'label_{int(label)}.nii.gz')
+                        new_nii = nib.Nifti1Image(binary_mask, affine, header)
+                        nib.save(new_nii, output_file)
+                        print(f"Saved: {output_file}")
+
+                # Example usage
+                input_file = self.outputSegmFileNifti
+                output_dir = self.outputFolder
+                split_segmentation_mask(input_file, output_dir)
+                print('should have work')
+                # # Get the unique label values from the labelmap
+                # labelmap_array = slicer.util.arrayFromVolume(self.labelmapVolumeNode)
+                # unique_labels = list(set(labelmap_array.flatten()))
+                # unique_labels.remove(0)  # Remove background label (0) if present
+                # print('iunique labels', unique_labels)
+                #
+                # # Get the original image dimensions and spacing
+                # original_spacing = self.labelmapVolumeNode.GetSpacing()
+                # original_origin = self.labelmapVolumeNode.GetOrigin()
+                # original_direction_matrix = vtk.vtkMatrix4x4()
+                # original_direction = self.labelmapVolumeNode.GetIJKToRASDirections(original_direction_matrix)
+                #
+                # # Process each label
+                # for label in unique_labels:
+                #     # Create a new labelmap node for the single label
+                #     single_label_node = slicer.mrmlScene.AddNewNodeByClass(
+                #         "vtkMRMLLabelMapVolumeNode", f"Label_{label}")
+                #     single_label_node.SetSpacing(original_spacing)
+                #     single_label_node.SetOrigin(original_origin)
+                #     single_label_node.SetIJKToRASDirections(original_direction)
+                #
+                #     # Copy data to the new labelmap
+                #     single_label_array = slicer.util.arrayFromVolume(
+                #         single_label_node)
+                #     single_label_array[:] = (labelmap_array == label).astype(
+                #         labelmap_array.dtype)
+                #
+                #     # Update the new labelmap node
+                #     slicer.util.arrayFromVolumeModified(single_label_node)
+                #
+                #     # Save the single-label file
+                #     output_path = os.path.join(self.outputFolder,
+                #                                f"Label_{label}.nii.gz")
+                #     slicer.util.saveNode(single_label_node, output_path)
+                #     print('achieved')
+
+
+
+            else:
+                print('in else : save unique file')
+                slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+
+
+
+
+
         else:
             msg3 = qt.QMessageBox()
             msg3.setWindowTitle('Save As')

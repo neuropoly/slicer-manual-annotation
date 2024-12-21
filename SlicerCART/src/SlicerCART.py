@@ -1053,6 +1053,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def cast_segmentation_to_uint8(self):
       for case in self.predictions_paths:
+          print('self prediction paths: ', self.predictions_paths)
           # Load the segmentation
           input_path = os.path.basename(case)
           if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
@@ -1292,37 +1293,28 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             print(' in if not path nifti segmentation save multiple', self.save_multiple)
             if self.save_multiple:
                 slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
+                print('self current output path', self.currentOutputPath)
+                print('self current volume filename',
+                      self.currentVolumeFilename)
+                print('self current segmentation version', currentSegmentationVersion)
 
-                def split_segmentation_mask(input_file, output_dir):
-                    # Load the original .nii.gz file
-                    nii = nib.load(input_file)
-                    data = nii.get_fdata()
-                    affine = nii.affine
-                    header = nii.header
+                self.multiple_path = (f'{self.currentOutputPath}{os.sep}'
+                                 f'{self.currentVolumeFilename}_'
+                                 f'{currentSegmentationVersion}')
 
-                    # Get unique labels (excluding 0 for background)
-                    labels = np.unique(data)
-                    labels = labels[labels != 0]
+                print('self multiple path', self.multiple_path)
+                print('self out put segmfile', self.outputSegmFileNifti)
+                print('currentsemgnetaion version', currentSegmentationVersion)
 
-                    if not os.path.exists(output_dir):
-                        os.makedirs(output_dir)
+                self.save_multiple_segmentation_masks(
+                    self.outputSegmFileNifti, self.multiple_path, currentSegmentationVersion)
 
-                    for label in labels:
-                        # Create a binary mask for the current label
-                        binary_mask = (data == label).astype(np.uint8)
 
-                        # Save the binary mask as a new .nii.gz file
-                        output_file = os.path.join(output_dir,
-                                                   f'label_{int(label)}.nii.gz')
-                        new_nii = nib.Nifti1Image(binary_mask, affine, header)
-                        nib.save(new_nii, output_file)
-                        print(f"Saved: {output_file}")
-
-                # Example usage
-                input_file = self.outputSegmFileNifti
-                output_dir = self.outputFolder
-                split_segmentation_mask(input_file, output_dir)
                 print('should have work')
+
+
+
+
                 # # Get the unique label values from the labelmap
                 # labelmap_array = slicer.util.arrayFromVolume(self.labelmapVolumeNode)
                 # unique_labels = list(set(labelmap_array.flatten()))
@@ -1378,6 +1370,73 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
             msg3.buttonClicked.connect(self.msg3_clicked)
             msg3.exec()
+
+  def save_multiple_segmentation_masks(self, input_file, output_dir, currentSegmentationVersion):
+      # Load the original .nii.gz file
+      nii = nib.load(input_file)
+      data = nii.get_fdata()
+      affine = nii.affine
+      header = nii.header
+
+      # Get unique labels (excluding 0 for background)
+      labels = np.unique(data)
+      labels = labels[labels != 0]
+
+      print('labels', labels)
+      label_names = self.config_yaml["labels"]
+      print('label names', label_names)
+      print('type label names', type(label_names))
+      label_dict = {}
+      for element in label_names:
+          print('element', element)
+          label_dict[element['value']] = element['name']
+
+      print('label_dict', label_dict)
+
+      if not os.path.exists(output_dir):
+          os.makedirs(output_dir)
+
+      print('self output dir', output_dir)
+      print('self multiple path 2', self.multiple_path)
+
+      for label in labels:
+
+          print('label', label)
+          print('type label', type(label))
+
+          label_tag = label_dict[label]
+
+          # Create a binary mask for the current label
+          binary_mask = (data == label).astype(np.uint8)
+
+          filename_only = os.path.basename(input_file).split('.')[0][:-4]
+          print('filename_only', filename_only)
+
+          filename = (f"{output_dir}{os.sep}{filename_only}" + '_' +
+                      label_tag + '_'+ currentSegmentationVersion + '.nii.gz')
+          print('filename', filename)
+          # filepaath = f'{self.multiple_path}'
+
+          # output_dir = (f'{self.multiple_path}{os.sep}'
+          #               f'{self.currentVolumeFilename}_'
+          #               f'{currentSegmentationVersion}')
+          print('output dir bfore', output_dir)
+
+          # Save the binary mask as a new .nii.gz file
+          # output_file = os.path.join(output_dir,
+          #                            filename)
+          # output_file = f'{output_dir}{os.sep}{filename}'
+          # print('output file', output_file)
+
+          new_nii = nib.Nifti1Image(binary_mask, affine, header)
+          # nib.save(new_nii, output_file)
+          nib.save(new_nii, filename)
+
+          # destination_path = f'{self.multiple_path}{os.sep}{}
+          # # Move the file
+          # shutil.move(filename, destination_path)
+
+          # print(f"Saved: {output_file}")
   
   def saveSegmentationInformation(self, currentSegmentationVersion):
     # Header row

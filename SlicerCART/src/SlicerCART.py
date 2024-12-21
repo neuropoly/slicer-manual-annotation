@@ -102,6 +102,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           "is_display_timer_requested"]
 
       INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
+
+      print('INPUS FILE EXTENSION GET CONFIG VALUE', INPUT_FILE_EXTENSION)
+
+
       DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
       self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
       DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
@@ -125,7 +129,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       elif MODALITY == 'MRI':
           # therefore, .nii.gz required
-          INPUT_FILE_EXTENSION = '*.nii.gz'
+          # INPUT_FILE_EXTENSION = '*.nii.gz'
           # user can decide whether to impose bids or not
           REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
               "impose_bids_format"]
@@ -440,7 +444,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if file_structure_valid == False:
           return # don't load any patient cases
 
+      # INPUT_FILE_EXTENSION = ''
+
+      print('INPUT FILE EXTENSION', INPUT_FILE_EXTENSION)
+
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+
+      print('self CasesPath', self.CasesPaths)
+      print('self currentFolder', self.CurrentFolder)
+      print('input file extension', INPUT_FILE_EXTENSION)
 
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
@@ -459,6 +471,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
+
+
 
       self.reset_ui()
 
@@ -1285,10 +1299,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     self.multiple_path,
                     currentSegmentationVersion)
 
-            # else:
-            #     print('in else : save unique file')
-            #     slicer.util.saveNode(self.labelmapVolumeNode, self.outputSegmFileNifti)
-
         else:
             msg3 = qt.QMessageBox()
             msg3.setWindowTitle('Save As')
@@ -1299,8 +1309,52 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             msg3.buttonClicked.connect(self.msg3_clicked)
             msg3.exec()
 
+  # @enter_function
+  # def save_multiple_segmentation_masks(self, input_file, output_dir,
+  #                                      currentSegmentationVersion):
+  #
+  #     print('INPUT FILE EXTENSION', INPUT_FILE_EXTENSION)
+  #
+  #     # Load the original .nii.gz file
+  #     nii = nib.load(input_file)
+  #     data = nii.get_fdata()
+  #     affine = nii.affine
+  #     header = nii.header
+  #
+  #     # Get unique labels (excluding 0 for background)
+  #     labels = np.unique(data)
+  #     labels = labels[labels != 0]
+  #
+  #     label_names = self.config_yaml["labels"]
+  #     label_dict = {}
+  #     for element in label_names:
+  #         label_dict[element['value']] = element['name']
+  #
+  #     if not os.path.exists(output_dir):
+  #         os.makedirs(output_dir)
+  #
+  #     for label in labels:
+  #
+  #         label_tag = label_dict[label]
+  #
+  #         # Create a binary mask for the current label
+  #         binary_mask = (data == label).astype(np.uint8)
+  #
+  #         filename_only = os.path.basename(input_file).split('.')[0][:-4]
+  #         filename = (f"{output_dir}{os.sep}{filename_only}" + '_' +
+  #                     label_tag + '_'+ currentSegmentationVersion + '.nii.gz')
+  #
+  #         new_nii = nib.Nifti1Image(binary_mask, affine, header)
+  #         nib.save(new_nii, filename)
+
+  @enter_function
   def save_multiple_segmentation_masks(self, input_file, output_dir,
                                        currentSegmentationVersion):
+
+      print('INPUT FILE EXTENSION', INPUT_FILE_EXTENSION)
+
+      file_extension = '.nii.gz'
+      print('file extension', file_extension)
 
       # Load the original .nii.gz file
       nii = nib.load(input_file)
@@ -1321,7 +1375,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           os.makedirs(output_dir)
 
       for label in labels:
-
           label_tag = label_dict[label]
 
           # Create a binary mask for the current label
@@ -1329,7 +1382,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           filename_only = os.path.basename(input_file).split('.')[0][:-4]
           filename = (f"{output_dir}{os.sep}{filename_only}" + '_' +
-                      label_tag + '_'+ currentSegmentationVersion + '.nii.gz')
+                      label_tag + '_' + currentSegmentationVersion + '.nii.gz')
 
           new_nii = nib.Nifti1Image(binary_mask, affine, header)
           nib.save(new_nii, filename)

@@ -68,7 +68,7 @@ freetextboxes:
   number_of_focal_points: Number of focal points
   other_comments: Comments
 impose_bids_format: false
-input_filetype: '*.nii.gz'
+input_filetype: '*.nrrd'
 interpolate_value: 0
 is_classification_requested: true
 is_display_timer_requested: false

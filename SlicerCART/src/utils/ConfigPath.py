@@ -1,4 +1,8 @@
-from utils import *
+# from utils import *
+from utils.requirements import *
+from utils.global_variables import *
+from utils.GlobalValues import *
+
 
 OUTPUT_CONFIG_PATH = 'output_path.txt' # Name of the temp file where the path
 # of the config file to use (from selected output folder). To use here only.
@@ -25,7 +29,7 @@ class ConfigPath():
             self.path_to_config_copy = path_to_config_copy
             self.config_yaml.clear()
             ConfigPath.open_project_config_file(self)
-            self.get_config_values()
+            GlobalValues.get_config_values()
             ConfigPath.create_temp_file(self, name=OUTPUT_CONFIG_PATH,
                                         text=self.path_to_config_copy)
 

@@ -20,7 +20,8 @@ class GlobalValues:
         self.IS_SEGMENTATION_REQUESTED = IS_SEGMENTATION_REQUESTED
         self.IS_MOUSE_SHORTCUTS_REQUESTED = IS_MOUSE_SHORTCUTS_REQUESTED
         self.IS_KEYBOARD_SHORTCUTS_REQUESTED = IS_KEYBOARD_SHORTCUTS_REQUESTED
-        self.INTERPOLATE_VALUE = INTERPOLATE_VALUE
+        self.INTERPOLATE_VALUE = INTERPOLATE_VALUE # not refractored in
+        # slicercart.py
         self.CT_WINDOW_WIDTH = CT_WINDOW_WIDTH
         self.CT_WINDOW_LEVEL = CT_WINDOW_LEVEL
         self.IS_DISPLAY_TIMER_REQUESTED = IS_DISPLAY_TIMER_REQUESTED
@@ -28,6 +29,7 @@ class GlobalValues:
         self.WORKING_LIST_FILENAME = WORKING_LIST_FILENAME
         self.REMAINING_LIST_FILENAME = REMAINING_LIST_FILENAME
         # self.ENABLE_DEBUG = ENABLE_DEBUG
+        self.KEEP_WORKING_LIST = KEEP_WORKING_LIST
 
 
     @enter_function
@@ -52,6 +54,7 @@ class GlobalValues:
         global WORKING_LIST_FILENAME
         global REMAINING_LIST_FILENAME
         global ENABLE_DEBUG
+        global KEEP_WORKING_LIST
 
         IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
             "is_display_timer_requested"]
@@ -85,6 +88,8 @@ class GlobalValues:
         CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
             "impose_bids_format"]
+
+        KEEP_WORKING_LIST = self.config_yaml["keep_working_list"]
 
         if MODALITY == 'CT':
             # then BIDS not mandatory because it is not yet supported

@@ -708,7 +708,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                 qt.QFileDialog.getExistingDirectory(
                     None,
                     "Open a folder",
-                    DEFAULT_VOLUMES_DIRECTORY,
+                    GlobalValues.DEFAULT_VOLUMES_DIRECTORY,
                     qt.QFileDialog.ShowDirsOnly))
             content = UserPath.read_filepath(self)
             if self.outputFolder in content:
@@ -720,7 +720,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                 self.CurrentFolder = (
                     qt.QFileDialog.getExistingDirectory(
                         None, "Open a folder",
-                        DEFAULT_VOLUMES_DIRECTORY,
+                        GlobalValues.DEFAULT_VOLUMES_DIRECTORY,
                         qt.QFileDialog.ShowDirsOnly))
                 # Save the associated volume_folder_path with the output_folder
                 # selected.

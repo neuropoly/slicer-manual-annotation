@@ -76,9 +76,9 @@ class LoadSegmentationsWindow(qt.QWidget):
        selected_version = self.versionDropdown.currentText
 
        segmentation_file_extension = ""
-       if "nii" in INPUT_FILE_EXTENSION:
+       if "nii" in GlobalValues.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".nii.gz"
-       elif "nrrd" in INPUT_FILE_EXTENSION:
+       elif "nrrd" in GlobalValues.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".seg.nrrd"
 
        absolute_path_to_segmentation = f'{self.segmenter.currentOutputPath}{os.sep}{self.segmenter.currentVolumeFilename}_{selected_version}{segmentation_file_extension}'

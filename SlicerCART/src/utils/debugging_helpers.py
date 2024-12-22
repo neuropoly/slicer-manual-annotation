@@ -1,6 +1,20 @@
 import functools
 import inspect
-from utils.global_variables import ENABLE_DEBUG
+import yaml
+# from utils.global_variables import ENABLE_DEBUG
+# from utils.GlobalValues import ENABLE_DEBUG
+# from utils.GlobalValues import *
+# print('enable debyg begin', ENABLE_DEBUG)
+# from utils.GlobalValues import ENABLE_DEBUG
+# from general.GlobalValues import *
+from utils.global_variables import CONFIG_FILE_PATH
+print('import success', CONFIG_FILE_PATH)
+with open (CONFIG_FILE_PATH, 'r') as file:
+    ENABLE_DEBUG = yaml.safe_load(file)['enable_debug']
+
+print('enable debug extracted', ENABLE_DEBUG)
+
+
 
 
 class Debug:

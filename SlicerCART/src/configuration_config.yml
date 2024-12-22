@@ -63,12 +63,13 @@ ct_window_level: 45
 ct_window_width: 85
 default_segmentation_directory: ''
 default_volume_directory: ''
+enable_debug: true
 freetextboxes:
   cheese: Cheese
   number_of_focal_points: Number of focal points
   other_comments: Comments
 impose_bids_format: false
-input_filetype: '*.nii.gz'
+input_filetype: '*.nrrd'
 interpolate_value: 0
 is_classification_requested: true
 is_display_timer_requested: false
@@ -92,4 +93,7 @@ labels:
   upper_bound_HU: 90
   value: 2
 modality: MRI
+remaining_list_filename: remaining_list.yaml
+require_empty: false
 slice_view_color: Yellow
+working_list_filename: working_list.yaml

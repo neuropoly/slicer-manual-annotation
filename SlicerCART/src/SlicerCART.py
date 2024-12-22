@@ -251,7 +251,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.PauseTimerButton.hide()
             self.ui.StartTimerButton.hide()  
 
-        if IS_MOUSE_SHORTCUTS_REQUESTED:
+        if GlobalValues.IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
             self.interactor1 = slicer.app.layoutManager().sliceWidget(
                     'Yellow').sliceView().interactor()
@@ -290,12 +290,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.timers.append(Timer(number=timer_index))
             timer_index = timer_index + 1
         
-        if not IS_CLASSIFICATION_REQUESTED:
+        if not GlobalValues.IS_CLASSIFICATION_REQUESTED:
             self.ui.MRMLCollapsibleButton.setVisible(False)
-        if not IS_SEGMENTATION_REQUESTED:
+        if not GlobalValues.IS_SEGMENTATION_REQUESTED:
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
 
-        if MODALITY == 'MRI':
+        if GlobalValues.MODALITY == 'MRI':
             self.ui.ThresholdLabel.setVisible(False)
             self.ui.MinimumLabel.setVisible(False)
             self.ui.MaximumLabel.setVisible(False)
@@ -337,9 +337,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
   def set_master_volume_intensity_mask_according_to_modality(self):
-      if MODALITY == 'CT':
+      if GlobalValues.MODALITY == 'CT':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      elif MODALITY == 'MRI':
+      elif GlobalValues.MODALITY == 'MRI':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
   
   def setupCheckboxes(self, number_of_columns):
@@ -447,13 +447,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       file_structure_valid = True
-      if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
+      if GlobalValues.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
     
       if file_structure_valid == False:
           return # don't load any patient cases
 
-      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{GlobalValues.INPUT_FILE_EXTENSION}', recursive = True))
 
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
@@ -525,7 +525,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('self current foler before init in manage workflo', self.CurrentFolder)
 
       self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder,
-                                 INPUT_FILE_EXTENSION)
+                                 GlobalValues.INPUT_FILE_EXTENSION)
 
       # Set up working list appropriateness compared to volumes folder selected.
       self.WorkFiles.check_working_list()
@@ -574,7 +574,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             for subdir, dirs, files in os.walk(path):
                 for file in files:
-                    if file.endswith(INPUT_FILE_EXTENSION.split("*")[1]):
+                    if file.endswith(GlobalValues.INPUT_FILE_EXTENSION.split("*")[1]):
                         try:
                             path = "/sub" + (subdir + "/" + file).split("/sub", 1)[1]
                             is_valid = validator.is_bids(path)
@@ -600,7 +600,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('len self cases ', len(self.Cases))
       print('len self. cases path', len(self.CasesPaths))
       print(' cases path', self.CasesPaths)
-      print('input file extension', INPUT_FILE_EXTENSION)
+      print('input file extension', GlobalValues.INPUT_FILE_EXTENSION)
 
       # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
@@ -681,11 +681,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print(' node', self.VolumeNode)
 
       Vol_displayNode.AutoWindowLevelOff()
-      if MODALITY == 'CT':
+      if GlobalValues.MODALITY == 'CT':
           Debug.print(self, 'MODALITY==CT')
-          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
-      Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
+          Vol_displayNode.SetWindow(GlobalValues.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(GlobalValues.CT_WINDOW_LEVEL)
+      Vol_displayNode.SetInterpolate(GlobalValues.INTERPOLATE_VALUE)
       self.newSegmentation()
 
       self.updateCurrentOutputPathAndCurrentVolumeFilename()
@@ -729,6 +729,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.update_current_segmentation_status()
   
   def onPushButton_Interpolate(self):
+      # ToDo: here not sure if we rewrite each time the values in the config
+      #  yaml file
       global INTERPOLATE_VALUE
       INTERPOLATE_VALUE = 1 - INTERPOLATE_VALUE # toggle
 
@@ -1150,10 +1152,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           self.saveSegmentationInformation(currentSegmentationVersion)
 
-          if 'nrrd' in INPUT_FILE_EXTENSION:
+          if 'nrrd' in GlobalValues.INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)
 
-          if 'nii' in INPUT_FILE_EXTENSION:
+          if 'nii' in GlobalValues.INPUT_FILE_EXTENSION:
             self.saveNiiSegmentation(currentSegmentationVersion)
 
           msg_box = qt.QMessageBox()
@@ -1418,7 +1420,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust the version according to each individual file.
       list_of_segmentation_filenames = glob(
           f'{self.currentOutputPath}{os.sep}'
-          f'{self.currentVolumeFilename}{INPUT_FILE_EXTENSION}')
+          f'{self.currentVolumeFilename}{GlobalValues.INPUT_FILE_EXTENSION}')
 
       version = 'v'
       if list_of_segmentation_filenames == []:
@@ -1510,7 +1512,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.update_current_segmentation_status()
 
               self.predictions_paths = sorted(glob(
-                  os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+                  os.path.join(self.outputFolder, f'{GlobalValues.INPUT_FILE_EXTENSION}')))
       else:
           Debug.print(self, 'No output folder selected.')
 
@@ -1697,10 +1699,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      if MODALITY == 'CT':
+      if GlobalValues.MODALITY == 'CT':
           Debug.print(self, 'MODALITY==CT')
-          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
+          Vol_displayNode.SetWindow(GlobalValues.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(GlobalValues.CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -1709,10 +1711,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
       
       for (segment_name, version_file_path) in selected_version_file_paths.items():
-            if 'nrrd' in INPUT_FILE_EXTENSION:
+            if 'nrrd' in GlobalValues.INPUT_FILE_EXTENSION:
                 slicer.util.loadSegmentation(version_file_path)
                 currentSegmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-            elif 'nii' in INPUT_FILE_EXTENSION:
+            elif 'nii' in GlobalValues.INPUT_FILE_EXTENSION:
                 labelmapVolumeNode = slicer.util.loadLabelVolume(version_file_path)
                 currentSegmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
                 slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, currentSegmentationNode)
@@ -1763,10 +1765,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
   def loadSegmentation(self, absolute_path_to_segmentation_file):
-        if 'nrrd' in INPUT_FILE_EXTENSION:
+        if 'nrrd' in GlobalValues.INPUT_FILE_EXTENSION:
             slicer.util.loadSegmentation(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-        elif 'nii' in INPUT_FILE_EXTENSION:
+        elif 'nii' in GlobalValues.INPUT_FILE_EXTENSION:
             labelmapVolumeNode = slicer.util.loadLabelVolume(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
             slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, self.segmentationNode)

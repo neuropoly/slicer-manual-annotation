@@ -64,7 +64,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
     self.predictions_names= None
-    self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+    # GV = GlobalValues()
+    self.DefaultDir = GlobalValues.DEFAULT_VOLUMES_DIRECTORY
+    print('test passed set default dir')
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -79,56 +81,69 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.theme  = Theme.get_mode(self)
     self.foreground = Theme.set_foreground(self, self.theme)
 
-  @enter_function
-  def get_config_values(self):
-      # Select the appropriate configuration file.
-      ConfigPath.open_project_config_file(self)
 
-      global INPUT_FILE_EXTENSION
-      global DEFAULT_VOLUMES_DIRECTORY
-      global DEFAULT_SEGMENTATION_DIRECTORY
-      global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-      global MODALITY
-      global IS_CLASSIFICATION_REQUESTED
-      global IS_SEGMENTATION_REQUESTED
-      global IS_MOUSE_SHORTCUTS_REQUESTED
-      global IS_KEYBOARD_SHORTCUTS_REQUESTED
-      global INTERPOLATE_VALUE
-      global CT_WINDOW_WIDTH
-      global CT_WINDOW_LEVEL
-      global IS_DISPLAY_TIMER_REQUESTED
+  # @enter_function
+  # def GlobalValues.get_config_values(self):
+  #   print('befor einstantinging global values')
+  #   # aa = GlobalValues()
+  #   print('after gobalue')
+  #   print('global value: input file extensdion ',
+  #         GlobalValues.INPUT_FILE_EXTENSION)
 
-      IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
-          "is_display_timer_requested"]
 
-      INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-      DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-      self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-      DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
-          "default_segmentation_directory"]
-      MODALITY = self.config_yaml["modality"]
-      IS_CLASSIFICATION_REQUESTED = self.config_yaml[
-          "is_classification_requested"]
-      IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
-      IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
-          "is_mouse_shortcuts_requested"]
-      IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
-          "is_keyboard_shortcuts_requested"]
-      INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
 
-      if MODALITY == 'CT':
-          # then BIDS not mandatory because it is not yet supported
-          # therefore, either .nrrd or .nii.gz accepted
-          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-          CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-          CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
-
-      elif MODALITY == 'MRI':
-          # therefore, .nii.gz required
-          INPUT_FILE_EXTENSION = '*.nii.gz'
-          # user can decide whether to impose bids or not
-          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
-              "impose_bids_format"]
+  # @enter_function
+  # def GlobalValues.get_config_values(self):
+  #     # Select the appropriate configuration file.
+  #     ConfigPath.open_project_config_file(self)
+  #
+  #     global INPUT_FILE_EXTENSION
+  #     global DEFAULT_VOLUMES_DIRECTORY
+  #     global DEFAULT_SEGMENTATION_DIRECTORY
+  #     global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
+  #     global MODALITY
+  #     global IS_CLASSIFICATION_REQUESTED
+  #     global IS_SEGMENTATION_REQUESTED
+  #     global IS_MOUSE_SHORTCUTS_REQUESTED
+  #     global IS_KEYBOARD_SHORTCUTS_REQUESTED
+  #     global INTERPOLATE_VALUE
+  #     global CT_WINDOW_WIDTH
+  #     global CT_WINDOW_LEVEL
+  #     global IS_DISPLAY_TIMER_REQUESTED
+  #
+  #     IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
+  #         "is_display_timer_requested"]
+  #
+  #     INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
+  #     print('input file Extension in slicercart', INPUT_FILE_EXTENSION)
+  #
+  #     DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
+  #     self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+  #     DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
+  #         "default_segmentation_directory"]
+  #     MODALITY = self.config_yaml["modality"]
+  #     IS_CLASSIFICATION_REQUESTED = self.config_yaml[
+  #         "is_classification_requested"]
+  #     IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
+  #     IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
+  #         "is_mouse_shortcuts_requested"]
+  #     IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
+  #         "is_keyboard_shortcuts_requested"]
+  #     INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
+  #
+  #     if MODALITY == 'CT':
+  #         # then BIDS not mandatory because it is not yet supported
+  #         # therefore, either .nrrd or .nii.gz accepted
+  #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+  #         CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
+  #         CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+  #
+  #     elif MODALITY == 'MRI':
+  #         # therefore, .nii.gz required
+  #         # INPUT_FILE_EXTENSION = '*.nii.gz'
+  #         # user can decide whether to impose bids or not
+  #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+  #             "impose_bids_format"]
 
   def setup(self):
     """
@@ -166,7 +181,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
-    self.get_config_values()
+    GlobalValues.get_config_values()
     ConfigPath.open_project_config_file(self)
     self.current_label_index = self.config_yaml['labels'][0]['value']
   
@@ -230,7 +245,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.MostRecentPausedCasePath = ""
   
   def setup_configuration(self):
-        self.get_config_values()
+        GlobalValues.get_config_values()
         
         if not IS_DISPLAY_TIMER_REQUESTED:
             self.ui.PauseTimerButton.hide()
@@ -458,6 +473,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
+      print('self Cases', self.Cases)
+
       self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
@@ -504,15 +521,34 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Instantiate a WorkFiles class object to facilitate cases lists
       # management.
-      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
+
+      print('self current foler before init in manage workflo', self.CurrentFolder)
+
+      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder,
+                                 INPUT_FILE_EXTENSION)
 
       # Set up working list appropriateness compared to volumes folder selected.
       self.WorkFiles.check_working_list()
 
       # Re-assignation of self.Cases and self.CasesPath based on working list.
+
+      print('self cases before manage workflo,', self.Cases)
+      print('self cases path before maange worklfo', self.CasesPaths)
+
+
       self.Cases = self.WorkFiles.get_working_list_filenames(self)
+
+      print('self cases between', self.Cases)
+
       self.CasesPaths = self.WorkFiles.get_working_list_filepaths(self.Cases)
+
+      print('*********self cases after manage workflo,', self.Cases)
+      print('******self cases path after maange worklfo', self.CasesPaths)
+
+
       self.reset_ui()
+      print('*********self cases after reset ui manage workflo,', self.Cases)
+      print('******self cases path after reset ui worklfo', self.CasesPaths)
 
       # Get the first case of remaining list (considers if empty).
       remaining_list_filenames = (
@@ -559,6 +595,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def updateCaseAll(self):
+
+      print('self current case index', self.currentCase_index)
+      print('len self cases ', len(self.Cases))
+      print('len self. cases path', len(self.CasesPaths))
+      print(' cases path', self.CasesPaths)
+      print('input file extension', INPUT_FILE_EXTENSION)
+
       # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]

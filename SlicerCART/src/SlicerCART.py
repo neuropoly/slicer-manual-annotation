@@ -10,6 +10,7 @@
 from utils import * # Import all modules, packages and global variables
 from scripts import * # Import all classes
 
+
 ###############################################################################
 
 ###############################################################################
@@ -68,6 +69,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.DefaultDir = GlobalValues.DEFAULT_VOLUMES_DIRECTORY
     print('test passed set default dir')
 
+
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
@@ -76,6 +78,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # has been selected or not.
     ConfigPath.create_temp_file(self)
     Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+    self.config_yaml = ConfigPath.open_project_config_file(self)
 
     # Auto-Detect the Slicer theme, so specific foreground can be used
     self.theme  = Theme.get_mode(self)
@@ -178,10 +181,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
     self.saved_selected = False # Flag to load correctly the first case
+    # self.config_yaml = INITIAL_CONFIG_FILE
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
-    GlobalValues.get_config_values()
+    self.config_yaml = ConfigPath.get_config_values(self)
     ConfigPath.open_project_config_file(self)
     self.current_label_index = self.config_yaml['labels'][0]['value']
   
@@ -245,9 +249,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.MostRecentPausedCasePath = ""
   
   def setup_configuration(self):
-        GlobalValues.get_config_values()
+        self.config_yaml = ConfigPath.open_project_config_file(self)
         
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not GlobalValues.IS_DISPLAY_TIMER_REQUESTED:
             self.ui.PauseTimerButton.hide()
             self.ui.StartTimerButton.hide()  
 
@@ -429,8 +433,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def onSelectVolumesFolderButton(self):
 
+      print(' test filetype input', self.config_yaml['input_filetype'])
+      print('self config yanl select vol,', self.config_yaml)
+
       if UserPath.get_selected_existing_folder(self):
           content = UserPath.get_selected_paths(self)
+          print(' test filetype input', self.config_yaml['input_filetype'])
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
@@ -599,14 +607,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       print('self current case index', self.currentCase_index)
       print('len self cases ', len(self.Cases))
       print('len self. cases path', len(self.CasesPaths))
-      print(' cases path', self.CasesPaths)
+      # print(' cases path', self.CasesPaths)
       print('input file extension', GlobalValues.INPUT_FILE_EXTENSION)
 
       # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
 
-      if not IS_DISPLAY_TIMER_REQUESTED:
+      if not GlobalValues.IS_DISPLAY_TIMER_REQUESTED:
           self.enableSegmentAndPaintButtons()
 
       self.updateCurrentPatient()
@@ -898,7 +906,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if (self.ui.PauseTimerButton.isChecked()):
             self.ui.PauseTimerButton.toggle()
     
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not GlobalValues.IS_DISPLAY_TIMER_REQUESTED:
             self.enableSegmentAndPaintButtons()
         else:
             self.disableSegmentAndPaintButtons() 

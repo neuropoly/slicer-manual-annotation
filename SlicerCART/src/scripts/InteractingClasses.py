@@ -33,8 +33,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
                         CONFIG_FILE_PATH)
 
         self.config_yaml  = ConfigPath.open_project_config_file(self)
-        # self.config_yaml  = ConfigPath.get_config_values(self)
-
 
         self.set_default_values()
 
@@ -413,7 +411,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
         self.config_yaml = ConfigPath.get_config_values(self)
 
-
         self.segmentation_selected = (
             self.config_yaml)['is_segmentation_requested']
         self.classification_selected = (
@@ -454,8 +451,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.config_yaml['KEYBOARD_SHORTCUTS'][5]['shortcut']
         self.interpolate_ks_selected = \
         self.config_yaml['KEYBOARD_SHORTCUTS'][6]['shortcut']
-
-
 
     def classification_checkbox_state_changed(self):
         self.classification_selected = self.classification_task_checkbox.isChecked()
@@ -620,7 +615,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.segmenter.config_yaml = ConfigPath.get_config_values(self)
 
         self.segmenter.setup_configuration()
-
 
         self.close()
 

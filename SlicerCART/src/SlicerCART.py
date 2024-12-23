@@ -10,7 +10,6 @@
 from utils import * # Import all modules, packages and global variables
 from scripts import * # Import all classes
 
-
 ###############################################################################
 
 ###############################################################################
@@ -65,10 +64,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
     self.predictions_names= None
-    # GV = GlobalValues()
     self.DefaultDir = GlobalValues.DEFAULT_VOLUMES_DIRECTORY
-    print('test passed set default dir')
-
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False

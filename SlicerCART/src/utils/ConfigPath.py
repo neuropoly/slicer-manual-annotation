@@ -14,28 +14,28 @@ class ConfigPath():
     @enter_function
     def __init__(self):
         print('before initializing config yaml')
-        self.config_yaml = INITIAL_CONFIG_FILE
+        # self.config_yaml = INITIAL_CONFIG_FILE
         print('after iniitalizeing config yanml')
         self.get_config_values()
-        self.INPUT_FILE_EXTENSION = INPUT_FILE_EXTENSION
-        self.DEFAULT_VOLUMES_DIRECTORY = DEFAULT_VOLUMES_DIRECTORY
-        self.DEFAULT_SEGMENTATION_DIRECTORY = DEFAULT_SEGMENTATION_DIRECTORY
-        self.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-        self.MODALITY = MODALITY
-        self.IS_CLASSIFICATION_REQUESTED = IS_CLASSIFICATION_REQUESTED
-        self.IS_SEGMENTATION_REQUESTED = IS_SEGMENTATION_REQUESTED
-        self.IS_MOUSE_SHORTCUTS_REQUESTED = IS_MOUSE_SHORTCUTS_REQUESTED
-        self.IS_KEYBOARD_SHORTCUTS_REQUESTED = IS_KEYBOARD_SHORTCUTS_REQUESTED
-        self.INTERPOLATE_VALUE = INTERPOLATE_VALUE  # not refractored in
-        # slicercart.py
-        self.CT_WINDOW_WIDTH = CT_WINDOW_WIDTH
-        self.CT_WINDOW_LEVEL = CT_WINDOW_LEVEL
-        self.IS_DISPLAY_TIMER_REQUESTED = IS_DISPLAY_TIMER_REQUESTED
-        self.REQUIRE_EMPTY = REQUIRE_EMPTY
-        self.WORKING_LIST_FILENAME = WORKING_LIST_FILENAME
-        self.REMAINING_LIST_FILENAME = REMAINING_LIST_FILENAME
-        # self.ENABLE_DEBUG = ENABLE_DEBUG
-        self.KEEP_WORKING_LIST = KEEP_WORKING_LIST
+        # self.INPUT_FILE_EXTENSION = INPUT_FILE_EXTENSION
+        # self.DEFAULT_VOLUMES_DIRECTORY = DEFAULT_VOLUMES_DIRECTORY
+        # self.DEFAULT_SEGMENTATION_DIRECTORY = DEFAULT_SEGMENTATION_DIRECTORY
+        # self.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
+        # self.MODALITY = MODALITY
+        # self.IS_CLASSIFICATION_REQUESTED = IS_CLASSIFICATION_REQUESTED
+        # self.IS_SEGMENTATION_REQUESTED = IS_SEGMENTATION_REQUESTED
+        # self.IS_MOUSE_SHORTCUTS_REQUESTED = IS_MOUSE_SHORTCUTS_REQUESTED
+        # self.IS_KEYBOARD_SHORTCUTS_REQUESTED = IS_KEYBOARD_SHORTCUTS_REQUESTED
+        # self.INTERPOLATE_VALUE = INTERPOLATE_VALUE  # not refractored in
+        # # slicercart.py
+        # self.CT_WINDOW_WIDTH = CT_WINDOW_WIDTH
+        # self.CT_WINDOW_LEVEL = CT_WINDOW_LEVEL
+        # self.IS_DISPLAY_TIMER_REQUESTED = IS_DISPLAY_TIMER_REQUESTED
+        # self.REQUIRE_EMPTY = REQUIRE_EMPTY
+        # self.WORKING_LIST_FILENAME = WORKING_LIST_FILENAME
+        # self.REMAINING_LIST_FILENAME = REMAINING_LIST_FILENAME
+        # # self.ENABLE_DEBUG = ENABLE_DEBUG
+        # self.KEEP_WORKING_LIST = KEEP_WORKING_LIST
 
 
     @enter_function
@@ -43,6 +43,10 @@ class ConfigPath():
         """
         Check if a configuration file already exists in selected output folder.
         """
+
+        #ATTENTION! Implies that each self parameter pass from slicercart
+        # widget must be also
+        # setted in ConfgPath
 
         path_to_saved_config_files = \
             f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
@@ -59,9 +63,9 @@ class ConfigPath():
             print('else path not existing')
             self.path_to_config_copy = path_to_config_copy
             self.config_yaml.clear()
-            ConfigPath.open_project_config_file(self)
-            ConfigPath.get_config_values(self)
-            ConfigPath.create_temp_file(self, name=OUTPUT_CONFIG_PATH,
+            ConfigPath.open_project_config_file()
+            ConfigPath.get_config_values()
+            ConfigPath.create_temp_file(name=OUTPUT_CONFIG_PATH,
                                         text=self.path_to_config_copy)
 
     @enter_function
@@ -71,7 +75,7 @@ class ConfigPath():
         exists.
         """
 
-        temp_file_exist = ConfigPath.get_temp_file(self)
+        temp_file_exist = ConfigPath.get_temp_file()
 
         print('temp file exsit', temp_file_exist)
         # print('CONFIG FILE_PATH'. CONFIG_FILE_PATH)
@@ -132,6 +136,10 @@ class ConfigPath():
 
         # Create a temporary file
         temp_dir = tempfile.gettempdir()
+
+        print('temp dir', temp_dir)
+        print('name', name)
+
         temp_file_path = os.path.join(temp_dir, name)
         # Write some initial data to the file
         with open(temp_file_path, "w") as temp_file:
@@ -195,7 +203,7 @@ class ConfigPath():
         in the output folder configuration file).
         """
 
-        temp_file_exist = ConfigPath.get_temp_file(self)
+        temp_file_exist = ConfigPath.get_temp_file()
 
         if temp_file_exist:
             print('write config file temp file exist')
@@ -203,13 +211,12 @@ class ConfigPath():
                 yaml.safe_dump(self.config_yaml, file)
         else:
             print('else config file not exsitng)')
-            output_path = ConfigPath.read_temp_file(self,
-                                                    name=OUTPUT_CONFIG_PATH)
+            output_path = ConfigPath.read_temp_file(name=OUTPUT_CONFIG_PATH)
             with open(output_path, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
 
         # ensure values are up-to-date
-        ConfigPath.get_config_values(self)
+        ConfigPath.get_config_values(self.config_yaml)
 
 
     @enter_function
@@ -223,94 +230,247 @@ class ConfigPath():
         path_to_config_copy = \
             f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
 
-        ConfigPath.create_temp_file(self,
-                                    name=OUTPUT_CONFIG_PATH,
+        ConfigPath.create_temp_file(name=OUTPUT_CONFIG_PATH,
                                     text=path_to_config_copy)
 
+    # @enter_function
+    # def get_config_values(self):
+    #     # Select the appropriate configuration file.
+    #     # print('self config yaml try', self.config_yaml)
+    #     # self.config_yaml = ConfigPath.open_project_config_file(self)
+    #     # self.config_yaml = ConfigPath.open_project_config_file(self)
+    #
+    #
+    #     # print('srelf confif yamla fter', self.config_yaml)
+    #     # print('len self conig yaml', len(self.config_yaml))
+    #
+    #     global INPUT_FILE_EXTENSION
+    #     global DEFAULT_VOLUMES_DIRECTORY
+    #     global DEFAULT_SEGMENTATION_DIRECTORY
+    #     global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
+    #     global MODALITY
+    #     global IS_CLASSIFICATION_REQUESTED
+    #     global IS_SEGMENTATION_REQUESTED
+    #     global IS_MOUSE_SHORTCUTS_REQUESTED
+    #     global IS_KEYBOARD_SHORTCUTS_REQUESTED
+    #     global INTERPOLATE_VALUE
+    #     global CT_WINDOW_WIDTH
+    #     global CT_WINDOW_LEVEL
+    #     global IS_DISPLAY_TIMER_REQUESTED
+    #     global REQUIRE_EMPTY
+    #     global WORKING_LIST_FILENAME
+    #     global REMAINING_LIST_FILENAME
+    #     global ENABLE_DEBUG
+    #     global KEEP_WORKING_LIST
+    #
+    #     IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
+    #         "is_display_timer_requested"]
+    #
+    #     INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
+    #     print('input file Extension in slicercart', INPUT_FILE_EXTENSION)
+    #
+    #     DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
+    #     self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+    #     DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
+    #         "default_segmentation_directory"]
+    #     MODALITY = self.config_yaml["modality"]
+    #     IS_CLASSIFICATION_REQUESTED = self.config_yaml[
+    #         "is_classification_requested"]
+    #     IS_SEGMENTATION_REQUESTED = self.config_yaml[
+    #         "is_segmentation_requested"]
+    #     IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
+    #         "is_mouse_shortcuts_requested"]
+    #     IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
+    #         "is_keyboard_shortcuts_requested"]
+    #     INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
+    #
+    #     print('self config yaml get config 247', self.config_yaml)
+    #     print('len self config yaml', len(self.config_yaml))
+    #
+    #     REQUIRE_EMPTY = self.config_yaml["require_empty"]
+    #     ENABLE_DEBUG = self.config_yaml["enable_debug"]
+    #
+    #
+    #     WORKING_LIST_FILENAME = self.config_yaml["working_list_filename"]
+    #     REMAINING_LIST_FILENAME = self.config_yaml["remaining_list_filename"]
+    #
+    #     CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
+    #     CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+    #     REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+    #         "impose_bids_format"]
+    #
+    #     KEEP_WORKING_LIST = self.config_yaml["keep_working_list"]
+    #
+    #     if MODALITY == 'CT':
+    #         # then BIDS not mandatory because it is not yet supported
+    #         # therefore, either .nrrd or .nii.gz accepted
+    #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+    #         # CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
+    #         # CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+    #
+    #     elif MODALITY == 'MRI':
+    #         # therefore, .nii.gz required
+    #         # INPUT_FILE_EXTENSION = '*.nii.gz'
+    #         # user can decide whether to impose bids or not
+    #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+    #             "impose_bids_format"]
+    #
+    #     print('self config yank before return', self.config_yaml['input_filetype'])
+    #
+    #     return self.config_yaml
+    # @enter_function
+    # def get_config_values(self, config=INITIAL_CONFIG_FILE):
+    #     # Select the appropriate configuration file.
+    #     # print('self config yaml try', self.config_yaml)
+    #     # self.config_yaml = ConfigPath.open_project_config_file(self)
+    #     # self.config_yaml = ConfigPath.open_project_config_file(self)
+    #
+    #     # print('srelf confif yamla fter', self.config_yaml)
+    #     # print('len self conig yaml', len(self.config_yaml))
+    #
+    #     global INPUT_FILE_EXTENSION
+    #     global DEFAULT_VOLUMES_DIRECTORY
+    #     global DEFAULT_SEGMENTATION_DIRECTORY
+    #     global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
+    #     global MODALITY
+    #     global IS_CLASSIFICATION_REQUESTED
+    #     global IS_SEGMENTATION_REQUESTED
+    #     global IS_MOUSE_SHORTCUTS_REQUESTED
+    #     global IS_KEYBOARD_SHORTCUTS_REQUESTED
+    #     global INTERPOLATE_VALUE
+    #     global CT_WINDOW_WIDTH
+    #     global CT_WINDOW_LEVEL
+    #     global IS_DISPLAY_TIMER_REQUESTED
+    #     global REQUIRE_EMPTY
+    #     global WORKING_LIST_FILENAME
+    #     global REMAINING_LIST_FILENAME
+    #     global ENABLE_DEBUG
+    #     global KEEP_WORKING_LIST
+    #
+    #     self.IS_DISPLAY_TIMER_REQUESTED = config[
+    #         "is_display_timer_requested"]
+    #
+    #     self.INPUT_FILE_EXTENSION = config["input_filetype"]
+    #     print('input file Extension in slicercart', INPUT_FILE_EXTENSION)
+    #
+    #     DEFAULT_VOLUMES_DIRECTORY = config["default_volume_directory"]
+    #     self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
+    #     DEFAULT_SEGMENTATION_DIRECTORY = config[
+    #         "default_segmentation_directory"]
+    #     self.MODALITY = config["modality"]
+    #     self.IS_CLASSIFICATION_REQUESTED = config[
+    #         "is_classification_requested"]
+    #     self.IS_SEGMENTATION_REQUESTED = config[
+    #         "is_segmentation_requested"]
+    #     self.IS_MOUSE_SHORTCUTS_REQUESTED = config[
+    #         "is_mouse_shortcuts_requested"]
+    #     self.IS_KEYBOARD_SHORTCUTS_REQUESTED = config[
+    #         "is_keyboard_shortcuts_requested"]
+    #     self.INTERPOLATE_VALUE = config["interpolate_value"]
+    #
+    #     print('self config yaml get config 247', config)
+    #     print('len self config yaml', len(config))
+    #
+    #     REQUIRE_EMPTY = config["require_empty"]
+    #     ENABLE_DEBUG = config["enable_debug"]
+    #
+    #     WORKING_LIST_FILENAME = config["working_list_filename"]
+    #     REMAINING_LIST_FILENAME = config["remaining_list_filename"]
+    #
+    #     CT_WINDOW_WIDTH = config["ct_window_width"]
+    #     CT_WINDOW_LEVEL = config["ct_window_level"]
+    #     REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
+    #         "impose_bids_format"]
+    #
+    #     KEEP_WORKING_LIST = config["keep_working_list"]
+    #
+    #     if MODALITY == 'CT':
+    #         # then BIDS not mandatory because it is not yet supported
+    #         # therefore, either .nrrd or .nii.gz accepted
+    #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+    #         # CT_WINDOW_WIDTH = config["ct_window_width"]
+    #         # CT_WINDOW_LEVEL = config["ct_window_level"]
+    #
+    #     elif MODALITY == 'MRI':
+    #         # therefore, .nii.gz required
+    #         # INPUT_FILE_EXTENSION = '*.nii.gz'
+    #         # user can decide whether to impose bids or not
+    #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
+    #             "impose_bids_format"]
+    #
+    #     print('self config yank before return',
+    #           config['input_filetype'])
+    #
+    #     return config
+
     @enter_function
-    def get_config_values(self):
+    def get_config_values(self, config=INITIAL_CONFIG_FILE):
         # Select the appropriate configuration file.
         # print('self config yaml try', self.config_yaml)
         # self.config_yaml = ConfigPath.open_project_config_file(self)
         # self.config_yaml = ConfigPath.open_project_config_file(self)
 
-        print('temp file es', ConfigPath.get_temp_file(self))
-
-
         # print('srelf confif yamla fter', self.config_yaml)
         # print('len self conig yaml', len(self.config_yaml))
 
-        global INPUT_FILE_EXTENSION
-        global DEFAULT_VOLUMES_DIRECTORY
-        global DEFAULT_SEGMENTATION_DIRECTORY
-        global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-        global MODALITY
-        global IS_CLASSIFICATION_REQUESTED
-        global IS_SEGMENTATION_REQUESTED
-        global IS_MOUSE_SHORTCUTS_REQUESTED
-        global IS_KEYBOARD_SHORTCUTS_REQUESTED
-        global INTERPOLATE_VALUE
-        global CT_WINDOW_WIDTH
-        global CT_WINDOW_LEVEL
-        global IS_DISPLAY_TIMER_REQUESTED
-        global REQUIRE_EMPTY
-        global WORKING_LIST_FILENAME
-        global REMAINING_LIST_FILENAME
-        global ENABLE_DEBUG
-        global KEEP_WORKING_LIST
-
-        IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
+        self.IS_DISPLAY_TIMER_REQUESTED = config[
             "is_display_timer_requested"]
 
-        INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-        print('input file Extension in slicercart', INPUT_FILE_EXTENSION)
+        self.INPUT_FILE_EXTENSION = config["input_filetype"]
 
-        DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-        self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-        DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
+        self.DEFAULT_VOLUMES_DIRECTORY = config["default_volume_directory"]
+        self.DefaultDir = self.DEFAULT_VOLUMES_DIRECTORY
+        self.DEFAULT_SEGMENTATION_DIRECTORY = config[
             "default_segmentation_directory"]
-        MODALITY = self.config_yaml["modality"]
-        IS_CLASSIFICATION_REQUESTED = self.config_yaml[
+        self.MODALITY = config["modality"]
+        self.IS_CLASSIFICATION_REQUESTED = config[
             "is_classification_requested"]
-        IS_SEGMENTATION_REQUESTED = self.config_yaml[
+        self.IS_SEGMENTATION_REQUESTED = config[
             "is_segmentation_requested"]
-        IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
+        self.IS_MOUSE_SHORTCUTS_REQUESTED = config[
             "is_mouse_shortcuts_requested"]
-        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
+        self.IS_KEYBOARD_SHORTCUTS_REQUESTED = config[
             "is_keyboard_shortcuts_requested"]
-        INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
+        self.INTERPOLATE_VALUE = config["interpolate_value"]
 
-        print('self config yaml get config 247', self.config_yaml)
-        print('len self config yaml', len(self.config_yaml))
+        print('self config yaml get config 247', config)
+        print('len self config yaml', len(config))
 
-        REQUIRE_EMPTY = self.config_yaml["require_empty"]
-        ENABLE_DEBUG = self.config_yaml["enable_debug"]
+        self.REQUIRE_EMPTY = config["require_empty"]
+        self.ENABLE_DEBUG = config["enable_debug"]
 
+        self.WORKING_LIST_FILENAME = config["working_list_filename"]
+        self.REMAINING_LIST_FILENAME = config["remaining_list_filename"]
 
-        WORKING_LIST_FILENAME = self.config_yaml["working_list_filename"]
-        REMAINING_LIST_FILENAME = self.config_yaml["remaining_list_filename"]
-
-        CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-        CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
-        REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+        self.CT_WINDOW_WIDTH = config["ct_window_width"]
+        self.CT_WINDOW_LEVEL = config["ct_window_level"]
+        self.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
             "impose_bids_format"]
 
-        KEEP_WORKING_LIST = self.config_yaml["keep_working_list"]
+        self.KEEP_WORKING_LIST = config["keep_working_list"]
 
-        if MODALITY == 'CT':
+        if self.MODALITY == 'CT':
             # then BIDS not mandatory because it is not yet supported
             # therefore, either .nrrd or .nii.gz accepted
             REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-            # CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-            # CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+            # CT_WINDOW_WIDTH = config["ct_window_width"]
+            # CT_WINDOW_LEVEL = config["ct_window_level"]
 
-        elif MODALITY == 'MRI':
+        elif self.MODALITY == 'MRI':
             # therefore, .nii.gz required
             # INPUT_FILE_EXTENSION = '*.nii.gz'
             # user can decide whether to impose bids or not
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
+            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
                 "impose_bids_format"]
 
-        print('self config yank before return', self.config_yaml['input_filetype'])
+        print('self config yank before return',
+              config['input_filetype'])
 
-        return self.config_yaml
+        return config
+
+    def set_output_folder(self, outputFolder):
+        self.outputFolder = outputFolder
+
+#Implies that each self parameter pass from slicercart widget must be also
+# setted in ConfgPath
+ConfigPath = ConfigPath()

@@ -91,9 +91,9 @@ class CompareSegmentVersionsWindow(qt.QWidget):
        selected_version_file_paths = {}
 
        segmentation_file_extension = ""
-       if "nii" in GlobalValues.INPUT_FILE_EXTENSION:
+       if "nii" in ConfigPath.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".nii.gz"
-       elif "nrrd" in GlobalValues.INPUT_FILE_EXTENSION:
+       elif "nrrd" in ConfigPath.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".seg.nrrd"
 
        for index, row in self.segmentationInformation_df.iterrows():

@@ -740,6 +740,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             self.segmenter.onSelectVolumesFolderButton()
             self.segmenter.set_ui_enabled_options()
 
+            # Ensure there is a config file in the output folder
             ConfigPath.set_output_folder(self.outputFolder)
             ConfigPath.check_existing_configuration()
 

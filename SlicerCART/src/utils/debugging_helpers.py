@@ -1,20 +1,17 @@
 import functools
 import inspect
 import yaml
-# from utils.global_variables import ENABLE_DEBUG
-# from utils.GlobalValues import ENABLE_DEBUG
-# from utils.GlobalValues import *
-# print('enable debyg begin', ENABLE_DEBUG)
-# from utils.GlobalValues import ENABLE_DEBUG
-# from general.GlobalValues import *
-from utils.global_variables import CONFIG_FILE_PATH
-print('import success', CONFIG_FILE_PATH)
+
+# Import initial configuration filepath associated with SlicerCART module.
+from utils.constants import CONFIG_FILE_PATH
+# Extracts ENABLE_DEBUG value from the initial configuration file. Can be set
+# and unset as the user wants to use it in different configurations by using
+# set_debug (described below).
 with open (CONFIG_FILE_PATH, 'r') as file:
+    # This variable enables/disables easier debug mode (with print)
+    # in the python console (e.g. Debug.set_debug(self, True) or
+    # Debug.set_debug(self, False)
     ENABLE_DEBUG = yaml.safe_load(file)['enable_debug']
-
-print('enable debug extracted', ENABLE_DEBUG)
-
-
 
 
 class Debug:

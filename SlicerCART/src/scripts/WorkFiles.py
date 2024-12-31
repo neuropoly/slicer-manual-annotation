@@ -1,11 +1,5 @@
 from utils import *
 
-# global KEEP_WORKING_LIST
-# # ToDo: define this flag in the initial configuration UI and in global variables
-# KEEP_WORKING_LIST = True
-
-
-
 class WorkFiles():
     """
     This class is intended to manipulate different cases list in order to
@@ -13,14 +7,7 @@ class WorkFiles():
     previous work sessions.
     """
 
-    def __init__(self, currentFolder, outputFolder, file_extension=''):
-
-        # global INPUT_FILE_EXTENSION
-        # INPUT_FILE_EXTENSION = file_extension
-        #
-        # print('input file extension in init', INPUT_FILE_EXTENSION)
-        # print('global', ConfigPath.INPUT_FILE_EXTENSION)
-
+    def __init__(self, currentFolder, outputFolder):
         self.CurrentFolder = currentFolder
         self.outputFolder = outputFolder
         self.working_list_filepath = os.path.join(self.outputFolder,
@@ -36,16 +23,6 @@ class WorkFiles():
 
         self.all_cases_filenames = (
             self.get_filenames_in_working_list(self.all_cases_path))
-
-        print(' in init workfiles')
-        print('self currenf foterler', self.CurrentFolder)
-        print('self output folder', self.outputFolder)
-        print('self working list filepath', self.working_list_filepath)
-        print('self remaining list filepath', self.remaining_list_filepath)
-        print('output folder ifles', self.output_folder_files)
-        print('self cases all filenames', self.all_cases_filenames)
-
-
 
     @enter_function
     def check_working_list(self):
@@ -76,10 +53,7 @@ class WorkFiles():
 
                 # The user wants to keep the working list as is currently in
                 # output folder.
-                print('before checking keep working list')
-                print(ConfigPath.KEEP_WORKING_LIST)
                 if ConfigPath.KEEP_WORKING_LIST:
-                # if ConfigPath.REMAINING_LIST_FILENAME:
                     if WorkFiles.check_working_list_in_volumes(
                             self, self.all_cases_filenames):
                         Debug.print(self, 'All elements in working list are '
@@ -119,15 +93,11 @@ class WorkFiles():
 
 
         else:
-            print('entering check working list else no exist already')
-            print('self working lis filepath', self.working_list_filepath)
-            print('self al case sfilenames', self.all_cases_filenames)
             # Create initial working list and remaining list.
             self.write_file_list(self.working_list_filepath,
                                  self.all_cases_filenames)
 
             working_list_filenames = WorkFiles.get_working_list_filenames(self)
-            print('working list iflenames else 00000', working_list_filenames)
 
             if os.path.exists(self.remaining_list_filepath):
                 if self.check_remaining_list(working_list_filenames):
@@ -154,9 +124,6 @@ class WorkFiles():
         """
         Get all files that have the correct file extension from volumes folder.
         """
-        print('input file extension before get working list',
-              ConfigPath.INPUT_FILE_EXTENSION)
-        print('segmenter')
         self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}*'
                                            f'*{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}',
                                            recursive=True))
@@ -388,7 +355,6 @@ class WorkFiles():
         """
         Get all filenames from the working list.
         """
-        print(' self working list filepath', self.working_list_filepath)
         with open(self.working_list_filepath, 'r') as file:
             working_list_filenames = yaml.safe_load(file)['CASES']
             return working_list_filenames
@@ -407,16 +373,11 @@ class WorkFiles():
         """
         Get all working list filepaths.
         """
-        print('self working list filenames', working_list_filenames)
-        print('self.working_list_filepath', self.working_list_filepath)
-
         filenames_path = []
         for element in working_list_filenames:
             for path in self.all_cases_path:
                 if element in path:
                     filenames_path.append(path)
-        print('working_list_filepaths', filenames_path)
-
         return filenames_path
 
     @enter_function

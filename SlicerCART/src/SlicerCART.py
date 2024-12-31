@@ -65,10 +65,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # LLG CODE BELOW
     self.predictions_names= None
 
-
-
-    # self.DefaultDir = ConfigPath.DEFAULT_VOLUMES_DIRECTORY
-
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
@@ -85,69 +81,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.theme  = Theme.get_mode(self)
     self.foreground = Theme.set_foreground(self, self.theme)
 
-
-  # @enter_function
-  # def GlobalValues.get_config_values(self):
-  #   print('befor einstantinging global values')
-  #   # aa = GlobalValues()
-  #   print('after gobalue')
-  #   print('global value: input file extensdion ',
-  #         GlobalValues.INPUT_FILE_EXTENSION)
-
-
-
-  # @enter_function
-  # def GlobalValues.get_config_values(self):
-  #     # Select the appropriate configuration file.
-  #     ConfigPath.open_project_config_file(self)
-  #
-  #     global INPUT_FILE_EXTENSION
-  #     global DEFAULT_VOLUMES_DIRECTORY
-  #     global DEFAULT_SEGMENTATION_DIRECTORY
-  #     global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-  #     global MODALITY
-  #     global IS_CLASSIFICATION_REQUESTED
-  #     global IS_SEGMENTATION_REQUESTED
-  #     global IS_MOUSE_SHORTCUTS_REQUESTED
-  #     global IS_KEYBOARD_SHORTCUTS_REQUESTED
-  #     global INTERPOLATE_VALUE
-  #     global CT_WINDOW_WIDTH
-  #     global CT_WINDOW_LEVEL
-  #     global IS_DISPLAY_TIMER_REQUESTED
-  #
-  #     IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
-  #         "is_display_timer_requested"]
-  #
-  #     INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-  #     print('input file Extension in slicercart', INPUT_FILE_EXTENSION)
-  #
-  #     DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-  #     self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-  #     DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
-  #         "default_segmentation_directory"]
-  #     MODALITY = self.config_yaml["modality"]
-  #     IS_CLASSIFICATION_REQUESTED = self.config_yaml[
-  #         "is_classification_requested"]
-  #     IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
-  #     IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
-  #         "is_mouse_shortcuts_requested"]
-  #     IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
-  #         "is_keyboard_shortcuts_requested"]
-  #     INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
-  #
-  #     if MODALITY == 'CT':
-  #         # then BIDS not mandatory because it is not yet supported
-  #         # therefore, either .nrrd or .nii.gz accepted
-  #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-  #         CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-  #         CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
-  #
-  #     elif MODALITY == 'MRI':
-  #         # therefore, .nii.gz required
-  #         # INPUT_FILE_EXTENSION = '*.nii.gz'
-  #         # user can decide whether to impose bids or not
-  #         REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
-  #             "impose_bids_format"]
 
   def setup(self):
     """
@@ -182,7 +115,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
     self.saved_selected = False # Flag to load correctly the first case
-    # self.config_yaml = INITIAL_CONFIG_FILE
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
@@ -434,17 +366,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def onSelectVolumesFolderButton(self):
 
-      print(' test filetype input', self.config_yaml['input_filetype'])
-      print('self config yanl select vol,', self.config_yaml)
-      print('user path get selected exisitng folder, ',
-            UserPath.get_selected_existing_folder(self))
+      Debug.print(self,
+                  f'value of UserPath.get_selected_existing_folder: '
+                  f'{UserPath.get_selected_existing_folder(self)}')
 
       ConfigPath.get_config_values(self.config_yaml)
 
       if UserPath.get_selected_existing_folder(self):
-
           content = UserPath.get_selected_paths(self)
-          print(' test filetype input', self.config_yaml['input_filetype'])
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
@@ -469,8 +398,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}', recursive = True))
 
-      print('extension', ConfigPath.INPUT_FILE_EXTENSION)
-
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
       self.CasesPaths = [item for item in self.CasesPaths if 'derivatives' not
@@ -488,8 +415,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
-
-      print('self Cases', self.Cases)
 
       self.reset_ui()
 
@@ -537,11 +462,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # Instantiate a WorkFiles class object to facilitate cases lists
       # management.
-
-      print('self current foler before init in manage workflo', self.CurrentFolder)
-
-      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder,
-                                 ConfigPath.INPUT_FILE_EXTENSION)
+      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
 
       # Set up working list appropriateness compared to volumes folder selected.
       if self.WorkFiles.check_working_list() == False:
@@ -562,24 +483,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       # Re-assignation of self.Cases and self.CasesPath based on working list.
-
-      print('self cases before manage workflo,', self.Cases)
-      print('self cases path before maange worklfo', self.CasesPaths)
-
-
       self.Cases = self.WorkFiles.get_working_list_filenames(self)
-
-      print('self cases between', self.Cases)
-
       self.CasesPaths = self.WorkFiles.get_working_list_filepaths(self.Cases)
-
-      print('*********self cases after manage workflo,', self.Cases)
-      print('******self cases path after maange worklfo', self.CasesPaths)
-
-
       self.reset_ui()
-      print('*********self cases after reset ui manage workflo,', self.Cases)
-      print('******self cases path after reset ui worklfo', self.CasesPaths)
 
       # Get the first case of remaining list (considers if empty).
       remaining_list_filenames = (
@@ -626,13 +532,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def updateCaseAll(self):
-
-      print('self current case index', self.currentCase_index)
-      print('len self cases ', len(self.Cases))
-      print('len self. cases path', len(self.CasesPaths))
-      # print(' cases path', self.CasesPaths)
-      print('input file extension', ConfigPath.INPUT_FILE_EXTENSION)
-
       # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
@@ -761,8 +660,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.update_current_segmentation_status()
   
   def onPushButton_Interpolate(self):
-      # ToDo: here not sure if we rewrite each time the values in the config
-      #  yaml file
       global INTERPOLATE_VALUE
       INTERPOLATE_VALUE = 1 - INTERPOLATE_VALUE # toggle
 
@@ -1501,15 +1398,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   "Open a folder",
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
-
           ConfigPath.set_output_folder(self.outputFolder)
 
       else:
           Dev.show_message_box(self, 'Please select volumes folder first.',
                                box_title='ATTENTION!')
           return
-
-      print('self.output folder', self.outputFolder)
 
 
       # MB: Deactivated related to issue 112. To discuss in team (to remove).

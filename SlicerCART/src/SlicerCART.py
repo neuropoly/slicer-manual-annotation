@@ -677,6 +677,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def loadPatient(self):
       timer_index = 0
       self.timers = []
+      self.config_yaml = ConfigPath.get_config_values()
       for label in self.config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
           timer_index = timer_index + 1

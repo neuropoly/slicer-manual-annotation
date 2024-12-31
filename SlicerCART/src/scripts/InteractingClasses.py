@@ -406,9 +406,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
     @enter_function
     def set_default_values(self):
-
         ConfigPath.write_config_file()
-
         self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
 
         self.segmentation_selected = (
@@ -611,7 +609,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             'shortcut'] = self.interpolate_ks_selected
 
         ConfigPath.write_config_file()
-
         self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
 
         self.segmenter.setup_configuration()

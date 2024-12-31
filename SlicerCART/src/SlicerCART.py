@@ -544,7 +544,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                                  ConfigPath.INPUT_FILE_EXTENSION)
 
       # Set up working list appropriateness compared to volumes folder selected.
-      self.WorkFiles.check_working_list()
+      if self.WorkFiles.check_working_list() == False:
+          print('\n\n INVALID WORKFLOW. CANNOT CONTINUE WITH CURRENT SELECTED '
+                'VOLUMES AND OUTPUT FOLDERS.\n\n')
+          # Output folder is inconsistent with Volumes Folder.
+          # We should NEVER be able to save any other segmentations.
+          message = ('The UI case list is now invalid. \n'
+                     f'In the output folder {self.outputFolder}'
+                     f'working_list and remaining_list, '
+                     'files are inconsistent and corrupted.\n\n'
+                     'Cannot continue with Slicer from now one.\n\n'
+                     'Please restart SlicerCART if you want to continue.\n\n'
+                     'Ensure you select appropriate volumes and output '
+                     'folder, and reset working_list and remaining_list.\n'
+                     '(For example, delete them).')
+          Dev.show_message_box(self, message)
+          return
 
       # Re-assignation of self.Cases and self.CasesPath based on working list.
 

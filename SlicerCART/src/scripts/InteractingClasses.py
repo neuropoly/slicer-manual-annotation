@@ -739,6 +739,10 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             # self.segmenter corresponds to SlicerCART UI in Slicer.
             self.segmenter.onSelectVolumesFolderButton()
             self.segmenter.set_ui_enabled_options()
+
+            ConfigPath.set_output_folder(self.outputFolder)
+            ConfigPath.check_existing_configuration()
+
             self.close()
 
             return

@@ -76,7 +76,10 @@ class WorkFiles():
 
                 # The user wants to keep the working list as is currently in
                 # output folder.
-                if ConfigPath.REMAINING_LIST_FILENAME:
+                print('before checking keep working list')
+                print(ConfigPath.KEEP_WORKING_LIST)
+                if ConfigPath.KEEP_WORKING_LIST:
+                # if ConfigPath.REMAINING_LIST_FILENAME:
                     if WorkFiles.check_working_list_in_volumes(
                             self, self.all_cases_filenames):
                         Debug.print(self, 'All elements in working list are '

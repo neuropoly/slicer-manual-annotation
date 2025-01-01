@@ -422,15 +422,27 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                          in item]
 
       if not self.CasesPaths:
-            msg_box = qt.QMessageBox()
-            msg_box.setWindowTitle("No files found")
-            msg_box.setIcon(qt.QMessageBox.Warning)
-            text = "No files found in the selected directory!"
-            text += "\n\nMake sure the configured extension is in the right format."
-            text += "\n\nThen restart the module"
-            msg_box.setText(text)
-            msg_box.exec()
-            return
+          message = ('No files found in the selected directory!'
+                     f'\n\nCurrent file extension configuration: '
+                     f'{ConfigPath.INPUT_FILE_EXTENSION}'
+                     "\n\nMake sure the configured extension is "
+                     "in the right format."
+                     "\n\nFor example: check configuration_config.yml file in "
+                     "SlicerCART project or in output folder under _conf "
+                     "folder."
+                     "\n\nThen restart the module.")
+
+          Dev.show_message_box(self, message, box_title='ATTENTION!')
+          #
+          # msg_box = qt.QMessageBox()
+          # msg_box.setWindowTitle("No files found")
+          # msg_box.setIcon(qt.QMessageBox.Warning)
+          # text = "No files found in the selected directory!"
+          # text += "\n\nMake sure the configured extension is in the right format."
+          # text += "\n\nThen restart the module"
+          # msg_box.setText(text)
+          # msg_box.exec()
+          return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 

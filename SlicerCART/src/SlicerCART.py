@@ -186,7 +186,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.config_yaml = ConfigPath.open_project_config_file()
         # Warning: if incorrect config values that have been changed create
         # new errors around those line of codes. A solution is likely to add:
-        # self.config_yaml = ConfigPath.get_config_value(self.config_yaml)
+        # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
         # (This sets appropriate values for configuration; to insert after
         # open_project_config_file)
         
@@ -377,7 +377,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f'{UserPath.get_selected_existing_folder(self)}')
 
       self.config_yaml = ConfigPath.open_project_config_file()
-      self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
+      self.config_yaml = ConfigPath.set_config_values(self.config_yaml)
 
       if UserPath.get_selected_existing_folder(self):
           content = UserPath.get_selected_paths(self)
@@ -1092,7 +1092,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           # If not working, the solution is likely to add here:
           # self.config_yaml = ConfigPath.open_project_config_file() # Get latest/appropriate configuration
-          # self.config_yaml = ConfigPath.get_config_value(self.config_yaml) # Set appropriate values for configuration
+          # self.config_yaml = ConfigPath.set_config_value(self.config_yaml) # Set appropriate values for configuration
 
           if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)

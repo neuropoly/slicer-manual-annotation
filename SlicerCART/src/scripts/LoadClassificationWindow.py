@@ -1,5 +1,6 @@
 from utils import *
 class LoadClassificationWindow(qt.QWidget):
+   @enter_function
    def __init__(self, segmenter, classificationInformation_df, parent = None):
       super(LoadClassificationWindow, self).__init__(parent)
 
@@ -21,6 +22,8 @@ class LoadClassificationWindow(qt.QWidget):
       buttonLayout.addWidget(self.versionDropdown)
 
       layout.addLayout(buttonLayout)
+
+      print('classificationInformation_df shape 0: ', classificationInformation_df.shape[0])
 
       if classificationInformation_df.shape[0] > 0:
           available_versions = classificationInformation_df['Classification version'].to_list()
@@ -69,9 +72,13 @@ class LoadClassificationWindow(qt.QWidget):
       self.setWindowTitle("Load Classification")
       self.resize(800, 400)
 
+   @enter_function
    def pushLoad(self):
+       print('self version dorpdown currenttext', self.versionDropdown.currentText)
+
        selected_version = self.versionDropdown.currentText
        selected_version_df = self.classificationInformation_df[self.classificationInformation_df['Classification version']==selected_version].reset_index(drop = True)
+       print('selected version df', selected_version_df)
 
        for i, (objectName, label) in enumerate(self.segmenter.classification_config_yaml["checkboxes"].items()):
            if selected_version_df.at[0, label] == 'Yes':

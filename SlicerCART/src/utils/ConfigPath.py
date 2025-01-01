@@ -1,11 +1,14 @@
-from utils import *
+from utils.requirements import *
+from utils.constants import *
+from utils.debugging_helpers import *
 
 OUTPUT_CONFIG_PATH = 'output_path.txt' # Name of the temp file where the path
 # of the config file to use (from selected output folder). To use here only.
 
 class ConfigPath():
+    @enter_function
     def __init__(self):
-        pass
+        self.set_config_values(INITIAL_CONFIG_FILE)
 
     @enter_function
     def check_existing_configuration(self):
@@ -24,9 +27,8 @@ class ConfigPath():
         else:
             self.path_to_config_copy = path_to_config_copy
             self.config_yaml.clear()
-            ConfigPath.open_project_config_file(self)
-            self.get_config_values()
-            ConfigPath.create_temp_file(self, name=OUTPUT_CONFIG_PATH,
+            self.config_yaml = ConfigPath.open_project_config_file()
+            ConfigPath.create_temp_file(name=OUTPUT_CONFIG_PATH,
                                         text=self.path_to_config_copy)
 
     @enter_function
@@ -36,7 +38,7 @@ class ConfigPath():
         exists.
         """
 
-        temp_file_exist = ConfigPath.get_temp_file(self)
+        temp_file_exist = ConfigPath.get_temp_file()
 
         if temp_file_exist:
             with open(CONFIG_FILE_PATH, 'r') as file:
@@ -148,16 +150,18 @@ class ConfigPath():
         in the output folder configuration file).
         """
 
-        temp_file_exist = ConfigPath.get_temp_file(self)
+        temp_file_exist = ConfigPath.get_temp_file()
 
         if temp_file_exist:
             with open(CONFIG_FILE_PATH, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
         else:
-            output_path = ConfigPath.read_temp_file(self,
-                                                    name=OUTPUT_CONFIG_PATH)
+            output_path = ConfigPath.read_temp_file(name=OUTPUT_CONFIG_PATH)
             with open(output_path, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
+
+        # Ensure to get the latest config values
+        ConfigPath.set_config_values(self.config_yaml)
 
     @enter_function
     def write_correct_path(self):
@@ -170,6 +174,77 @@ class ConfigPath():
         path_to_config_copy = \
             f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
 
-        ConfigPath.create_temp_file(self,
-                                    name=OUTPUT_CONFIG_PATH,
+        ConfigPath.create_temp_file(name=OUTPUT_CONFIG_PATH,
                                     text=path_to_config_copy)
+
+    @enter_function
+    def set_config_values(self, config):
+        """
+        Function moved from SlicerCART.py. Enables to select configuration
+        values from a specified config file (for example, the latest). In
+        fact, THIS IS A SETTER FUNCTION: it updates the config values from
+        the config file passed in parameter.
+        :param config: config yaml file content
+        :return: config yaml file content
+        """
+
+        self.IS_DISPLAY_TIMER_REQUESTED = config[
+            "is_display_timer_requested"]
+
+        self.INPUT_FILE_EXTENSION = config["input_filetype"]
+        self.DEFAULT_VOLUMES_DIRECTORY = config["default_volume_directory"]
+        self.DefaultDir = self.DEFAULT_VOLUMES_DIRECTORY
+        self.DEFAULT_SEGMENTATION_DIRECTORY = config[
+            "default_segmentation_directory"]
+
+        self.MODALITY = config["modality"]
+        self.IS_CLASSIFICATION_REQUESTED = config[
+            "is_classification_requested"]
+        self.IS_SEGMENTATION_REQUESTED = config[
+            "is_segmentation_requested"]
+        self.IS_MOUSE_SHORTCUTS_REQUESTED = config[
+            "is_mouse_shortcuts_requested"]
+        self.IS_KEYBOARD_SHORTCUTS_REQUESTED = config[
+            "is_keyboard_shortcuts_requested"]
+
+        self.INTERPOLATE_VALUE = config["interpolate_value"]
+        self.REQUIRE_EMPTY = config["require_empty"]
+        self.ENABLE_DEBUG = config["enable_debug"]
+
+        self.WORKING_LIST_FILENAME = config["working_list_filename"]
+        self.REMAINING_LIST_FILENAME = config["remaining_list_filename"]
+
+        self.CT_WINDOW_WIDTH = config["ct_window_width"]
+        self.CT_WINDOW_LEVEL = config["ct_window_level"]
+
+        self.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
+            "impose_bids_format"]
+
+        self.KEEP_WORKING_LIST = config["keep_working_list"]
+
+        if self.MODALITY == 'CT':
+            # then BIDS not mandatory because it is not yet supported
+            # therefore, either .nrrd or .nii.gz accepted
+            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
+            # CT_WINDOW_WIDTH = config["ct_window_width"]
+            # CT_WINDOW_LEVEL = config["ct_window_level"]
+
+        elif self.MODALITY == 'MRI':
+            # therefore, .nii.gz required
+            # INPUT_FILE_EXTENSION = '*.nii.gz'
+            # user can decide whether to impose bids or not
+            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = config[
+                "impose_bids_format"]
+
+        return config
+
+    def set_output_folder(self, outputFolder):
+        """
+        Set output folder to ConfigPath class.
+        """
+        self.outputFolder = outputFolder
+
+
+# Creating an instance of ConfigPath. This ensures that all the same
+# config values will be used in the different files/modules.
+ConfigPath = ConfigPath()

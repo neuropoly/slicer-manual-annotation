@@ -32,7 +32,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}',
                         CONFIG_FILE_PATH)
 
-        self.config_yaml  = ConfigPath.open_project_config_file(self)
+        self.config_yaml  = ConfigPath.open_project_config_file()
 
         self.set_default_values()
 
@@ -406,6 +406,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 
     @enter_function
     def set_default_values(self):
+        ConfigPath.write_config_file()
+        self.config_yaml = ConfigPath.open_project_config_file()
+
         self.segmentation_selected = (
             self.config_yaml)['is_segmentation_requested']
         self.classification_selected = (
@@ -605,7 +608,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.config_yaml['KEYBOARD_SHORTCUTS'][6][
             'shortcut'] = self.interpolate_ks_selected
 
-        ConfigPath.write_config_file(self)
+        ConfigPath.write_config_file()
+        self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmenter.setup_configuration()
 
@@ -628,7 +632,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)
 
         # MB: Required for using the correct config file.
-        self.config_yaml = ConfigPath.open_project_config_file(self)
+        self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmenter = segmenter
 
@@ -708,7 +712,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                 qt.QFileDialog.getExistingDirectory(
                     None,
                     "Open a folder",
-                    DEFAULT_VOLUMES_DIRECTORY,
+                    ConfigPath.DEFAULT_VOLUMES_DIRECTORY,
                     qt.QFileDialog.ShowDirsOnly))
             content = UserPath.read_filepath(self)
             if self.outputFolder in content:
@@ -720,7 +724,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                 self.CurrentFolder = (
                     qt.QFileDialog.getExistingDirectory(
                         None, "Open a folder",
-                        DEFAULT_VOLUMES_DIRECTORY,
+                        ConfigPath.DEFAULT_VOLUMES_DIRECTORY,
                         qt.QFileDialog.ShowDirsOnly))
                 # Save the associated volume_folder_path with the output_folder
                 # selected.
@@ -731,6 +735,11 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                                          self.outputFolder,
                                          self.CurrentFolder)
             UserPath.set_selected_existing_folder(self)
+
+            # Ensure there is a config file in the output folder
+            ConfigPath.set_output_folder(self.outputFolder)
+            ConfigPath.check_existing_configuration()
+            ConfigPath.delete_temp_file()
 
             # self.segmenter corresponds to SlicerCART UI in Slicer.
             self.segmenter.onSelectVolumesFolderButton()
@@ -807,7 +816,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
         if label_config_yaml is None:
             Debug.print(self, 'label_config_yaml is None in '
                               'ConfigureSegmentationwindow')
-            self.config_yaml  = ConfigPath.open_project_config_file(self)
+            self.config_yaml  = ConfigPath.open_project_config_file()
         else:
             Debug.print(self, 'else meaning label_config_yaml is NOT None in '
                               'ConfigureSegmentationwindow')
@@ -976,7 +985,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
             if l['value'] > value_removed and value_removed != -1:
                 l['value'] = l['value'] - 1
 
-        ConfigPath.write_config_file(self)
+        ConfigPath.write_config_file()
 
         configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality, self.edit_conf, self.config_yaml)
@@ -1011,7 +1020,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
         else:
             Debug.print(self, 'in else push_apply in '
                               'ConfigureSegmentationWindow')
-            ConfigPath.write_config_file(self)
+            ConfigPath.write_config_file()
 
         slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
             self.segmenter)
@@ -1042,7 +1051,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.segmenter = segmenter
         self.modality = modality
         self.initial_label = label
-        self.config_yaml = ConfigPath.open_project_config_file(self)
+        self.config_yaml = ConfigPath.open_project_config_file()
         self.edit_conf = edit_conf
 
         layout = qt.QVBoxLayout() # Creates a vertical Box layout (Label Box)
@@ -1297,7 +1306,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
             self.config_yaml['labels'].append(new_label)
 
-        ConfigPath.write_config_file(self)
+        ConfigPath.write_config_file()
 
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality, self.edit_conf)
@@ -1320,7 +1329,7 @@ class ConfigureClassificationWindow(qt.QWidget):
         self.edit_conf = edit_conf
 
         if classification_config_yaml is None:
-            self.config_yaml  = ConfigPath.open_project_config_file(self)
+            self.config_yaml  = ConfigPath.open_project_config_file()
         else:
             self.config_yaml = classification_config_yaml
 
@@ -1560,7 +1569,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
     @enter_function
     def push_save(self):
-        ConfigPath.write_config_file(self)
+        ConfigPath.write_config_file()
 
         if self.edit_conf:
             if self.segmenter.outputFolder is not None and os.path.exists(

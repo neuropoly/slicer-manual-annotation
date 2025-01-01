@@ -63,6 +63,7 @@ ct_window_level: 45
 ct_window_width: 85
 default_segmentation_directory: ''
 default_volume_directory: ''
+enable_debug: true
 freetextboxes:
   cheese: Cheese
   number_of_focal_points: Number of focal points
@@ -76,6 +77,7 @@ is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: true
 is_segmentation_requested: true
 is_semi_automatic_phe_tool_requested: true
+keep_working_list: false
 labels:
 - color_b: 10
   color_g: 10
@@ -92,4 +94,7 @@ labels:
   upper_bound_HU: 90
   value: 2
 modality: MRI
+remaining_list_filename: remaining_list.yaml
+require_empty: false
 slice_view_color: Yellow
+working_list_filename: working_list.yaml

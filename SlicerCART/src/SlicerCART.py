@@ -64,7 +64,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
     self.predictions_names= None
-    self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
@@ -72,63 +71,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create a temp file that serves as a flag to determine if output folder
     # has been selected or not.
-    ConfigPath.create_temp_file(self)
+    ConfigPath.create_temp_file()
     Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+    self.config_yaml = ConfigPath.open_project_config_file()
+    self.DefaultDir = ConfigPath.DEFAULT_VOLUMES_DIRECTORY
+
 
     # Auto-Detect the Slicer theme, so specific foreground can be used
     self.theme  = Theme.get_mode(self)
     self.foreground = Theme.set_foreground(self, self.theme)
 
-  @enter_function
-  def get_config_values(self):
-      # Select the appropriate configuration file.
-      ConfigPath.open_project_config_file(self)
-
-      global INPUT_FILE_EXTENSION
-      global DEFAULT_VOLUMES_DIRECTORY
-      global DEFAULT_SEGMENTATION_DIRECTORY
-      global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-      global MODALITY
-      global IS_CLASSIFICATION_REQUESTED
-      global IS_SEGMENTATION_REQUESTED
-      global IS_MOUSE_SHORTCUTS_REQUESTED
-      global IS_KEYBOARD_SHORTCUTS_REQUESTED
-      global INTERPOLATE_VALUE
-      global CT_WINDOW_WIDTH
-      global CT_WINDOW_LEVEL
-      global IS_DISPLAY_TIMER_REQUESTED
-
-      IS_DISPLAY_TIMER_REQUESTED = self.config_yaml[
-          "is_display_timer_requested"]
-
-      INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-      DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-      self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-      DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml[
-          "default_segmentation_directory"]
-      MODALITY = self.config_yaml["modality"]
-      IS_CLASSIFICATION_REQUESTED = self.config_yaml[
-          "is_classification_requested"]
-      IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
-      IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml[
-          "is_mouse_shortcuts_requested"]
-      IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml[
-          "is_keyboard_shortcuts_requested"]
-      INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
-
-      if MODALITY == 'CT':
-          # then BIDS not mandatory because it is not yet supported
-          # therefore, either .nrrd or .nii.gz accepted
-          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-          CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-          CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
-
-      elif MODALITY == 'MRI':
-          # therefore, .nii.gz required
-          INPUT_FILE_EXTENSION = '*.nii.gz'
-          # user can decide whether to impose bids or not
-          REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml[
-              "impose_bids_format"]
 
   def setup(self):
     """
@@ -163,11 +115,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.lineDetails = {}
     self.previousAction = None
     self.saved_selected = False # Flag to load correctly the first case
+    self.currentOutputPath = None
+    self.currentVolumeFilename = None
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
-    self.get_config_values()
-    ConfigPath.open_project_config_file(self)
+    self.config_yaml = ConfigPath.open_project_config_file()
     self.current_label_index = self.config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
@@ -230,13 +183,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.MostRecentPausedCasePath = ""
   
   def setup_configuration(self):
-        self.get_config_values()
+        self.config_yaml = ConfigPath.open_project_config_file()
+        # Warning: if incorrect config values that have been changed create
+        # new errors around those line of codes. A solution is likely to add:
+        # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
+        # (This sets appropriate values for configuration; to insert after
+        # open_project_config_file)
         
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
             self.ui.PauseTimerButton.hide()
             self.ui.StartTimerButton.hide()  
 
-        if IS_MOUSE_SHORTCUTS_REQUESTED:
+        if ConfigPath.IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
             self.interactor1 = slicer.app.layoutManager().sliceWidget(
                     'Yellow').sliceView().interactor()
@@ -275,12 +233,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.timers.append(Timer(number=timer_index))
             timer_index = timer_index + 1
         
-        if not IS_CLASSIFICATION_REQUESTED:
+        if not ConfigPath.IS_CLASSIFICATION_REQUESTED:
             self.ui.MRMLCollapsibleButton.setVisible(False)
-        if not IS_SEGMENTATION_REQUESTED:
+        if not ConfigPath.IS_SEGMENTATION_REQUESTED:
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
 
-        if MODALITY == 'MRI':
+        if ConfigPath.MODALITY == 'MRI':
             self.ui.ThresholdLabel.setVisible(False)
             self.ui.MinimumLabel.setVisible(False)
             self.ui.MaximumLabel.setVisible(False)
@@ -322,9 +280,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
   def set_master_volume_intensity_mask_according_to_modality(self):
-      if MODALITY == 'CT':
+      if ConfigPath.MODALITY == 'CT':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      elif MODALITY == 'MRI':
+      elif ConfigPath.MODALITY == 'MRI':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
   
   def setupCheckboxes(self, number_of_columns):
@@ -414,6 +372,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def onSelectVolumesFolderButton(self):
 
+      Debug.print(self,
+                  f'value of UserPath.get_selected_existing_folder: '
+                  f'{UserPath.get_selected_existing_folder(self)}')
+
+      self.config_yaml = ConfigPath.open_project_config_file()
+      self.config_yaml = ConfigPath.set_config_values(self.config_yaml)
+
       if UserPath.get_selected_existing_folder(self):
           content = UserPath.get_selected_paths(self)
           for element in content:
@@ -432,13 +397,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       file_structure_valid = True
-      if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
+      if ConfigPath.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
     
       if file_structure_valid == False:
           return # don't load any patient cases
 
-      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}', recursive = True))
 
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
@@ -446,15 +411,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                          in item]
 
       if not self.CasesPaths:
-            msg_box = qt.QMessageBox()
-            msg_box.setWindowTitle("No files found")
-            msg_box.setIcon(qt.QMessageBox.Warning)
-            text = "No files found in the selected directory!"
-            text += "\n\nMake sure the configured extension is in the right format."
-            text += "\n\nThen restart the module"
-            msg_box.setText(text)
-            msg_box.exec()
-            return
+          message = ('No files found in the selected directory!'
+                     f'\n\nCurrent file extension configuration: '
+                     f'{ConfigPath.INPUT_FILE_EXTENSION}'
+                     "\n\nMake sure the configured extension is "
+                     "in the right format."
+                     "\n\nFor example: check configuration_config.yml file in "
+                     "SlicerCART project or in output folder under _conf "
+                     "folder."
+                     "\n\nThen restart the module.")
+          Dev.show_message_box(self, message, box_title='ATTENTION!')
+          return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
@@ -502,12 +469,28 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Allows to work from appropriate working list and remaining list.
       """
 
+      self.config_yaml = ConfigPath.open_project_config_file()
       # Instantiate a WorkFiles class object to facilitate cases lists
       # management.
       self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
 
       # Set up working list appropriateness compared to volumes folder selected.
-      self.WorkFiles.check_working_list()
+      if self.WorkFiles.check_working_list() == False:
+          print('\n\n INVALID WORKFLOW. CANNOT CONTINUE WITH CURRENT SELECTED '
+                'VOLUMES AND OUTPUT FOLDERS.\n\n')
+          # Output folder is inconsistent with Volumes Folder.
+          # We should NEVER be able to save any other segmentations.
+          message = ('The UI case list is now invalid. \n'
+                     f'In the output folder {self.outputFolder}'
+                     f'working_list and remaining_list, '
+                     'files are inconsistent and corrupted.\n\n'
+                     'Cannot continue with Slicer from now one.\n\n'
+                     'Please restart SlicerCART if you want to continue.\n\n'
+                     'Ensure you select appropriate volumes and output '
+                     'folder, and reset working_list and remaining_list.\n'
+                     '(For example, delete them).')
+          Dev.show_message_box(self, message)
+          return
 
       # Re-assignation of self.Cases and self.CasesPath based on working list.
       self.Cases = self.WorkFiles.get_working_list_filenames(self)
@@ -538,7 +521,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             for subdir, dirs, files in os.walk(path):
                 for file in files:
-                    if file.endswith(INPUT_FILE_EXTENSION.split("*")[1]):
+                    if file.endswith(ConfigPath.INPUT_FILE_EXTENSION.split("*")[1]):
                         try:
                             path = "/sub" + (subdir + "/" + file).split("/sub", 1)[1]
                             is_valid = validator.is_bids(path)
@@ -563,7 +546,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
 
-      if not IS_DISPLAY_TIMER_REQUESTED:
+      if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
           self.enableSegmentAndPaintButtons()
 
       self.updateCurrentPatient()
@@ -638,11 +621,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print(' node', self.VolumeNode)
 
       Vol_displayNode.AutoWindowLevelOff()
-      if MODALITY == 'CT':
+      if ConfigPath.MODALITY == 'CT':
           Debug.print(self, 'MODALITY==CT')
-          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
-      Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
+          Vol_displayNode.SetWindow(ConfigPath.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(ConfigPath.CT_WINDOW_LEVEL)
+      Vol_displayNode.SetInterpolate(ConfigPath.INTERPOLATE_VALUE)
       self.newSegmentation()
 
       self.updateCurrentOutputPathAndCurrentVolumeFilename()
@@ -853,7 +836,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if (self.ui.PauseTimerButton.isChecked()):
             self.ui.PauseTimerButton.toggle()
     
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
             self.enableSegmentAndPaintButtons()
         else:
             self.disableSegmentAndPaintButtons() 
@@ -1107,10 +1090,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           self.saveSegmentationInformation(currentSegmentationVersion)
 
-          if 'nrrd' in INPUT_FILE_EXTENSION:
+          # If not working, the solution is likely to add here:
+          # self.config_yaml = ConfigPath.open_project_config_file() # Get latest/appropriate configuration
+          # self.config_yaml = ConfigPath.set_config_value(self.config_yaml) # Set appropriate values for configuration
+
+          if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)
 
-          if 'nii' in INPUT_FILE_EXTENSION:
+          if 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNiiSegmentation(currentSegmentationVersion)
 
           msg_box = qt.QMessageBox()
@@ -1375,7 +1362,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Adjust the version according to each individual file.
       list_of_segmentation_filenames = glob(
           f'{self.currentOutputPath}{os.sep}'
-          f'{self.currentVolumeFilename}{INPUT_FILE_EXTENSION}')
+          f'{self.currentVolumeFilename}{ConfigPath.INPUT_FILE_EXTENSION}')
 
       version = 'v'
       if list_of_segmentation_filenames == []:
@@ -1424,6 +1411,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   "Open a folder",
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
+          ConfigPath.set_output_folder(self.outputFolder)
       else:
           Dev.show_message_box(self, 'Please select volumes folder first.',
                                box_title='ATTENTION!')
@@ -1434,12 +1422,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # if REQUIRE_EMPTY:
       #     self.verify_empty()
 
-      ConfigPath.check_existing_configuration(self)
-      ConfigPath.delete_temp_file(self)
+      ConfigPath.check_existing_configuration()
+      ConfigPath.delete_temp_file()
 
       # Robust. If the next output folder selected (from a change) is empty,
       # ensure it will select the correct output folder path
-      ConfigPath.write_correct_path(self)
+      ConfigPath.write_correct_path()
 
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
@@ -1467,7 +1455,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.update_current_segmentation_status()
 
               self.predictions_paths = sorted(glob(
-                  os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+                  os.path.join(self.outputFolder, f'{ConfigPath.INPUT_FILE_EXTENSION}')))
       else:
           Debug.print(self, 'No output folder selected.')
 
@@ -1654,10 +1642,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      if MODALITY == 'CT':
+      if ConfigPath.MODALITY == 'CT':
           Debug.print(self, 'MODALITY==CT')
-          Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-          Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
+          Vol_displayNode.SetWindow(ConfigPath.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(ConfigPath.CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -1666,10 +1654,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
       
       for (segment_name, version_file_path) in selected_version_file_paths.items():
-            if 'nrrd' in INPUT_FILE_EXTENSION:
+            if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
                 slicer.util.loadSegmentation(version_file_path)
                 currentSegmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-            elif 'nii' in INPUT_FILE_EXTENSION:
+            elif 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
                 labelmapVolumeNode = slicer.util.loadLabelVolume(version_file_path)
                 currentSegmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
                 slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, currentSegmentationNode)
@@ -1720,10 +1708,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
   def loadSegmentation(self, absolute_path_to_segmentation_file):
-        if 'nrrd' in INPUT_FILE_EXTENSION:
+        if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             slicer.util.loadSegmentation(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-        elif 'nii' in INPUT_FILE_EXTENSION:
+        elif 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
             labelmapVolumeNode = slicer.util.loadLabelVolume(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
             slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, self.segmentationNode)
@@ -1765,12 +1753,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return list_of_segment_names
 
   def onPushDefaultMin(self):
-      fresh_config = ConfigPath.open_project_config_file(self)
+      fresh_config = ConfigPath.open_project_config_file()
       self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
       self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      fresh_config = ConfigPath.open_project_config_file(self)
+      fresh_config = ConfigPath.open_project_config_file()
       self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]
       self.setUpperAndLowerBoundHU(
           self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"],

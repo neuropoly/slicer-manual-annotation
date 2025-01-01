@@ -1,10 +1,5 @@
 from utils import *
 
-global KEEP_WORKING_LIST
-# ToDo: define this flag in the initial configuration UI and in global variables
-KEEP_WORKING_LIST = True
-
-
 class WorkFiles():
     """
     This class is intended to manipulate different cases list in order to
@@ -16,9 +11,9 @@ class WorkFiles():
         self.CurrentFolder = currentFolder
         self.outputFolder = outputFolder
         self.working_list_filepath = os.path.join(self.outputFolder,
-                                             WORKING_LIST_FILENAME)
+                                             ConfigPath.WORKING_LIST_FILENAME)
         self.remaining_list_filepath = os.path.join(self.outputFolder,
-                                               REMAINING_LIST_FILENAME)
+                                               ConfigPath.REMAINING_LIST_FILENAME)
 
         self.output_folder_files = os.listdir(self.outputFolder)
 
@@ -36,7 +31,7 @@ class WorkFiles():
         output folder if a working list is defined.
         """
 
-        if WORKING_LIST_FILENAME in self.output_folder_files:
+        if ConfigPath.WORKING_LIST_FILENAME in self.output_folder_files:
             # Check if the working list file corresponds to the volumes folder.
             good_match = self.check_correspondence(self.all_cases_filenames)
             if good_match:
@@ -58,7 +53,7 @@ class WorkFiles():
 
                 # The user wants to keep the working list as is currently in
                 # output folder.
-                if KEEP_WORKING_LIST:
+                if ConfigPath.KEEP_WORKING_LIST:
                     if WorkFiles.check_working_list_in_volumes(
                             self, self.all_cases_filenames):
                         Debug.print(self, 'All elements in working list are '
@@ -130,7 +125,7 @@ class WorkFiles():
         Get all files that have the correct file extension from volumes folder.
         """
         self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}*'
-                                           f'*{os.sep}{INPUT_FILE_EXTENSION}',
+                                           f'*{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}',
                                            recursive=True))
         return self.CasesPaths
 
@@ -215,10 +210,10 @@ class WorkFiles():
             message = (
                 f"WORKING_LIST AND VOLUMES FOLDER ARE INCONSISTENT.\n"
                 f"PLEASE DOUBLE CHECK:\n\n"
-                f"{WORKING_LIST_FILENAME} misses cases from volumes folder\n"
+                f"{ConfigPath.WORKING_LIST_FILENAME} misses cases from volumes folder\n"
                 f"that should be included in the working list:\n\n"
                 f"{print_message(missing_in_elements)}\n\n"
-                f"Cases that should not be included in {WORKING_LIST_FILENAME}\n"
+                f"Cases that should not be included in {ConfigPath.WORKING_LIST_FILENAME}\n"
                 f"according to configuration:\n\n"
                 f"{print_message(missing_in_all_cases)}"
             )
@@ -242,7 +237,7 @@ class WorkFiles():
         (Attention! It is not the remaining list.)
         """
 
-        if REMAINING_LIST_FILENAME in self.output_folder_files:
+        if ConfigPath.REMAINING_LIST_FILENAME in self.output_folder_files:
             with open(self.remaining_list_filepath, 'r') as file:
                 elements = yaml.safe_load(file)['CASES']
                 if WorkFiles.check_remaining_first_element(self, elements):
@@ -342,10 +337,10 @@ class WorkFiles():
         Create a backup of the working list file and/or the remaining list file.
         """
         working_list_backup_path = (f'{self.outputFolder}{os.sep}ol'
-                                    f'd_{WORKING_LIST_FILENAME}')
+                                    f'd_{ConfigPath.WORKING_LIST_FILENAME}')
         remaining_list_backup_path = \
             (f'{self.outputFolder}'
-             f'{os.sep}old_{REMAINING_LIST_FILENAME}')
+             f'{os.sep}old_{ConfigPath.REMAINING_LIST_FILENAME}')
 
         if os.path.exists(self.working_list_filepath):
             shutil.copy(self.working_list_filepath, working_list_backup_path)

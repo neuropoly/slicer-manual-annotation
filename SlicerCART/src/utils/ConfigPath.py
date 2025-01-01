@@ -25,17 +25,11 @@ class ConfigPath():
             os.makedirs(path_to_saved_config_files)
             shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
         else:
-            print('else check existing config')
             self.path_to_config_copy = path_to_config_copy
             self.config_yaml.clear()
             self.config_yaml = ConfigPath.open_project_config_file()
-            # ConfigPath.open_project_config_file()
-            # ConfigPath.get_config_values(self.config_yaml)
             ConfigPath.create_temp_file(name=OUTPUT_CONFIG_PATH,
                                         text=self.path_to_config_copy)
-            print('otu config path', OUTPUT_CONFIG_PATH)
-
-
 
     @enter_function
     def open_project_config_file(self):
@@ -46,26 +40,18 @@ class ConfigPath():
 
         temp_file_exist = ConfigPath.get_temp_file()
 
-        print('temp file exist', temp_file_exist)
-
         if temp_file_exist:
-            print('tempf ile exist')
             with open(CONFIG_FILE_PATH, 'r') as file:
                 self.config_yaml = yaml.safe_load(file)
         else:
-            print('in else open project config')
             temp_dir = tempfile.gettempdir()
             temp_file_path = os.path.join(temp_dir, OUTPUT_CONFIG_PATH)
             # Read data of the temp file
             with open(temp_file_path, "r") as temp_file:
                 output_path = temp_file.read()
             with open(output_path, 'r') as file:
-                print('output pathasdasd', output_path)
                 self.config_yaml = {}
                 self.config_yaml = yaml.safe_load(file)
-
-        print(' \n\ in opening project ', self.config_yaml["input_filetype"])
-
 
         return self.config_yaml
 
@@ -166,8 +152,6 @@ class ConfigPath():
 
         temp_file_exist = ConfigPath.get_temp_file()
 
-        print(' \n\n\n before writning: ', self.config_yaml["input_filetype"])
-
         if temp_file_exist:
             with open(CONFIG_FILE_PATH, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
@@ -197,14 +181,12 @@ class ConfigPath():
     def get_config_values(self, config=INITIAL_CONFIG_FILE):
         """
         Function moved from SlicerCART.py. Enables to select configuration
-        values from a specified config file (for example, the latest). By
-        default, use config values from the initial config file associated
-        with SlicerCART module.
-        :param config: yaml file content
+        values from a specified config file (for example, the latest). In
+        fact, THIS IS A SETTER FUNCTION: it updates the config values from
+        the config file passed in parameter.
+        :param config: config yaml file content
         :return: config yaml file content
         """
-
-
 
         self.IS_DISPLAY_TIMER_REQUESTED = config[
             "is_display_timer_requested"]

@@ -120,8 +120,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
-    # self.config_yaml = ConfigPath.get_config_values(INITIAL_CONFIG_FILE)
-    # ConfigPath.open_project_config_file()
     self.config_yaml = ConfigPath.open_project_config_file()
     self.current_label_index = self.config_yaml['labels'][0]['value']
   
@@ -186,6 +184,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   def setup_configuration(self):
         self.config_yaml = ConfigPath.open_project_config_file()
+        # Warning: if incorrect config values that have been changed create
+        # new errors around those line of codes. A solution is likely to add:
+        # self.config_yaml = ConfigPath.get_config_value(self.config_yaml)
+        # (This sets appropriate values for configuration; to insert after
+        # open_project_config_file)
         
         if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
             self.ui.PauseTimerButton.hide()
@@ -376,18 +379,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.config_yaml = ConfigPath.open_project_config_file()
       self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
 
-      # ConfigPath.get_config_values(self.config_yaml)
-      print('self config yaml in select volues', self.config_yaml)
-
       if UserPath.get_selected_existing_folder(self):
-
           content = UserPath.get_selected_paths(self)
           for element in content:
               self.outputFolder = element
               self.CurrentFolder = content[self.outputFolder]
-
-          print('self config yaml in user path selct vol', self.config_yaml)
-
       else:
           self.CurrentFolder= (
               qt.QFileDialog.getExistingDirectory(
@@ -398,7 +394,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
-          print('if not self currentfolder. should not be here if continue')
           return
 
       file_structure_valid = True
@@ -406,15 +401,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
     
       if file_structure_valid == False:
-          print('file structure false should not be here!')
           return # don't load any patient cases
 
       self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}', recursive = True))
-
-      print('after self cases path', len(self.CasesPaths))
-      print('case path from yaml', self.config_yaml["input_filetype"])
-      # self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
-      print('after config extension', ConfigPath.INPUT_FILE_EXTENSION)
 
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
@@ -431,17 +420,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                      "SlicerCART project or in output folder under _conf "
                      "folder."
                      "\n\nThen restart the module.")
-
           Dev.show_message_box(self, message, box_title='ATTENTION!')
-          #
-          # msg_box = qt.QMessageBox()
-          # msg_box.setWindowTitle("No files found")
-          # msg_box.setIcon(qt.QMessageBox.Warning)
-          # text = "No files found in the selected directory!"
-          # text += "\n\nMake sure the configured extension is in the right format."
-          # text += "\n\nThen restart the module"
-          # msg_box.setText(text)
-          # msg_box.exec()
           return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
@@ -456,9 +435,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
           self.manage_workflow()
-          print('after self outputfolder not none')
-
-      print('success select volum folder')
 
   @enter_function
   def reset_ui(self):
@@ -493,15 +469,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       Allows to work from appropriate working list and remaining list.
       """
 
+      self.config_yaml = ConfigPath.open_project_config_file()
       # Instantiate a WorkFiles class object to facilitate cases lists
       # management.
-
-      print('before manage workflow in ', self.config_yaml)
-
-      # self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
-      self.config_yaml = ConfigPath.open_project_config_file()
-      print('fonig manage work', ConfigPath.INPUT_FILE_EXTENSION)
-
       self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
 
       # Set up working list appropriateness compared to volumes folder selected.
@@ -572,11 +542,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def updateCaseAll(self):
-      print('self Cases', self.Cases)
-      print('self curren case index', self.currentCase_index)
-      print('self exnteisoin', ConfigPath.INPUT_FILE_EXTENSION)
-
-
       # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
@@ -636,14 +601,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def loadPatient(self):
       timer_index = 0
       self.timers = []
-
-      print('  before load patient: ', self.config_yaml["input_filetype"])
-
-      # self.config_yaml = ConfigPath.get_config_values()
-
-      print('  after load patient: ', self.config_yaml["input_filetype"])
-
-
       for label in self.config_yaml["labels"]:
           self.timers.append(Timer(number = timer_index))
           timer_index = timer_index + 1
@@ -1133,6 +1090,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           self.saveSegmentationInformation(currentSegmentationVersion)
 
+          # If not working, the solution is likely to add here:
+          # self.config_yaml = ConfigPath.open_project_config_file() # Get latest/appropriate configuration
+          # self.config_yaml = ConfigPath.get_config_value(self.config_yaml) # Set appropriate values for configuration
+
           if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)
 
@@ -1443,11 +1404,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   @enter_function
   def onSelectOutputFolder(self):
 
-      # x =ConfigPath.get_config_values(self.config_yaml)
-      # print('x', x)
-      print('fonig', ConfigPath.INPUT_FILE_EXTENSION)
-      # print('config yaml', self.config_yaml["input_filetype"])
-
       if self.check_volume_folder_selected():
           self.outputFolder = (
               qt.QFileDialog.getExistingDirectory(
@@ -1456,7 +1412,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   self.DefaultDir,
                   qt.QFileDialog.ShowDirsOnly))
           ConfigPath.set_output_folder(self.outputFolder)
-
       else:
           Dev.show_message_box(self, 'Please select volumes folder first.',
                                box_title='ATTENTION!')

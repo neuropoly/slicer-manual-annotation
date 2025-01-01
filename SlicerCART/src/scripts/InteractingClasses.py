@@ -407,7 +407,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
     @enter_function
     def set_default_values(self):
         ConfigPath.write_config_file()
-        # self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
         self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmentation_selected = (
@@ -610,7 +609,6 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             'shortcut'] = self.interpolate_ks_selected
 
         ConfigPath.write_config_file()
-        # self.config_yaml = ConfigPath.get_config_values(self.config_yaml)
         self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmenter.setup_configuration()
@@ -738,23 +736,14 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
                                          self.CurrentFolder)
             UserPath.set_selected_existing_folder(self)
 
+            # Ensure there is a config file in the output folder
             ConfigPath.set_output_folder(self.outputFolder)
             ConfigPath.check_existing_configuration()
             ConfigPath.delete_temp_file()
 
-
             # self.segmenter corresponds to SlicerCART UI in Slicer.
             self.segmenter.onSelectVolumesFolderButton()
-
-
-
-
             self.segmenter.set_ui_enabled_options()
-
-            # # Ensure there is a config file in the output folder
-            # ConfigPath.set_output_folder(self.outputFolder)
-            # ConfigPath.check_existing_configuration()
-
             self.close()
 
             return

@@ -8,7 +8,7 @@ OUTPUT_CONFIG_PATH = 'output_path.txt' # Name of the temp file where the path
 class ConfigPath():
     @enter_function
     def __init__(self):
-        self.get_config_values(INITIAL_CONFIG_FILE)
+        self.set_config_values(INITIAL_CONFIG_FILE)
 
     @enter_function
     def check_existing_configuration(self):
@@ -161,7 +161,7 @@ class ConfigPath():
                 yaml.safe_dump(self.config_yaml, file)
 
         # Ensure to get the latest config values
-        ConfigPath.get_config_values(self.config_yaml)
+        ConfigPath.set_config_values(self.config_yaml)
 
     @enter_function
     def write_correct_path(self):
@@ -178,7 +178,7 @@ class ConfigPath():
                                     text=path_to_config_copy)
 
     @enter_function
-    def get_config_values(self, config=INITIAL_CONFIG_FILE):
+    def set_config_values(self, config):
         """
         Function moved from SlicerCART.py. Enables to select configuration
         values from a specified config file (for example, the latest). In

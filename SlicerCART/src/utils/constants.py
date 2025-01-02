@@ -27,3 +27,6 @@ print('CONFIG_FILE_PATH from file constants.py: ', CONFIG_FILE_PATH)
 with open(CONFIG_FILE_PATH, 'r') as file:
     content = yaml.safe_load(file)
 INITIAL_CONFIG_FILE = content
+
+CLASSIFICATION_BOXES_LIST = ["checkboxes", "comboboxes", "freetextboxes"]
+

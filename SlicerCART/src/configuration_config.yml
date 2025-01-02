@@ -41,8 +41,8 @@ checkboxes:
   SDH_checkbox: SDH
   Tonsillar_herniation_checkbox: Tonsillar herniation
   toto: Toto
-  z1: Z1
-  z2: Z2
+  za1: Za1
+  zz: Zz
 comboboxes:
   test_dd:
     '1': '1'

@@ -514,11 +514,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.update_ui()
 
 
-  def update_config_classification_labels(self):
-      pass
-      # Find the config file
-      # Get the current classification labels
-      # Write in the config file
 
 
 
@@ -1076,40 +1071,66 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               self.outputClassificationInformationFile):
           df = pd.read_csv(self.outputClassificationInformationFile)
 
-      label_string = ""
-      data_string = ""
+      label_string_slicer = ""
+      data_string_slicer = ""
 
       if df is not None:
 
           print('header not none', )
 
-          label_string, data_string = self.get_classif_config_data()
-          print('after df')
+          # Get Slicer Classification data only
+          label_string_slicer, data_string_slicer = (
+              self.get_classif_config_data())
+          Debug.print(self, 'Got classification details from Slicer.')
+          print('header from slicer', label_string_slicer)
+          print(' data from slicer', data_string_slicer)
 
 
+          print('\n\ndf before adding columns', df)
 
-          print('got data string and label string success')
-          print('jacques', label_string, '\n\nmaxime',
-                data_string)
-
-          print('df before adding columns', df)
-
-
-          df = self.add_missing_columns_to_df(df, label_string)
-
+          # Add Slicer Classification data header to csv df
+          df = self.add_missing_columns_to_df(df, label_string_slicer)
           print('conten with new columns\n\n', df)
-          Debug.df_file(self, df, self.outputFolder)
 
           # Extract column names into a dictionary
           columns_dict = self.extract_header_from_df(df)
-          print('columns dic', columns_dict)
+          print('columns dic to chek', columns_dict)
 
           # columns_dict = {i: col for i, col in enumerate(df.columns)}
           # print('columns_dict', columns_dict)
 
-          # Extract data into a dictionary
+          # Extract previous data into a dictionary
           data_dict = {col: df[col].tolist() for col in df.columns}
           print('data_dict', data_dict)
+
+          print()
+
+          data_string_slicer.update(self.build_current_classif_dictionary())
+          print('data_string slicer updated', data_string_slicer)
+          # print('data string slicer,', data_string_slicer)
+          data_string_slicer = (
+              self.convert_string_values_to_list_element(data_string_slicer))
+          print('listed data string slicer', data_string_slicer)
+
+          #Previous dict and new dict should have the same format
+          # Combine the dictionaries
+          combined_df = self.combine_dict(data_dict, data_string_slicer)
+
+          print('\n\n\ncombined dic', combined_df)
+          # Convert to DataFrame
+          df = combined_df
+          # df = pd.DataFrame(combined_dict)
+          print('df combined', df)
+          df = df.fillna("--")
+          print('df with -', df)
+          Debug.df_file(self, df, self.outputFolder)
+
+
+
+          ## replace na values by --
+
+
+          # Add current classification data tp previous data dict
 
           label_string = columns_dict
           data_string = data_dict
@@ -1192,6 +1213,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           print('self config yaml checkbos', self.config_yaml["checkboxes"])
           label_string, data_string = self.get_classif_config_data()
+
+
+
+
+
           # label_string = {}
           # data_string = {}
           #
@@ -1380,6 +1406,38 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               df[column] = np.nan
       return df
 
+  @enter_function
+  def convert_string_values_to_list_element(self, dict):
+      # Ensure all values are lists
+      for key in dict:
+          if not isinstance(dict[key], list):
+              dict[key] = [dict[key]]
+      return dict
+
+  @enter_function
+  def combine_dict(self, dict1, dict2):
+      # Convert dictionaries to DataFrames
+      df1 = pd.DataFrame(dict1)
+      df2 = pd.DataFrame(dict2)
+
+      # Concatenate the DataFrames
+      result_df = pd.concat([df1, df2], ignore_index=True)
+      return result_df
+      # # Combine the dictionaries by appending values
+      # combined_dict = {}
+      #
+      # print('dcit1 in combine, ', len(dict1))
+      # print('dict2 in combine', len(dict2))
+      #
+      # for key in dict1.keys():
+      #     print('key', key)
+      #     values1 = dict1.get(key, [])  # Get values from dict1 or an empty list
+      #     print('value1', values1)
+      #     values2 = dict2.get(key, [])  # Get values from dict2 or an empty list
+      #     print('values2', values2)
+      #     combined_dict[key] = values1 + values2  # Append values
+      # return combined_dict
+
   # @enter_function
   # def extract_header_from_df(self, df):
   #     label_string = {}
@@ -1410,14 +1468,31 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           try:
               # Attempt to evaluate the string as a dictionary
               col_dict = eval(col)
-
               if isinstance(col_dict, dict):
-                  # Extract key-value pairs from the dictionary
+                  # Extract the single key-value pair from the dictionary
                   for key, value in col_dict.items():
-                      label_string[key] = value
-          except (SyntaxError, NameError):
-              # If not a valid dictionary, just use the column name
+                      label_string[col] = value
+          except (SyntaxError, NameError, ValueError):
+              # Handle cases where col is not a valid dictionary
               label_string[col] = col
+
+      # for col in columns_name:
+      #     try:
+      #         # Attempt to evaluate the string as a dictionary
+      #         col_dict = eval(col)
+      #         if isinstance(col_dict, dict):
+      #             dict_name = {}
+      #             dict_value = dict(col)
+      #             dict_name[f"{col}"]: str(dict_value.values())
+      #             print(f'dict name for {col}', dict_name)
+      #         # if isinstance(col_dict, dict):
+      #         #     # Extract key-value pairs from the dictionary
+      #         #     for key, value in col_dict.items():
+      #         #         label_string[key] = value
+      #     except ValueError:
+      #         print('entering ecept', col)
+      #         # If not a valid dictionary, just use the column name
+      #         label_string[col] = col
 
           # return label_string
 
@@ -1427,6 +1502,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # RENDU ICI CONVERTIR ELEMENTS EN STRING POUR ETRE FORMATTES
   # ajouter savegarder le dateitme dans classification
+
+  @enter_function
+  def build_current_classif_dictionary(self):
+      currentClassificationInformationVersion = self.getClassificationInformationVersion()
+      print('info current build', currentClassificationInformationVersion)
+      info_dict = {}
+      info_dict['Volume filename'] = self.currentCase
+      info_dict['Classification version'] = currentClassificationInformationVersion
+      info_dict['Annotator Name'] = self.annotator_name
+      info_dict['Annotator degree'] = self.annotator_degree
+      info_dict['Revision step'] = self.ui.RevisionStep.currentText
+      info_dict['Date and time'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+      return info_dict
+
+
+
 
 
 
@@ -1785,12 +1876,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       tag_str = tag_str + "," + classification_information_labels_string
 
-      data_str = self.currentCase
-      data_str = data_str + "," + currentClassificationInformationVersion
-      data_str = data_str + "," + self.annotator_name
-      data_str = data_str + "," + self.annotator_degree
-      data_str = data_str + "," + self.revision_step[0]
-      data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+      data_str = self.build_current_classif_dictionary()
+      data_str = ",".join(data_str.values())
+      print('data_str = ', data_str)
+
       # data_str = data_str + "," + classification_information_data_string #
       # need to modify classificaiton information dat string
 

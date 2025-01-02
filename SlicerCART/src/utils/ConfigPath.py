@@ -156,6 +156,7 @@ class ConfigPath():
             with open(CONFIG_FILE_PATH, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
         else:
+            print('in else write config file')
             output_path = ConfigPath.read_temp_file(name=OUTPUT_CONFIG_PATH)
             with open(output_path, 'w') as file:
                 yaml.safe_dump(self.config_yaml, file)
@@ -243,6 +244,58 @@ class ConfigPath():
         Set output folder to ConfigPath class.
         """
         self.outputFolder = outputFolder
+
+    @enter_function
+    def get_initial_config_after_modif(self):
+        # Read at startup the initial config file
+        with open(CONFIG_FILE_PATH, 'r') as file:
+            content = yaml.safe_load(file)
+        return content
+
+    @enter_function
+    def extract_config_classification(self, content):
+        """
+        content == content of a config file
+        """
+        classif_dict = {}
+        for element in CLASSIFICATION_BOXES_LIST:
+            classif_dict[element] = content[element]
+
+        print('classif dict', classif_dict)
+        Debug.print_dictionary(self, classif_dict)
+        return classif_dict
+
+    @enter_function
+    def compare_and_merge_classification(self, final_config_file, temp_dict):
+        final_dict = {}
+        initial_config_file_dict = ConfigPath.extract_config_classification(final_config_file)
+
+        print('final config file before\n\n\n', final_config_file)
+
+        for key in list(
+                initial_config_file_dict.keys()):  # Use list() to avoid RuntimeError
+            if key not in temp_dict:
+                del initial_config_file_dict[key]
+
+        # Add or update keys from temp_dict to initial_config_file_dict
+        for key, value in temp_dict.items():
+            initial_config_file_dict[key] = value
+
+        print('\n\n\ninitial config file dic FINAL', initial_config_file_dict)
+
+        for element in initial_config_file_dict:
+            final_config_file[element] = initial_config_file_dict[element]
+
+        print('final config file dic FINAL after', final_config_file)
+
+        return final_config_file
+
+
+
+
+
+
+
 
 
 # Creating an instance of ConfigPath. This ensures that all the same

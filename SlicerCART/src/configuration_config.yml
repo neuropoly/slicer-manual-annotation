@@ -22,7 +22,6 @@ KEYBOARD_SHORTCUTS:
   shortcut: i
 checkboxes:
   Brain_edema_checkbox: Brain edema
-  Craniectomy_checkbox: Craniectomy
   Craniotomy_checkbox: Craniotomy
   EDH_checkbox: EDH
   EVD_checkbox: EVD
@@ -37,10 +36,13 @@ checkboxes:
   Multiple_lesions_checkbox: Multiple lesions
   Normal_checkbox: Normal
   Pressure_monitor_checkbox: Pressure monitor
+  QWETY: Qwety
   SAH_checkbox: SAH
   SDH_checkbox: SDH
   Tonsillar_herniation_checkbox: Tonsillar herniation
   toto: Toto
+  z1: Z1
+  z2: Z2
 comboboxes:
   test_dd:
     '1': '1'

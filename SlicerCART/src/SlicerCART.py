@@ -513,6 +513,17 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.set_patient(remaining_list_first)
       self.update_ui()
 
+
+  def update_config_classification_labels(self):
+      pass
+      # Find the config file
+      # Get the current classification labels
+      # Write in the config file
+
+
+
+
+
   def validateBIDS(self, path):
         validator = BIDSValidator()
         is_structure_valid = True
@@ -1059,79 +1070,144 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           os.path.join(self.currentOutputPath,
                        '{}_ClassificationInformation.csv'.format(
                            self.currentVolumeFilename)))
-      header = None
+      df = None
       if os.path.exists(
               self.outputClassificationInformationFile) and os.path.isfile(
               self.outputClassificationInformationFile):
-          with open(self.outputClassificationInformationFile, 'r') as f:
-              header = f.readlines()[0]
+          df = pd.read_csv(self.outputClassificationInformationFile)
 
       label_string = ""
       data_string = ""
 
-      if header is not None:
+      if df is not None:
 
-          print('header not none', header)
-          label_string = header.split('time,')[1]
-          labels = label_string.split(',')
+          print('header not none', )
 
-          number_of_checkboxes = len(self.config_yaml["checkboxes"].items())
-          number_of_comboboxes = len(self.config_yaml["comboboxes"].items())
-          number_of_freetextboxes = len(
-              self.config_yaml["freetextboxes"].items())
+          label_string, data_string = self.get_classif_config_data()
+          print('after df')
 
-          for i, label in enumerate(labels):
-              data = ""
-              if '\n' in label:
-                  label = label.replace('\n', '')
-              if 0 <= i < number_of_checkboxes:
-                  for _, (objectName, checkbox_label) in enumerate(
-                          self.config_yaml["checkboxes"].items()):
-                      if label == checkbox_label:
-                          data = "No"
-                          if self.checkboxWidgets[objectName].isChecked():
-                              data = "Yes"
-              elif (number_of_checkboxes <= i < number_of_checkboxes +
-                    number_of_comboboxes):
-                  for _, (comboBoxName, options) in enumerate(
-                          self.config_yaml["comboboxes"].items()):
-                      combobox_label = comboBoxName.replace("_",
-                                                            " ").capitalize()
-                      if label == combobox_label:
-                          data = self.comboboxWidgets[comboBoxName].currentText
-              elif (number_of_checkboxes + number_of_comboboxes <= i <
-                    number_of_checkboxes + number_of_comboboxes +
-                    number_of_freetextboxes):
-                  for _, (freeTextBoxObjectName, free_text_label) in enumerate(
-                          self.config_yaml["freetextboxes"].items()):
-                      if label == free_text_label:
-                          data = self.freeTextBoxes[
-                              freeTextBoxObjectName].text.replace("\n", " // ")
 
-              if i > 0:
-                  data_string = data_string + ","
-              data_string = data_string + data
+
+          print('got data string and label string success')
+          print('jacques', label_string, '\n\nmaxime',
+                data_string)
+
+          print('df before adding columns', df)
+
+
+          df = self.add_missing_columns_to_df(df, label_string)
+
+          print('conten with new columns\n\n', df)
+          Debug.df_file(self, df, self.outputFolder)
+
+          # Extract column names into a dictionary
+          columns_dict = self.extract_header_from_df(df)
+          print('columns dic', columns_dict)
+
+          # columns_dict = {i: col for i, col in enumerate(df.columns)}
+          # print('columns_dict', columns_dict)
+
+          # Extract data into a dictionary
+          data_dict = {col: df[col].tolist() for col in df.columns}
+          print('data_dict', data_dict)
+
+          label_string = columns_dict
+          data_string = data_dict
+
+          # Update df with actual data
+          # Add the new row to the DataFrame
+          df = pd.concat([df, pd.DataFrame([data_string])], ignore_index=True)
+
+          # Convert back df the data
+          # Convert DataFrame to dictionary
+          data_string = df.to_dict(orient="list")
+
+          # Make blank cell with --
+
+
+
+
+
+          # label_string = {}
+          # data_string = {}
+          #
+          # list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
+          # for element in list_of_boxes:
+          #     # label_string, data_string = self.build_classification_labels()
+          #     label_temp, data_temp = self.build_classification_labels(element)
+          #
+          #     label_string.update(label_temp)
+          #     data_string.update(data_temp)
+          #
+          #     print('checkboxe label and data string', label_string,
+          #           '\n', data_string)
+          #
+          # print('succed adding checkbox in header not none', label_string,
+          #       '\n', data_string)
+
+
+
+          # label_string = header.split('time,')[1]
+          # labels = label_string.split(',')
+          #
+          # number_of_checkboxes = len(self.config_yaml["checkboxes"].items())
+          # number_of_comboboxes = len(self.config_yaml["comboboxes"].items())
+          # number_of_freetextboxes = len(
+          #     self.config_yaml["freetextboxes"].items())
+          #
+          # for i, label in enumerate(labels):
+          #     data = ""
+          #     if '\n' in label:
+          #         label = label.replace('\n', '')
+          #     if 0 <= i < number_of_checkboxes:
+          #         for _, (objectName, checkbox_label) in enumerate(
+          #                 self.config_yaml["checkboxes"].items()):
+          #             if label == checkbox_label:
+          #                 data = "No"
+          #                 if self.checkboxWidgets[objectName].isChecked():
+          #                     data = "Yes"
+          #     elif (number_of_checkboxes <= i < number_of_checkboxes +
+          #           number_of_comboboxes):
+          #         for _, (comboBoxName, options) in enumerate(
+          #                 self.config_yaml["comboboxes"].items()):
+          #             combobox_label = comboBoxName.replace("_",
+          #                                                   " ").capitalize()
+          #             if label == combobox_label:
+          #                 data = self.comboboxWidgets[comboBoxName].currentText
+          #     elif (number_of_checkboxes + number_of_comboboxes <= i <
+          #           number_of_checkboxes + number_of_comboboxes +
+          #           number_of_freetextboxes):
+          #         for _, (freeTextBoxObjectName, free_text_label) in enumerate(
+          #                 self.config_yaml["freetextboxes"].items()):
+          #             if label == free_text_label:
+          #                 data = self.freeTextBoxes[
+          #                     freeTextBoxObjectName].text.replace("\n", " // ")
+          #
+          #     if i > 0:
+          #         data_string = data_string + ","
+          #     data_string = data_string + data
 
       else:
           print('in elase get classificaiton info')
 
           print('self config yaml checkbos', self.config_yaml["checkboxes"])
-          label_string = {}
-          data_string = {}
-
-          list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
-          for element in list_of_boxes:
-              # label_string, data_string = self.build_classification_labels()
-              label_temp, data_temp = self.build_classification_labels(element)
-
-              label_string.update(label_temp)
-              data_string.update(data_temp)
-
-              print('checkboxe label and data string', label_string,
-                    '\n', data_string)
-
-          print('succed adding checkbox', label_string,
-                    '\n', data_string)
+          label_string, data_string = self.get_classif_config_data()
+          # label_string = {}
+          # data_string = {}
+          #
+          # list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
+          # for element in list_of_boxes:
+          #     # label_string, data_string = self.build_classification_labels()
+          #     label_temp, data_temp = self.build_classification_labels(element)
+          #
+          #     label_string.update(label_temp)
+          #     data_string.update(data_temp)
+          #
+          #     print('checkboxe label and data string', label_string,
+          #           '\n', data_string)
+          #
+          # print('succed adding checkbox', label_string,
+          #           '\n', data_string)
 
           # for element in
 
@@ -1186,6 +1262,27 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #     data_string = data_string + data
 
       return label_string, data_string
+
+  def get_classif_config_data(self):
+      label_string = {}
+      data_string = {}
+
+      # list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
+      for element in CLASSIFICATION_BOXES_LIST:
+          # label_string, data_string = self.build_classification_labels()
+          label_temp, data_temp = self.build_classification_labels(element)
+
+          label_string.update(label_temp)
+          data_string.update(data_temp)
+
+          print('checkboxe label and data string', label_string,
+                '\n', data_string)
+
+      print('succed adding checkbox', label_string,
+            '\n', data_string)
+
+      return label_string, data_string
+
 
   @enter_function
   def build_classification_labels(self, classif_label):
@@ -1275,7 +1372,64 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # data_string = data_string + data
 
 
-  
+  @enter_function
+  def add_missing_columns_to_df(self, df, columns_dict):
+      # Add missing columns from the dictionary
+      for column in columns_dict:
+          if column not in df.columns:
+              df[column] = np.nan
+      return df
+
+  # @enter_function
+  # def extract_header_from_df(self, df):
+  #     label_string = {}
+  #     columns_name = list(df.columns.tolist())
+  #     print('columns name', columns_name)
+  #     for col in columns_name:
+  #         local_dict = {}
+  #
+  #         try:
+  #
+  #             col_name = dict(col)
+  #             for element in col_name:
+  #                 name = f"{col}"
+  #                 value = col_name[element]
+  #                 local_dict[name] = value
+  #         except ValueError:
+  #             value = col
+  #
+  #
+  #         label_string[col] = value
+  @enter_function
+  def extract_header_from_df(self, df):
+      label_string = {}
+      columns_name = list(df.columns.tolist())  # Get a list of column names
+      print('Columns name:', columns_name)
+
+      for col in columns_name:
+          try:
+              # Attempt to evaluate the string as a dictionary
+              col_dict = eval(col)
+
+              if isinstance(col_dict, dict):
+                  # Extract key-value pairs from the dictionary
+                  for key, value in col_dict.items():
+                      label_string[key] = value
+          except (SyntaxError, NameError):
+              # If not a valid dictionary, just use the column name
+              label_string[col] = col
+
+          # return label_string
+
+      print('label_string extracted', label_string)
+
+      return label_string
+
+    # RENDU ICI CONVERTIR ELEMENTS EN STRING POUR ETRE FORMATTES
+  # ajouter savegarder le dateitme dans classification
+
+
+
   @enter_function
   def cast_segmentation_to_uint8(self):
       for case in self.predictions_paths:
@@ -1624,6 +1778,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time"
 
+
+
       classification_information_labels_string = ",".join(
           classification_information_labels_string.keys())
 
@@ -1654,10 +1810,33 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               data_str = data_str + "," + classification_information_data_string
               f.write(data_str)
       else:
-          with open(self.outputClassificationInformationFile, 'a') as f:
-              f.write("\n")
-              f.write(data_str)
-  
+          print('in else before writing')
+
+          classification_information_data_string = ",".join(
+              classification_information_data_string.values())
+
+          with open(self.outputClassificationInformationFile, 'r') as f:
+              content = pd.read_csv(f)
+
+
+          print('content', content)
+          Debug.df_file(self, content, self.outputFolder)
+
+
+
+
+
+
+
+          # with open(self.outputClassificationInformationFile, 'a') as f:
+          #     f.write("\n")
+          #     f.write(data_str)
+
+
+  def get_classification_df(self, columns):
+      df = pd.DataFrame(columns=columns)
+      return df
+
   def getClassificationInformationVersion(self):
       version = "v"
       classificationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_ClassificationInformation.csv'
@@ -1748,7 +1927,24 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
 
+
+      print('self config labels checkbo', INITIAL_CONFIG_FILE)
+      initial_config_content = ConfigPath.get_initial_config_after_modif()
+      print('\n\n actual config file', initial_config_content)
+
+      temp_dict = ConfigPath.extract_config_classification(
+          initial_config_content)
+
       self.manage_workflow()
+
+      self.config_yaml = ConfigPath.compare_and_merge_classification(
+          self.config_yaml, temp_dict)
+
+      print('self config yaml afetr manag workfloe and updated', self.config_yaml)
+
+      ConfigPath.write_config_file()
+
+      print(' self config yaml after write config file', self.config_yaml)
 
       self.set_ui_enabled_options()
 

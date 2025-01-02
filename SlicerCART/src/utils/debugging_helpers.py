@@ -1,6 +1,8 @@
 import functools
 import inspect
 import yaml
+import os
+import pandas as pd
 
 # Import initial configuration filepath associated with SlicerCART module.
 from utils.constants import CONFIG_FILE_PATH
@@ -56,6 +58,11 @@ class Debug:
         """
         if ENABLE_DEBUG:
             print(statement)
+
+    def df_file(self, df, folderpath):
+        filename = os.path.join(folderpath, 'debug_df.csv')
+        df.to_csv(filename, index=False)
+
 
 def enter_function(func):
     """

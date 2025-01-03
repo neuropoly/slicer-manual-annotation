@@ -47,6 +47,10 @@ comboboxes:
     atrophy_moderate: Moderate
     atrophy_none: None
     atrophy_severe: Severe
+  ert:
+    Option_3: Option 3
+    bb: bb
+    dra: dra
   test_dd:
     '1': '1'
   ventricular_size:

@@ -269,10 +269,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
             
-        self.ui.dropDownButton_label_select.clear()
-        for label in self.config_yaml["labels"]:
-            self.ui.dropDownButton_label_select.addItem(label["name"])
-  
+
+  @enter_function
+  def set_segmentation_config_ui(self):
+      self.ui.dropDownButton_label_select.clear()
+
+      for label in self.config_yaml["labels"]:
+          self.ui.dropDownButton_label_select.addItem(label["name"])
+
   @enter_function
   def set_classification_config_ui(self):
 
@@ -526,6 +530,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           remaining_list_first = self.select_next_working_case()
 
       self.set_patient(remaining_list_first)
+
+      # Assign segmentation labels in the segmentation UI
+      self.set_segmentation_config_ui()
+
       self.update_ui()
 
   def validateBIDS(self, path):
@@ -1996,6 +2004,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         removedNode = self.lineDetails.pop(lastMarkupNode.GetName())
         
+  @enter_function
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
       label = self.config_yaml["labels"][value]

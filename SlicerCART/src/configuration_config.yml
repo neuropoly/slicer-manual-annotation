@@ -36,13 +36,9 @@ checkboxes:
   Multiple_lesions_checkbox: Multiple lesions
   Normal_checkbox: Normal
   Pressure_monitor_checkbox: Pressure monitor
-  QWETY: Qwety
   SAH_checkbox: SAH
   SDH_checkbox: SDH
-  Tonsillar_herniation_checkbox: Tonsillar herniation
-  toto: Toto
   za1: Za1
-  zz: Zz
 comboboxes:
   test_dd:
     '1': '1'
@@ -63,6 +59,7 @@ default_volume_directory: ''
 enable_debug: true
 freetextboxes:
   cheese: Cheese
+  kiki: Kiki
   maxime: Maxime
   number_of_focal_points: Number of focal points
   other_comments: Comments

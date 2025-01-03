@@ -1092,6 +1092,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           df = self.add_missing_columns_to_df(df, label_string_slicer)
           print('conten with new columns\n\n', df)
 
+          # Check if any columns in actual classification labels has been
+          # removed, and add -- if the column that has been removed
+
+
           # Extract column names into a dictionary
           columns_dict = self.extract_header_from_df(df)
           print('columns dic to chek', columns_dict)
@@ -1107,6 +1111,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           data_string_slicer.update(self.build_current_classif_dictionary())
           print('data_string slicer updated', data_string_slicer)
+          data_string_slicer = (
+              self.add_mark_for_removed_columns(df,  data_string_slicer))
+          print('data stirng slicer updated', data_string_slicer)
+
+
+
           # print('data string slicer,', data_string_slicer)
           data_string_slicer = (
               self.convert_string_values_to_list_element(data_string_slicer))
@@ -1121,29 +1131,30 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           df = combined_df
           # df = pd.DataFrame(combined_dict)
           print('df combined', df)
-          df = df.fillna("--")
+          # df = df.fillna("--") ## a la place = ajouter les -- lorsque ajoute
+          # les colonnes nouvelles ou ancienne!
           print('df with -', df)
           Debug.df_file(self, df, self.outputFolder)
 
 
 
-          ## replace na values by --
-
-
-          # Add current classification data tp previous data dict
-
-          label_string = columns_dict
-          data_string = data_dict
-
-          # Update df with actual data
-          # Add the new row to the DataFrame
-          df = pd.concat([df, pd.DataFrame([data_string])], ignore_index=True)
-
-          # Convert back df the data
-          # Convert DataFrame to dictionary
-          data_string = df.to_dict(orient="list")
-
-          # Make blank cell with --
+          # ## replace na values by --
+          #
+          #
+          # # Add current classification data tp previous data dict
+          #
+          # label_string = columns_dict
+          # data_string = data_dict
+          #
+          # # Update df with actual data
+          # # Add the new row to the DataFrame
+          # df = pd.concat([df, pd.DataFrame([data_string])], ignore_index=True)
+          #
+          # # Convert back df the data
+          # # Convert DataFrame to dictionary
+          # data_string = df.to_dict(orient="list")
+          #
+          # # Make blank cell with --
 
 
 
@@ -1213,6 +1224,30 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
           print('self config yaml checkbos', self.config_yaml["checkboxes"])
           label_string, data_string = self.get_classif_config_data()
+
+          print('label string', label_string)
+          print('data string', data_string)
+
+          info_dict = self.build_current_classif_dictionary()
+          print('data_str', info_dict)
+
+          data_dict = {}
+          data_dict.update(info_dict)
+          print('firt succe', data_dict)
+          data_dict.update(data_string)
+          print('data dict', data_dict)
+
+          data_dict = self.convert_string_values_to_list_element(data_dict)
+
+          print('final data', data_dict)
+          df = pd.DataFrame(data_dict)
+
+          print('df1231231', df )
+
+      return df
+
+
+
 
 
 
@@ -1287,7 +1322,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       #                                                                   " // ")
       #     data_string = data_string + data
 
-      return label_string, data_string
+      # return label_string, data_string
 
   def get_classif_config_data(self):
       label_string = {}
@@ -1403,8 +1438,26 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Add missing columns from the dictionary
       for column in columns_dict:
           if column not in df.columns:
-              df[column] = np.nan
+              # df[column] = np.nan
+              df[column] = '--'
+
       return df
+
+  @enter_function
+  def add_mark_for_removed_columns(self, dfcsv, slicer_dict):
+      """
+      :param dfcsv: dataframe from previous csv file
+      :param slicer_dict: dictionary of classification labels from slicer ui.
+      """
+      initial_columns = dfcsv.columns.tolist()
+      for column in initial_columns:
+          if column not in slicer_dict:
+              print('column in new config has been removed')
+              slicer_dict[column] = '--'
+
+      return slicer_dict
+
+
 
   @enter_function
   def convert_string_values_to_list_element(self, dict):
@@ -1416,6 +1469,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def combine_dict(self, dict1, dict2):
+
+      # Replace empty string lists with empty strings in both dictionaries
+      # def replace_empty_string_lists(d):
+      #     return {key: ["" if isinstance(val, list) and len(val) == 1 and val[
+      #         0] == "" else val for val in value]
+      #             for key, value in d.items()}
+      #
+      # dict1 = replace_empty_string_lists(dict1)
+      # dict2 = replace_empty_string_lists(dict2)
+
       # Convert dictionaries to DataFrames
       df1 = pd.DataFrame(dict1)
       df2 = pd.DataFrame(dict2)
@@ -1862,23 +1925,21 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #             f.write("\n")
   #             f.write(data_str)
   @enter_function
-  def saveClassificationInformation(self,
-                                    classification_information_labels_string,
-                                    classification_information_data_string):
-      currentClassificationInformationVersion = self.getClassificationInformationVersion()
+  def saveClassificationInformation(self, classification_df):
+      # currentClassificationInformationVersion = self.getClassificationInformationVersion()
 
-      tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time"
-
-
-
-      classification_information_labels_string = ",".join(
-          classification_information_labels_string.keys())
-
-      tag_str = tag_str + "," + classification_information_labels_string
-
-      data_str = self.build_current_classif_dictionary()
-      data_str = ",".join(data_str.values())
-      print('data_str = ', data_str)
+      # tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time"
+      #
+      #
+      #
+      # classification_information_labels_string = ",".join(
+      #     classification_information_labels_string.keys())
+      #
+      # tag_str = tag_str + "," + classification_information_labels_string
+      #
+      # data_str = self.build_current_classif_dictionary()
+      # data_str = ",".join(data_str.values())
+      # print('data_str = ', data_str)
 
       # data_str = data_str + "," + classification_information_data_string #
       # need to modify classificaiton information dat string
@@ -1886,30 +1947,44 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.outputClassificationInformationFile = os.path.join(
           self.currentOutputPath,
           '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-      if not os.path.isfile(self.outputClassificationInformationFile):
-          with open(self.outputClassificationInformationFile, 'w') as f:
-              f.write(tag_str)
-              f.write("\n")
 
-              classification_information_data_string = ",".join(
-                  classification_information_data_string.values())
+      classification_df.to_csv(self.outputClassificationInformationFile,
+                               index=False)
 
-              print('classificiton information data frstin')
+      # if not os.path.isfile(self.outputClassificationInformationFile):
+      #     classification_df.to_csv(self.outputClassificationInformationFile,
+      #                              index=False)
+      #
+      #     # with open(self.outputClassificationInformationFile, 'w') as f:
+      #
+      #
+      #
+      #         # f.write(tag_str)
+      #         # f.write("\n")
+      #         #
+      #         # classification_information_data_string = ",".join(
+      #         #     classification_information_data_string.values())
+      #         #
+      #         # print('classificiton information data frstin')
+      #         #
+      #         # data_str = data_str + "," + classification_information_data_string
+      #         # f.write(data_str)
+      # else:
+      #     print('in else before writing')
+      #
+      #     classification_df.to_csv(self.outputClassificationInformationFile,
+      #                              index=False)
 
-              data_str = data_str + "," + classification_information_data_string
-              f.write(data_str)
-      else:
-          print('in else before writing')
-
-          classification_information_data_string = ",".join(
-              classification_information_data_string.values())
-
-          with open(self.outputClassificationInformationFile, 'r') as f:
-              content = pd.read_csv(f)
-
-
-          print('content', content)
-          Debug.df_file(self, content, self.outputFolder)
+          #
+          # classification_information_data_string = ",".join(
+          #     classification_information_data_string.values())
+          #
+          # with open(self.outputClassificationInformationFile, 'r') as f:
+          #     content = pd.read_csv(f)
+          #
+          #
+          # print('content', content)
+          # Debug.df_file(self, content, self.outputFolder)
 
 
 
@@ -2138,19 +2213,21 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
-      classification_information_labels_string, classification_information_data_string \
-          = self.getClassificationInformation()
+      # classification_information_labels_string, classification_information_data_string \
+      #     = self.getClassificationInformation()
+
+      classification_df = self.getClassificationInformation()
       
       # Create folders if don't exist
       self.createFolders()
 
       if self.annotator_name is not None:
 
-          print(' save class no none classif ino label string', classification_information_labels_string)
+          print(' save class no none classif ino label string', classification_df)
           print('\n\nclassificaitno information label data string',
-                classification_information_data_string)
+                classification_df)
 
-          self.saveClassificationInformation(classification_information_labels_string, classification_information_data_string)
+          self.saveClassificationInformation(classification_df)
           msg_box = qt.QMessageBox()
           msg_box.setWindowTitle("Success")
           msg_box.setIcon(qt.QMessageBox.Information)

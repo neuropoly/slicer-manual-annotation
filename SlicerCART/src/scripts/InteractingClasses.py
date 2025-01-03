@@ -1553,6 +1553,7 @@ class ConfigureClassificationWindow(qt.QWidget):
             self.segmenter, self.config_yaml, 'freetextbox', self.edit_conf)
         configureSingleClassificationItemWindow.show()
 
+    @enter_function
     def push_add_combobox(self):
         self.close()
 
@@ -1686,6 +1687,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
 
 class ConfigureSingleClassificationItemWindow(qt.QWidget):
+    @enter_function
     def __init__(self, segmenter, classification_config_yaml, item_added,
                  edit_conf, parent=None):
         super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
@@ -1708,19 +1710,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
 
         layout.addLayout(name_hbox)
 
-        if self.item_added == 'combobox':
-            options_hbox = qt.QHBoxLayout()
-
-            options_label = qt.QLabel('Options : ')
-            options_label.setStyleSheet("font-weight: bold")
-            options_hbox.addWidget(options_label)
-
-            self.options_combobox = qt.QComboBox()
-            self.options_combobox.setEditable(True)
-
-            options_hbox.addWidget(self.options_combobox)
-
-            layout.addLayout(options_hbox)
+        self.edit_combobox(layout)
 
         self.save_button = qt.QPushButton('Save')
         self.save_button.clicked.connect(self.push_save)
@@ -1734,6 +1724,123 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         self.setWindowTitle("Configure Classification Item")
         self.resize(200, 100)
 
+    @enter_function
+    def edit_combobox(self, layout):
+        if self.item_added == 'combobox':
+
+            # MB: Create a QHBox layout for the combo box information,
+            # but do not show it yet in the pop-up. However, it has to be
+            # created so it makes it easier to handle the adding of the
+            # combobox later on.
+            # Create a horizontal layout for the combo box and label
+            options_hbox = qt.QHBoxLayout()
+            # Label for the combo box
+            options_label = qt.QLabel('Options : ')
+            options_label.setStyleSheet("font-weight: bold")
+            options_hbox.addWidget(options_label)
+            # Create a combo box
+            self.options_combobox = qt.QComboBox()
+            self.options_combobox.setEditable(True)
+            options_hbox.addWidget(self.options_combobox)
+            # Do not add the Combobox to the layout (keep commented) unless
+            # you want to see it in the pop-up.
+            # layout.addLayout(options_hbox)
+
+            # Create a horizontal layout for the explanations label
+            info_hbox = qt.QHBoxLayout()
+
+            message = ('\nAdjust the DropDown count.\n'
+                       'Then, edit the option names.\n'
+                       'If no text, option number will\n'
+                       'be used as default.\n'
+                       'N.B. Options will be saved sorted.\n')
+
+            # Label for the combo box
+            options_label_info = qt.QLabel(message)
+            info_hbox.addWidget(options_label_info)
+            layout.addLayout(info_hbox)
+
+            # Create a horizontal layout for number of options input
+            num_options_hbox = qt.QHBoxLayout()
+            # Label for number of options
+            num_options_label = qt.QLabel('Number of options: ')
+            num_options_label.setStyleSheet("font-weight: bold")
+            num_options_hbox.addWidget(num_options_label)
+            # Spin box to specify the number of options
+            self.num_options_spinbox = qt.QSpinBox()
+            self.num_options_spinbox.setMinimum(1)  # At least 1 option
+            self.num_options_spinbox.setMaximum(50)  # Arbitrary upper limit
+            self.num_options_spinbox.setValue(5)  # Default value
+            num_options_hbox.addWidget(self.num_options_spinbox)
+            # Add the spin box layout to the main layout
+            layout.addLayout(num_options_hbox)
+
+            # Container for text fields to edit options
+            self.options_edit_layout = qt.QVBoxLayout()
+            layout.addLayout(self.options_edit_layout)
+
+            def clearLayout(layout):
+                """
+                Recursively clears all widgets and sublayouts from the given
+                layout.
+                :param layout: pop-up widget layout.
+                """
+                while layout.count():
+                    child = layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()  # Delete the widget
+                    elif child.layout():
+                        clearLayout(
+                            child.layout())  # Recursively clear sublayouts
+
+            def updateOptionFields():
+                """
+                Dynamically adjust the number of options text field based on
+                the number of options selected.
+                """
+                # Clear the text fields from the options layout
+                clearLayout(self.options_edit_layout)
+                # Clear all items from the combo box
+                self.options_combobox.clear()
+
+                # Create new text fields and populate the combo box
+                for i in range(self.num_options_spinbox.value):
+                    # Add text fields
+                    option_hbox = qt.QHBoxLayout()
+                    option_label = qt.QLabel(f"Option {i + 1}:")
+                    option_line_edit = qt.QLineEdit()
+                    option_line_edit.setText(f"")  # Default text
+
+                    option_hbox.addWidget(option_label)
+                    option_hbox.addWidget(option_line_edit)
+                    self.options_edit_layout.addLayout(option_hbox)
+
+                    # Add item to the combo box
+                    self.options_combobox.addItem(option_line_edit.text)
+
+                    # Define a function to update the combo box dynamically
+                    def updateComboBoxItem(option_line_edit, index=i):
+                        if index < self.options_combobox.count:
+                            self.options_combobox.setItemText(
+                                index,option_line_edit.text)
+                        else:
+                            self.options_combobox.addItem(option_line_edit.text)
+
+                    # Use lambda with default argument to capture the current
+                    # value of `i`
+                    option_line_edit.textChanged.connect(
+                        lambda _, le=option_line_edit,
+                               idx=i: updateComboBoxItem(le, idx))
+
+                # Populate the combo box with default values
+                self.options_combobox.clear()
+                for i in range(self.num_options_spinbox.value):
+                    self.options_combobox.addItem(f"Option {i + 1}")
+
+            # Connect spin box to update the option fields dynamically
+            self.num_options_spinbox.valueChanged.connect(updateOptionFields)
+
+    @enter_function
     def push_save(self):
         current_label_name = self.name_line_edit.text
         object_name = current_label_name.replace(' ', '_')
@@ -1798,7 +1905,4 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         self.push_cancel()
 
     def push_cancel(self):
-        configureClassificationWindow = ConfigureClassificationWindow(
-            self.segmenter, self.edit_conf, self.config_yaml)
-        configureClassificationWindow.show()
         self.close()

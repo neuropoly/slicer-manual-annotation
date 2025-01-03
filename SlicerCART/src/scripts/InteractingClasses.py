@@ -1710,27 +1710,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
 
         layout.addLayout(name_hbox)
 
-        # if self.item_added == 'combobox':
-        #
-        #     print('entering item added combobox init')
-        #
-        #     options_hbox = qt.QHBoxLayout()
-        #     options_label = qt.QLabel('Options : ')
-        #     options_label.setStyleSheet("font-weight: bold")
-        #     options_hbox.addWidget(options_label)
-        #
-        #     self.options_combobox = qt.QComboBox()
-        #     self.options_combobox.setEditable(True)
-        #
-        #     options_hbox.addWidget(self.options_combobox)
-        #
-        #     layout.addLayout(options_hbox)
-
         self.edit_combobox(layout)
-
-
-
-
 
         self.save_button = qt.QPushButton('Save')
         self.save_button.clicked.connect(self.push_save)
@@ -1865,9 +1845,6 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         current_label_name = self.name_line_edit.text
         object_name = current_label_name.replace(' ', '_')
 
-        print('current label name', current_label_name)
-        print('object name push save', object_name)
-
         if self.item_added == 'checkbox':
             label_found = False
             for i, (_, label) in enumerate(
@@ -1880,9 +1857,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                 self.config_yaml['checkboxes'].update(
                     {object_name: current_label_name.capitalize()})
         elif self.item_added == 'combobox':
-            print('in item added == comboxe')
             if self.options_combobox.count == 0:
-                print('in if combo box ==0')
                 msg = qt.QMessageBox()
                 msg.setWindowTitle('ERROR : No Drop Down Options Defined')
                 msg.setText(
@@ -1893,38 +1868,22 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
                     self.push_error_no_dropdown_option_defined)
                 msg.exec()
             else:
-                print('combo box should have been added')
                 options_dict = {}
                 combobox_option_items = [self.options_combobox.itemText(i) for i
                                          in range(self.options_combobox.count)]
-
-                print('combo box options items ', combobox_option_items)
-
                 for option in combobox_option_items:
                     options_dict.update({option.replace(' ', '_'): option})
 
                 item_found = False
                 for i, (combobox_name, _) in enumerate(
                         self.config_yaml['comboboxes'].items()):
-                    print('item found true')
-                    print('combobox name', combobox_name)
-                    print('obejct-name', object_name)
                     if combobox_name == object_name:
                         item_found = True
 
                 if item_found == False:
                     # append
-                    print('item false')
-                    print('object name', object_name)
-                    print('option dict', options_dict)
-
-
                     self.config_yaml['comboboxes'].update(
                         {object_name: options_dict})
-
-                print('before save', self.config_yaml['comboboxes'])
-
-
         elif self.item_added == 'freetextbox':
             label_found = False
             for i, (_, label) in enumerate(
@@ -1946,7 +1905,4 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         self.push_cancel()
 
     def push_cancel(self):
-        configureClassificationWindow = ConfigureClassificationWindow(
-            self.segmenter, self.edit_conf, self.config_yaml)
-        configureClassificationWindow.show()
         self.close()

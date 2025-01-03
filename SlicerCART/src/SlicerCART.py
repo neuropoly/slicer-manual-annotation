@@ -275,6 +275,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   @enter_function
   def set_classification_config_ui(self):
+
+      # (Optional)) get the latest configuration if already exist in output
+      # folder so if configuration has been changed from new configuration
+      # but it already exists in the output folder, the classification labels
+      # would be taken from the output folder. For now, it has been commented
+      # since this would prevent to modify the classification and use it in
+      # an already selected output folder. Uncomment to do above.
+      # self.config_yaml = ConfigPath.open_project_config_file()
+
       # clear classification widgets
       for i in reversed(range(self.ui.ClassificationGridLayout.count())):
           if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:

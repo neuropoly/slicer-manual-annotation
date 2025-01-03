@@ -1716,11 +1716,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       if self.annotator_name is not None:
           self.saveClassificationInformation(classification_df)
-          msg_box = qt.QMessageBox()
-          msg_box.setWindowTitle("Success")
-          msg_box.setIcon(qt.QMessageBox.Information)
-          msg_box.setText("Classification saved successfully!")
-          msg_box.exec()
+          # Those lines can be re-activated if wanted to display a success
+          # message when saved.
+          # msg_box = qt.QMessageBox()
+          # msg_box.setWindowTitle("Success")
+          # msg_box.setIcon(qt.QMessageBox.Information)
+          # msg_box.setText("Classification saved successfully!")
+          # msg_box.exec()
+
+          # Go automatically to the next case in the UI list when
+          # classification has been saved (if it<s the last case, it stays on
+          # it)
+          self.onNextButton()
 
       else:
           msgboxtime = qt.QMessageBox()

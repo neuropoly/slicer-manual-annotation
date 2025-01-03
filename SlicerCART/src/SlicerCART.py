@@ -219,14 +219,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.set_classification_config_ui()
 
-        # # clear classification widgets
-        # for i in reversed(range(self.ui.ClassificationGridLayout.count())):
-        #     if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
-        #         self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
-        #
-        # comboboxesStartRow = self.setupCheckboxes(3)
-        # freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-        # self.setupFreeText(freetextStartRow)
         
         # Initialize timers
         self.timers = []
@@ -292,7 +284,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       comboboxesStartRow = self.setupCheckboxes(3)
       freetextStartRow = self.setupComboboxes(comboboxesStartRow)
       self.setupFreeText(freetextStartRow)
-
 
   def set_master_volume_intensity_mask_according_to_modality(self):
       if ConfigPath.MODALITY == 'CT':
@@ -449,13 +440,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.outputFolder != None:
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
-          print('fomr contineu exitinsg config')
           self.manage_workflow_and_classification()
-          print('amange worked')
-          # self.set_classification_config_ui()
-          print('classif souhld be ok')
-
-          # self.manage_workflow()
 
   @enter_function
   def reset_ui(self):
@@ -969,7 +954,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.freeTextBoxes[freeTextBoxObjectName].setText("")
         except:
             pass
-
 
   @enter_function
   def getClassificationInformation(self):
@@ -1601,18 +1585,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
 
       self.manage_workflow_and_classification()
-      # # Update classification labels (part 1 of 2)
-      # initial_config_content = ConfigPath.get_initial_config_after_modif()
-      # temp_dict = ConfigPath.extract_config_classification(
-      #     initial_config_content)
-      #
-      # self.manage_workflow()
-      #
-      # # Update classification labels (part 2 of 2)
-      # # To do after manage workflow because manage workflow looks for the
-      # # optimal configuration file to use.
-      # self.config_yaml = ConfigPath.compare_and_merge_classification(
-      #     self.config_yaml, temp_dict)
 
       ConfigPath.write_config_file()
 
@@ -1749,7 +1721,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msg_box.setIcon(qt.QMessageBox.Information)
           msg_box.setText("Classification saved successfully!")
           msg_box.exec()
-
 
       else:
           msgboxtime = qt.QMessageBox()

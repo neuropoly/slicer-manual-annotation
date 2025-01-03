@@ -443,7 +443,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
-      print(self.Cases)
       self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)

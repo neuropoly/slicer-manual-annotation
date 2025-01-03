@@ -1750,6 +1750,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           msg_box.setText("Classification saved successfully!")
           msg_box.exec()
 
+
       else:
           msgboxtime = qt.QMessageBox()
           msgboxtime.setText("Classification not saved : no annotator name !  \n Please save again with your name!")

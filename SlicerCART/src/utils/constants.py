@@ -28,5 +28,5 @@ with open(CONFIG_FILE_PATH, 'r') as file:
     content = yaml.safe_load(file)
 INITIAL_CONFIG_FILE = content
 
+# Configuration sections names for classification labels
 CLASSIFICATION_BOXES_LIST = ["checkboxes", "comboboxes", "freetextboxes"]
-

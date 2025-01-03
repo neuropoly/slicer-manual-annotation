@@ -536,8 +536,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.update_ui()
 
-
-
   def validateBIDS(self, path):
         validator = BIDSValidator()
         is_structure_valid = True
@@ -2008,7 +2006,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         
   @enter_function
   def onDropDownButton_label_select(self, value):
-      print('label', value)
       self.current_label_index = value
       label = self.config_yaml["labels"][value]
       self.setUpperAndLowerBoundHU(label["lower_bound_HU"], label["upper_bound_HU"])

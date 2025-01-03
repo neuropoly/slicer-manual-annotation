@@ -38,25 +38,25 @@ class LoadSegmentationsWindow(qt.QWidget):
           for index, row in segmentationInformation_df.iterrows():
                 cell = qt.QTableWidgetItem(row['Segmentation version'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 0, cell)
                 self.versionTableView.setHorizontalHeaderItem(0, qt.QTableWidgetItem('Version'))
 
                 cell = qt.QTableWidgetItem(row['Annotator Name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 1, cell)
                 self.versionTableView.setHorizontalHeaderItem(1, qt.QTableWidgetItem('Annotator'))
 
                 cell = qt.QTableWidgetItem(row['Annotator degree'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 2, cell)
                 self.versionTableView.setHorizontalHeaderItem(2, qt.QTableWidgetItem('Degree'))
 
                 cell = qt.QTableWidgetItem(row['Date and time'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.versionTableView.setItem(index, 3, cell)
                 self.versionTableView.setHorizontalHeaderItem(3, qt.QTableWidgetItem('Date and Time'))
 
@@ -76,9 +76,9 @@ class LoadSegmentationsWindow(qt.QWidget):
        selected_version = self.versionDropdown.currentText
 
        segmentation_file_extension = ""
-       if "nii" in INPUT_FILE_EXTENSION:
+       if "nii" in ConfigPath.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".nii.gz"
-       elif "nrrd" in INPUT_FILE_EXTENSION:
+       elif "nrrd" in ConfigPath.INPUT_FILE_EXTENSION:
            segmentation_file_extension = ".seg.nrrd"
 
        absolute_path_to_segmentation = f'{self.segmenter.currentOutputPath}{os.sep}{self.segmenter.currentVolumeFilename}_{selected_version}{segmentation_file_extension}'

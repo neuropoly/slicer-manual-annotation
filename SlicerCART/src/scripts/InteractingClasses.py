@@ -32,8 +32,7 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             shutil.copy(f'{conf_folder_path}{os.sep}{CONFIG_COPY_FILENAME}',
                         CONFIG_FILE_PATH)
 
-        with open(CONFIG_FILE_PATH, 'r') as file:
-            self.config_yaml = yaml.full_load(file)
+        self.config_yaml  = ConfigPath.open_project_config_file()
 
         self.set_default_values()
 
@@ -405,15 +404,19 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.segmentation_checkbox_state_changed()
         self.keyboard_shortcuts_checkbox_state_changed()
 
+    @enter_function
     def set_default_values(self):
-        self.segmentation_selected = self.config_yaml[
-            'is_segmentation_requested']
-        self.classification_selected = self.config_yaml[
-            'is_classification_requested']
-        self.mouse_shortcuts_selected = self.config_yaml[
-            'is_mouse_shortcuts_requested']
-        self.keyboard_shortcuts_selected = self.config_yaml[
-            'is_keyboard_shortcuts_requested']
+        ConfigPath.write_config_file()
+        self.config_yaml = ConfigPath.open_project_config_file()
+
+        self.segmentation_selected = (
+            self.config_yaml)['is_segmentation_requested']
+        self.classification_selected = (
+            self.config_yaml)['is_classification_requested']
+        self.mouse_shortcuts_selected = (
+            self.config_yaml)['is_mouse_shortcuts_requested']
+        self.keyboard_shortcuts_selected = (
+            self.config_yaml)['is_keyboard_shortcuts_requested']
 
         self.modality_selected = self.config_yaml['modality']
 
@@ -538,12 +541,14 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.ct_window_level_line_edit.setEnabled(False)
             self.ct_window_width_line_edit.setEnabled(False)
 
+    @enter_function
     def push_configure_segmentation(self):
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality_selected, self.edit_conf)
         self.configureSegmentationWindow.show()
         self.close()
 
+    @enter_function
     def push_configure_classification(self):
         configureClassificationWindow = ConfigureClassificationWindow(
             self.segmenter, self.edit_conf)
@@ -556,6 +561,8 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
             self.segmenter)
         slicerCART_configuration_initial_window.show()
 
+    @enter_function # Example that print the function name when you click on
+    # apply in the Configuration Set Up Window
     def push_apply(self):
         self.config_yaml[
             'is_segmentation_requested'] = self.segmentation_task_checkbox.isChecked()
@@ -601,15 +608,11 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
         self.config_yaml['KEYBOARD_SHORTCUTS'][6][
             'shortcut'] = self.interpolate_ks_selected
 
-        with open(CONFIG_FILE_PATH, 'w') as file:
-            yaml.safe_dump(self.config_yaml, file)
+        ConfigPath.write_config_file()
+        self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmenter.setup_configuration()
 
-        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
-                f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
-            shutil.copy(CONFIG_FILE_PATH,
-                        f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
         self.close()
 
     def push_cancel(self):
@@ -627,6 +630,9 @@ class SlicerCARTConfigurationSetupWindow(qt.QWidget):
 class SlicerCARTConfigurationInitialWindow(qt.QWidget):
     def __init__(self, segmenter, parent=None):
         super(SlicerCARTConfigurationInitialWindow, self).__init__(parent)
+
+        # MB: Required for using the correct config file.
+        self.config_yaml = ConfigPath.open_project_config_file()
 
         self.segmenter = segmenter
 
@@ -680,7 +686,7 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
         if self.reuse_configuration_selected_option == self.reuse_config_radio_button.text:
             msg = qt.QMessageBox()
             msg.setWindowTitle('Informative Message')
-            msg.setText('Please select the working output directory. ')
+            msg.setText('Please select the output folder. ')
             msg.setStandardButtons(qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
             msg.buttonClicked.connect(self.select_output_folder_clicked)
             msg.exec()
@@ -699,37 +705,52 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
             self.segmenter.ui.SelectOutputFolder.setVisible(True)
             self.close()
 
+    @enter_function
     def select_output_folder_clicked(self, button):
         if button.text == 'OK':
-            global REQUIRE_EMPTY
-            REQUIRE_EMPTY = False
-            self.segmenter.onSelectOutputFolder()
-            REQUIRE_EMPTY = True
-            self.segmenter.ui.SelectOutputFolder.setVisible(False)
-            if (os.path.exists(
-                    f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}') and
-                    os.path.exists(
-                        f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')):
-                # use this configuration directly
-                shutil.copy(
-                    f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}',
-                    CONFIG_FILE_PATH)
-                self.segmenter.setup_configuration()
-                self.close()
+            self.outputFolder = (
+                qt.QFileDialog.getExistingDirectory(
+                    None,
+                    "Open a folder",
+                    ConfigPath.DEFAULT_VOLUMES_DIRECTORY,
+                    qt.QFileDialog.ShowDirsOnly))
+            content = UserPath.read_filepath(self)
+            if self.outputFolder in content:
+                self.CurrentFolder = content[self.outputFolder]
             else:
-                msg = qt.QMessageBox()
-                msg.setWindowTitle('Informative Message')
-                msg.setText(
-                    'The selected output folder does not contain the required configuration files for SlicerCART. Please try again. ')
-                msg.setStandardButtons(
-                    qt.QMessageBox.Ok | qt.QMessageBox.Cancel)
-                msg.buttonClicked.connect(
-                    self.error_msg_for_output_folder_selection_clicked)
-                msg.exec()
+                Dev.show_message_box(self,
+                                     'Please select volumes folder.',
+                                     box_title='ATTENTION!')
+                self.CurrentFolder = (
+                    qt.QFileDialog.getExistingDirectory(
+                        None, "Open a folder",
+                        ConfigPath.DEFAULT_VOLUMES_DIRECTORY,
+                        qt.QFileDialog.ShowDirsOnly))
+                # Save the associated volume_folder_path with the output_folder
+                # selected.
+                UserPath.write_in_filepath(self, self.outputFolder,
+                                           self.CurrentFolder)
+
+            UserPath.save_selected_paths(self,
+                                         self.outputFolder,
+                                         self.CurrentFolder)
+            UserPath.set_selected_existing_folder(self)
+
+            # Ensure there is a config file in the output folder
+            ConfigPath.set_output_folder(self.outputFolder)
+            ConfigPath.check_existing_configuration()
+            ConfigPath.delete_temp_file()
+
+            # self.segmenter corresponds to SlicerCART UI in Slicer.
+            self.segmenter.onSelectVolumesFolderButton()
+            self.segmenter.set_ui_enabled_options()
+            self.close()
+
+            return
 
         else:
-            slicerCART_configuration_initial_window = SlicerCARTConfigurationInitialWindow(
-                self.segmenter)
+            slicerCART_configuration_initial_window = (
+                SlicerCARTConfigurationInitialWindow(self.segmenter))
             slicerCART_configuration_initial_window.show()
             self.close()
             return
@@ -786,18 +807,19 @@ class SlicerCARTConfigurationInitialWindow(qt.QWidget):
 
 
 class ConfigureSegmentationWindow(qt.QWidget):
+    @enter_function
     def __init__(self, segmenter, modality, edit_conf,
                  segmentation_config_yaml=None, label_config_yaml=None,
                  parent=None):
         super(ConfigureSegmentationWindow, self).__init__(parent)
 
-        #   with open(CONFIG_FILE_PATH, 'r') as file:
-        #     self.config_yaml = yaml.full_load(file)
-
         if label_config_yaml is None:
-            with open(CONFIG_FILE_PATH, 'r') as file:
-                self.config_yaml = yaml.full_load(file)
+            Debug.print(self, 'label_config_yaml is None in '
+                              'ConfigureSegmentationwindow')
+            self.config_yaml  = ConfigPath.open_project_config_file()
         else:
+            Debug.print(self, 'else meaning label_config_yaml is NOT None in '
+                              'ConfigureSegmentationwindow')
             self.config_yaml = label_config_yaml
 
         self.segmenter = segmenter
@@ -859,7 +881,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(label['name'])
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.label_table_view.setItem(index, 2, cell)
                 self.label_table_view.setHorizontalHeaderItem(2,
                                                               qt.QTableWidgetItem(
@@ -867,7 +889,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(str(label['value']))
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.label_table_view.setItem(index, 3, cell)
                 self.label_table_view.setHorizontalHeaderItem(3,
                                                               qt.QTableWidgetItem(
@@ -886,7 +908,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
                 if self.modality == 'CT':
                     cell = qt.QTableWidgetItem(str(label['lower_bound_HU']))
                     cell.setFlags(qt.Qt.NoItemFlags)
-                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                     self.label_table_view.setItem(index, 5, cell)
                     self.label_table_view.setHorizontalHeaderItem(5,
                                                                   qt.QTableWidgetItem(
@@ -894,7 +916,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
 
                     cell = qt.QTableWidgetItem(str(label['upper_bound_HU']))
                     cell.setFlags(qt.Qt.NoItemFlags)
-                    cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                    cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                     self.label_table_view.setItem(index, 6, cell)
                     self.label_table_view.setHorizontalHeaderItem(6,
                                                                   qt.QTableWidgetItem(
@@ -963,8 +985,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
             if l['value'] > value_removed and value_removed != -1:
                 l['value'] = l['value'] - 1
 
-        with open(CONFIG_FILE_PATH, 'w') as file:
-            yaml.safe_dump(self.config_yaml, file)
+        ConfigPath.write_config_file()
 
         configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality, self.edit_conf, self.config_yaml)
@@ -983,6 +1004,7 @@ class ConfigureSegmentationWindow(qt.QWidget):
         self.apply_button.clicked.connect(self.push_apply)
         self.cancel_button.clicked.connect(self.push_cancel)
 
+    @enter_function
     def push_apply(self):
         self.config_yaml[
             'is_display_timer_requested'] = self.display_timer_checkbox.isChecked()
@@ -996,13 +1018,9 @@ class ConfigureSegmentationWindow(qt.QWidget):
             msg.buttonClicked.connect(self.push_error_label_list_empty)
             msg.exec()
         else:
-            with open(CONFIG_FILE_PATH, 'w') as file:
-                yaml.safe_dump(self.config_yaml, file)
-
-        if self.edit_conf and self.segmenter.outputFolder is not None and os.path.exists(
-                f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}'):
-            shutil.copy(CONFIG_FILE_PATH,
-                        f'{self.segmenter.outputFolder}{os.sep}{CONF_FOLDER_NAME}{os.sep}{CONFIG_COPY_FILENAME}')
+            Debug.print(self, 'in else push_apply in '
+                              'ConfigureSegmentationWindow')
+            ConfigPath.write_config_file()
 
         slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(
             self.segmenter)
@@ -1033,66 +1051,109 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         self.segmenter = segmenter
         self.modality = modality
         self.initial_label = label
-        self.config_yaml = label_config_yaml
+        self.config_yaml = ConfigPath.open_project_config_file()
         self.edit_conf = edit_conf
 
-        layout = qt.QVBoxLayout()
+        layout = qt.QVBoxLayout() # Creates a vertical Box layout (Label Box)
 
-        name_hbox = qt.QHBoxLayout()
-
+        name_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         name_label = qt.QLabel('Name : ')
         name_label.setStyleSheet("font-weight: bold")
         name_hbox.addWidget(name_label)
-
         self.name_line_edit = qt.QLineEdit('')
         name_hbox.addWidget(self.name_line_edit)
-
         layout.addLayout(name_hbox)
 
-        value_hbox = qt.QHBoxLayout()
-
+        value_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         value_label = qt.QLabel('Value : ')
         value_label.setStyleSheet("font-weight: bold")
         value_hbox.addWidget(value_label)
-
         self.value_line_edit = qt.QLineEdit('')
         self.value_line_edit.setValidator(qt.QIntValidator())
         self.value_line_edit.setEnabled(
             False)  # To be changed at resolution of Issue #28
         value_hbox.addWidget(self.value_line_edit)
-
         layout.addLayout(value_hbox)
 
-        color_hbox = qt.QHBoxLayout()
+        comment_hbox = qt.QHBoxLayout()
+        # Create a QLabel to display a comment below the QLineEdit
+        self.comment_label = qt.QLabel(
+            'N.B. Label value is not editable and will be assigned '
+            'automatically.\nEnter any integer between 0 and 255 in RGB to '
+            'select label color.')
+        comment_hbox.addWidget(self.comment_label)
+        layout.addLayout(comment_hbox)
 
+        color_hbox = qt.QHBoxLayout() # Creates a horizontal Box layout (line)
         color_label = qt.QLabel('Colour : ')
         color_label.setStyleSheet("font-weight: bold")
         color_hbox.addWidget(color_label)
 
-        self.color_r_line_edit = qt.QLineEdit('R')
         colorValidator = qt.QIntValidator()
         colorValidator.setRange(0, 255)
+
+        r_label = qt.QLabel('R')
+        r_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(r_label)
+        self.color_r_line_edit = qt.QLineEdit('')
+        self.color_r_line_edit.setMaxLength(3)
         self.color_r_line_edit.setValidator(colorValidator)
-        self.color_r_line_edit.setInputMask("000")
         self.color_r_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_r_line_edit)
 
-        self.color_g_line_edit = qt.QLineEdit('G')
+        g_label = qt.QLabel('G')
+        g_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(g_label)
+        self.color_g_line_edit = qt.QLineEdit('')
+        self.color_g_line_edit.setMaxLength(3)
         self.color_g_line_edit.setValidator(colorValidator)
-        self.color_g_line_edit.setInputMask("000")
         self.color_g_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_g_line_edit)
 
-        self.color_b_line_edit = qt.QLineEdit('B')
-        # self.color_b_line_edit.setValidator(colorValidator)
-        self.color_b_line_edit.setInputMask("000")
+        b_label = qt.QLabel('B')
+        b_label.setStyleSheet("font-weight: bold")
+        color_hbox.addWidget(b_label)
+        self.color_b_line_edit = qt.QLineEdit('')
+        self.color_b_line_edit.setMaxLength(3)
+        self.color_b_line_edit.setValidator(colorValidator)
         self.color_b_line_edit.textChanged.connect(self.color_line_edit_changed)
         color_hbox.addWidget(self.color_b_line_edit)
 
+        # Display the selected color from RGB
         self.color_display = qt.QLabel('        ')
         color_hbox.addWidget(self.color_display)
-
         layout.addLayout(color_hbox)
+
+        validator_hbox = qt.QHBoxLayout() # Creates a validator horizontal Box
+        valided_result = ''
+        self.validator_label_hbox = qt.QLineEdit(f'{valided_result}')
+        validator_hbox.addWidget(self.validator_label_hbox)
+        self.validator_label_hbox.setEnabled(False) # Prevent user editing
+        layout.addLayout(validator_hbox)
+
+        def validate_input(color_line_edit):
+            """
+            This functions validates if RGB value for a single color is valid.
+            Display a comment if value is out of range.
+            """
+            input_text = color_line_edit.text
+            result = colorValidator.validate(input_text, 0)
+            if result == qt.QValidator.Acceptable:
+                self.validator_label_hbox.setText('')
+            else:
+                if len(input_text) > 0:
+                    self.validator_label_hbox.setText(f'{input_text} '
+                                                      f'is not valid.')
+                else:
+                    self.validator_label_hbox.setText('')
+
+        # Connect each QLineEdit to validate_input using lambda
+        self.color_r_line_edit.textChanged.connect(
+            lambda: validate_input(self.color_r_line_edit))
+        self.color_g_line_edit.textChanged.connect(
+            lambda: validate_input(self.color_g_line_edit))
+        self.color_b_line_edit.textChanged.connect(
+            lambda: validate_input(self.color_b_line_edit))
 
         if self.modality == 'CT':
             min_hu_hbox = qt.QHBoxLayout()
@@ -1153,10 +1214,69 @@ class ConfigureSingleLabelWindow(qt.QWidget):
         color = f'({self.color_r_line_edit.text},{self.color_g_line_edit.text},{self.color_b_line_edit.text})'
         self.color_display.setStyleSheet(f"background-color:rgb{color}")
 
-    def push_save(self):
-        current_label_name = self.name_line_edit.text
+    def incorrect_rgb(self):
+        r = self.color_r_line_edit.text
+        g = self.color_g_line_edit.text
+        b = self.color_b_line_edit.text
+        rgb_dict = {'R': r,'G': g,'B': b}
 
+        # N.B. The line edit allows now only to enter integers, so we only
+        # need to verify if values are not empty or between 0 and 255
+        incorrect_values = []
+        flag_incorrect_value = False
+
+        for color in rgb_dict:
+            try:
+                rgb_dict[color] = int(rgb_dict[color])
+                if 0 <= rgb_dict[color] <= 255:
+                    continue
+                else:
+                    incorrect_values.append(f"{color}: {str(rgb_dict[color])}")
+            except ValueError:
+                incorrect_values.append(f"{color}: {str(rgb_dict[color])}")
+
+        if len(incorrect_values) > 0:
+            incorrect_values = ' '.join(incorrect_values)
+            self.validator_label_hbox.setText(f'{incorrect_values} '
+                                              f'is/are not valid value/s.')
+            flag_incorrect_value = True
+
+        return flag_incorrect_value
+
+    def incorrect_name(self):
+        name = self.name_line_edit.text
+        flag_incorrect_name = False
+        if name != None :
+            name = name.strip()
+        if name == "":
+            self.validator_label_hbox.setText(f'Name cannot be empty.')
+            flag_incorrect_name = True
+        else:
+            if " " in name:
+                self.validator_label_hbox.setText(f'Name {name} is invalid. No '
+                                                  'space accepted in label '
+                                                  'name.')
+                flag_incorrect_name = True
+            else:
+                self.validator_label_hbox.setText('')
+                self.name_line_edit.text = name
+
+        return flag_incorrect_name
+
+    @enter_function
+    def push_save(self):
         label_found = False
+
+        # Validate rgb and name
+        if self.incorrect_rgb():
+            return
+
+        if self.incorrect_name():
+            return
+
+        current_label_name = self.name_line_edit.text
+        Debug.print(self, f'currrent_label_name: {current_label_name}')
+
         for label in self.config_yaml['labels']:
             if label['name'] == current_label_name:
                 # edit
@@ -1170,6 +1290,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                     label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
 
         if label_found == False:
+            Debug.print(self, 'label_found==False')
             # append
             new_label = {'color_b': 10, 'color_g': 10, 'color_r': 255,
                          'lower_bound_HU': 30, 'name': 'ICH',
@@ -1185,8 +1306,7 @@ class ConfigureSingleLabelWindow(qt.QWidget):
                 new_label['upper_bound_HU'] = int(self.max_hu_line_edit.text)
             self.config_yaml['labels'].append(new_label)
 
-        with open(CONFIG_FILE_PATH, 'w') as file:
-            yaml.safe_dump(self.config_yaml, file)
+        ConfigPath.write_config_file()
 
         self.configureSegmentationWindow = ConfigureSegmentationWindow(
             self.segmenter, self.modality, self.edit_conf)
@@ -1209,8 +1329,7 @@ class ConfigureClassificationWindow(qt.QWidget):
         self.edit_conf = edit_conf
 
         if classification_config_yaml is None:
-            with open(CONFIG_FILE_PATH, 'r') as file:
-                self.config_yaml = yaml.full_load(file)
+            self.config_yaml  = ConfigPath.open_project_config_file()
         else:
             self.config_yaml = classification_config_yaml
 
@@ -1252,7 +1371,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(checkbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.checkbox_table_view.setItem(index, 1, cell)
                 self.checkbox_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(
@@ -1301,7 +1420,7 @@ class ConfigureClassificationWindow(qt.QWidget):
                 cell = qt.QTableWidgetItem(
                     combo_box_name.replace('_', ' ').capitalize())
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.combobox_table_view.setItem(index, 1, cell)
                 self.combobox_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(
@@ -1362,7 +1481,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
                 cell = qt.QTableWidgetItem(freetextbox_label)
                 cell.setFlags(qt.Qt.NoItemFlags)
-                cell.setForeground(qt.QBrush(qt.QColor(0, 0, 0)))
+                cell.setForeground(qt.QBrush(qt.QColor(self.segmenter.foreground)))
                 self.freetext_table_view.setItem(index, 1, cell)
                 self.freetext_table_view.setHorizontalHeaderItem(1,
                                                                  qt.QTableWidgetItem(
@@ -1434,6 +1553,7 @@ class ConfigureClassificationWindow(qt.QWidget):
             self.segmenter, self.config_yaml, 'freetextbox', self.edit_conf)
         configureSingleClassificationItemWindow.show()
 
+    @enter_function
     def push_add_combobox(self):
         self.close()
 
@@ -1448,9 +1568,9 @@ class ConfigureClassificationWindow(qt.QWidget):
             self.segmenter, self.config_yaml, 'checkbox', self.edit_conf)
         configureSingleClassificationItemWindow.show()
 
+    @enter_function
     def push_save(self):
-        with open(CONFIG_FILE_PATH, 'w') as file:
-            yaml.safe_dump(self.config_yaml, file)
+        ConfigPath.write_config_file()
 
         if self.edit_conf:
             if self.segmenter.outputFolder is not None and os.path.exists(
@@ -1567,6 +1687,7 @@ class ConfigureClassificationWindow(qt.QWidget):
 
 
 class ConfigureSingleClassificationItemWindow(qt.QWidget):
+    @enter_function
     def __init__(self, segmenter, classification_config_yaml, item_added,
                  edit_conf, parent=None):
         super(ConfigureSingleClassificationItemWindow, self).__init__(parent)
@@ -1589,19 +1710,7 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
 
         layout.addLayout(name_hbox)
 
-        if self.item_added == 'combobox':
-            options_hbox = qt.QHBoxLayout()
-
-            options_label = qt.QLabel('Options : ')
-            options_label.setStyleSheet("font-weight: bold")
-            options_hbox.addWidget(options_label)
-
-            self.options_combobox = qt.QComboBox()
-            self.options_combobox.setEditable(True)
-
-            options_hbox.addWidget(self.options_combobox)
-
-            layout.addLayout(options_hbox)
+        self.edit_combobox(layout)
 
         self.save_button = qt.QPushButton('Save')
         self.save_button.clicked.connect(self.push_save)
@@ -1615,6 +1724,123 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         self.setWindowTitle("Configure Classification Item")
         self.resize(200, 100)
 
+    @enter_function
+    def edit_combobox(self, layout):
+        if self.item_added == 'combobox':
+
+            # MB: Create a QHBox layout for the combo box information,
+            # but do not show it yet in the pop-up. However, it has to be
+            # created so it makes it easier to handle the adding of the
+            # combobox later on.
+            # Create a horizontal layout for the combo box and label
+            options_hbox = qt.QHBoxLayout()
+            # Label for the combo box
+            options_label = qt.QLabel('Options : ')
+            options_label.setStyleSheet("font-weight: bold")
+            options_hbox.addWidget(options_label)
+            # Create a combo box
+            self.options_combobox = qt.QComboBox()
+            self.options_combobox.setEditable(True)
+            options_hbox.addWidget(self.options_combobox)
+            # Do not add the Combobox to the layout (keep commented) unless
+            # you want to see it in the pop-up.
+            # layout.addLayout(options_hbox)
+
+            # Create a horizontal layout for the explanations label
+            info_hbox = qt.QHBoxLayout()
+
+            message = ('\nAdjust the DropDown count.\n'
+                       'Then, edit the option names.\n'
+                       'If no text, option number will\n'
+                       'be used as default.\n'
+                       'N.B. Options will be saved sorted.\n')
+
+            # Label for the combo box
+            options_label_info = qt.QLabel(message)
+            info_hbox.addWidget(options_label_info)
+            layout.addLayout(info_hbox)
+
+            # Create a horizontal layout for number of options input
+            num_options_hbox = qt.QHBoxLayout()
+            # Label for number of options
+            num_options_label = qt.QLabel('Number of options: ')
+            num_options_label.setStyleSheet("font-weight: bold")
+            num_options_hbox.addWidget(num_options_label)
+            # Spin box to specify the number of options
+            self.num_options_spinbox = qt.QSpinBox()
+            self.num_options_spinbox.setMinimum(1)  # At least 1 option
+            self.num_options_spinbox.setMaximum(50)  # Arbitrary upper limit
+            self.num_options_spinbox.setValue(5)  # Default value
+            num_options_hbox.addWidget(self.num_options_spinbox)
+            # Add the spin box layout to the main layout
+            layout.addLayout(num_options_hbox)
+
+            # Container for text fields to edit options
+            self.options_edit_layout = qt.QVBoxLayout()
+            layout.addLayout(self.options_edit_layout)
+
+            def clearLayout(layout):
+                """
+                Recursively clears all widgets and sublayouts from the given
+                layout.
+                :param layout: pop-up widget layout.
+                """
+                while layout.count():
+                    child = layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()  # Delete the widget
+                    elif child.layout():
+                        clearLayout(
+                            child.layout())  # Recursively clear sublayouts
+
+            def updateOptionFields():
+                """
+                Dynamically adjust the number of options text field based on
+                the number of options selected.
+                """
+                # Clear the text fields from the options layout
+                clearLayout(self.options_edit_layout)
+                # Clear all items from the combo box
+                self.options_combobox.clear()
+
+                # Create new text fields and populate the combo box
+                for i in range(self.num_options_spinbox.value):
+                    # Add text fields
+                    option_hbox = qt.QHBoxLayout()
+                    option_label = qt.QLabel(f"Option {i + 1}:")
+                    option_line_edit = qt.QLineEdit()
+                    option_line_edit.setText(f"")  # Default text
+
+                    option_hbox.addWidget(option_label)
+                    option_hbox.addWidget(option_line_edit)
+                    self.options_edit_layout.addLayout(option_hbox)
+
+                    # Add item to the combo box
+                    self.options_combobox.addItem(option_line_edit.text)
+
+                    # Define a function to update the combo box dynamically
+                    def updateComboBoxItem(option_line_edit, index=i):
+                        if index < self.options_combobox.count:
+                            self.options_combobox.setItemText(
+                                index,option_line_edit.text)
+                        else:
+                            self.options_combobox.addItem(option_line_edit.text)
+
+                    # Use lambda with default argument to capture the current
+                    # value of `i`
+                    option_line_edit.textChanged.connect(
+                        lambda _, le=option_line_edit,
+                               idx=i: updateComboBoxItem(le, idx))
+
+                # Populate the combo box with default values
+                self.options_combobox.clear()
+                for i in range(self.num_options_spinbox.value):
+                    self.options_combobox.addItem(f"Option {i + 1}")
+
+            # Connect spin box to update the option fields dynamically
+            self.num_options_spinbox.valueChanged.connect(updateOptionFields)
+
+    @enter_function
     def push_save(self):
         current_label_name = self.name_line_edit.text
         object_name = current_label_name.replace(' ', '_')
@@ -1679,7 +1905,4 @@ class ConfigureSingleClassificationItemWindow(qt.QWidget):
         self.push_cancel()
 
     def push_cancel(self):
-        configureClassificationWindow = ConfigureClassificationWindow(
-            self.segmenter, self.edit_conf, self.config_yaml)
-        configureClassificationWindow.show()
         self.close()

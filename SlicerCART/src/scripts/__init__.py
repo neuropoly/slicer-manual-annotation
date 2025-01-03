@@ -8,3 +8,4 @@ from .ShowSegmentVersionLegendWindow import *
 from .SlicerCARTLogic import *
 from .SlicerCARTTest import *
 from .Timer import *
+from .WorkFiles import *

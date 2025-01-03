@@ -64,55 +64,23 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = False
     # LLG CODE BELOW
     self.predictions_names= None
-    self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
 
     # ----- ANW Addition  ----- : Initialize called var to False so the timer only stops once
     self.called = False
     self.called_onLoadSegmentation = False
-    
-  def get_config_values(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        self.config_yaml = yaml.safe_load(file)
 
-        global INPUT_FILE_EXTENSION
-        global DEFAULT_VOLUMES_DIRECTORY
-        global DEFAULT_SEGMENTATION_DIRECTORY
-        global REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT
-        global MODALITY
-        global IS_CLASSIFICATION_REQUESTED
-        global IS_SEGMENTATION_REQUESTED
-        global IS_MOUSE_SHORTCUTS_REQUESTED
-        global IS_KEYBOARD_SHORTCUTS_REQUESTED
-        global INTERPOLATE_VALUE
-        global CT_WINDOW_WIDTH
-        global CT_WINDOW_LEVEL
-        global IS_DISPLAY_TIMER_REQUESTED
-                
-        IS_DISPLAY_TIMER_REQUESTED = self.config_yaml["is_display_timer_requested"]
+    # Create a temp file that serves as a flag to determine if output folder
+    # has been selected or not.
+    ConfigPath.create_temp_file()
+    Debug.print(self, '*** temp file created. BE CAREFUL! ***')
+    self.config_yaml = ConfigPath.open_project_config_file()
+    self.DefaultDir = ConfigPath.DEFAULT_VOLUMES_DIRECTORY
 
-        INPUT_FILE_EXTENSION = self.config_yaml["input_filetype"]
-        DEFAULT_VOLUMES_DIRECTORY = self.config_yaml["default_volume_directory"]
-        self.DefaultDir = DEFAULT_VOLUMES_DIRECTORY
-        DEFAULT_SEGMENTATION_DIRECTORY = self.config_yaml["default_segmentation_directory"]
-        MODALITY = self.config_yaml["modality"]
-        IS_CLASSIFICATION_REQUESTED = self.config_yaml["is_classification_requested"]
-        IS_SEGMENTATION_REQUESTED = self.config_yaml["is_segmentation_requested"]
-        IS_MOUSE_SHORTCUTS_REQUESTED = self.config_yaml["is_mouse_shortcuts_requested"]
-        IS_KEYBOARD_SHORTCUTS_REQUESTED = self.config_yaml["is_keyboard_shortcuts_requested"]
-        INTERPOLATE_VALUE = self.config_yaml["interpolate_value"]
 
-        if MODALITY == 'CT':
-            # then BIDS not mandatory because it is not yet supported 
-            # therefore, either .nrrd or .nii.gz accepted 
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = False
-            CT_WINDOW_WIDTH = self.config_yaml["ct_window_width"]
-            CT_WINDOW_LEVEL = self.config_yaml["ct_window_level"]
+    # Auto-Detect the Slicer theme, so specific foreground can be used
+    self.theme  = Theme.get_mode(self)
+    self.foreground = Theme.set_foreground(self, self.theme)
 
-        elif MODALITY == 'MRI':
-            # therefore, .nii.gz required  
-            INPUT_FILE_EXTENSION = '*.nii.gz'
-            # user can decide whether to impose bids or not
-            REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT = self.config_yaml["impose_bids_format"]
 
   def setup(self):
     """
@@ -146,13 +114,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.CurrentFolder = None
     self.lineDetails = {}
     self.previousAction = None
+    self.saved_selected = False # Flag to load correctly the first case
+    self.currentOutputPath = None
+    self.currentVolumeFilename = None
 
-    #MB: code below added in the configuration setup since its absence
+    # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
-    self.get_config_values()
-    with open(CONFIG_FILE_PATH, 'r') as file:
-        self.config_yaml = yaml.full_load(file)
-        self.current_label_index = self.config_yaml['labels'][0]['value']
+    self.config_yaml = ConfigPath.open_project_config_file()
+    self.current_label_index = self.config_yaml['labels'][0]['value']
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -214,13 +183,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.MostRecentPausedCasePath = ""
   
   def setup_configuration(self):
-        self.get_config_values()
+        self.config_yaml = ConfigPath.open_project_config_file()
+        # Warning: if incorrect config values that have been changed create
+        # new errors around those line of codes. A solution is likely to add:
+        # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
+        # (This sets appropriate values for configuration; to insert after
+        # open_project_config_file)
         
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
             self.ui.PauseTimerButton.hide()
             self.ui.StartTimerButton.hide()  
 
-        if IS_MOUSE_SHORTCUTS_REQUESTED:
+        if ConfigPath.IS_MOUSE_SHORTCUTS_REQUESTED:
             # MB
             self.interactor1 = slicer.app.layoutManager().sliceWidget(
                     'Yellow').sliceView().interactor()
@@ -243,14 +217,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.UB_HU.setValue(self.UB_HU)
         self.ui.LB_HU.setValue(self.LB_HU)
 
-        # clear classification widgets
-        for i in reversed(range(self.ui.ClassificationGridLayout.count())): 
-            if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
-                self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+        self.set_classification_config_ui()
 
-        comboboxesStartRow = self.setupCheckboxes(3)
-        freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-        self.setupFreeText(freetextStartRow)
         
         # Initialize timers
         self.timers = []
@@ -259,12 +227,12 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.timers.append(Timer(number=timer_index))
             timer_index = timer_index + 1
         
-        if not IS_CLASSIFICATION_REQUESTED:
+        if not ConfigPath.IS_CLASSIFICATION_REQUESTED:
             self.ui.MRMLCollapsibleButton.setVisible(False)
-        if not IS_SEGMENTATION_REQUESTED:
+        if not ConfigPath.IS_SEGMENTATION_REQUESTED:
             self.ui.MRMLCollapsibleButton_2.setVisible(False)
 
-        if MODALITY == 'MRI':
+        if ConfigPath.MODALITY == 'MRI':
             self.ui.ThresholdLabel.setVisible(False)
             self.ui.MinimumLabel.setVisible(False)
             self.ui.MaximumLabel.setVisible(False)
@@ -301,14 +269,39 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             slicer.app.layoutManager().setLayout(
                 slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
             
-        self.ui.dropDownButton_label_select.clear()
-        for label in self.config_yaml["labels"]:
-            self.ui.dropDownButton_label_select.addItem(label["name"])
-  
+
+  @enter_function
+  def set_segmentation_config_ui(self):
+      self.ui.dropDownButton_label_select.clear()
+
+      for label in self.config_yaml["labels"]:
+          self.ui.dropDownButton_label_select.addItem(label["name"])
+
+  @enter_function
+  def set_classification_config_ui(self):
+
+      # (Optional)) get the latest configuration if already exist in output
+      # folder so if configuration has been changed from new configuration
+      # but it already exists in the output folder, the classification labels
+      # would be taken from the output folder. For now, it has been commented
+      # since this would prevent to modify the classification and use it in
+      # an already selected output folder. Uncomment to do above.
+      # self.config_yaml = ConfigPath.open_project_config_file()
+
+      # clear classification widgets
+      for i in reversed(range(self.ui.ClassificationGridLayout.count())):
+          if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+              self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(
+                  None)
+
+      comboboxesStartRow = self.setupCheckboxes(3)
+      freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+      self.setupFreeText(freetextStartRow)
+
   def set_master_volume_intensity_mask_according_to_modality(self):
-      if MODALITY == 'CT':
+      if ConfigPath.MODALITY == 'CT':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
-      elif MODALITY == 'MRI':
+      elif ConfigPath.MODALITY == 'MRI':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(False)
   
   def setupCheckboxes(self, number_of_columns):
@@ -395,21 +388,41 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicerCARTConfigurationSetupWindow = SlicerCARTConfigurationSetupWindow(self, edit_conf = True)
       slicerCARTConfigurationSetupWindow.show()
 
+  @enter_function
   def onSelectVolumesFolderButton(self):
-      self.CurrentFolder= qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
+
+      Debug.print(self,
+                  f'value of UserPath.get_selected_existing_folder: '
+                  f'{UserPath.get_selected_existing_folder(self)}')
+
+      self.config_yaml = ConfigPath.open_project_config_file()
+      self.config_yaml = ConfigPath.set_config_values(self.config_yaml)
+
+      if UserPath.get_selected_existing_folder(self):
+          content = UserPath.get_selected_paths(self)
+          for element in content:
+              self.outputFolder = element
+              self.CurrentFolder = content[self.outputFolder]
+      else:
+          self.CurrentFolder= (
+              qt.QFileDialog.getExistingDirectory(
+                  None,
+                  "Open a folder",
+                  self.DefaultDir,
+                  qt.QFileDialog.ShowDirsOnly))
 
       #prevents crashing if no volume folder is selected
       if not self.CurrentFolder:
           return
 
       file_structure_valid = True
-      if REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
+      if ConfigPath.REQUIRE_VOLUME_DATA_HIERARCHY_BIDS_FORMAT == True:
           file_structure_valid = self.validateBIDS(self.CurrentFolder)
     
       if file_structure_valid == False:
           return # don't load any patient cases
 
-      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{INPUT_FILE_EXTENSION}', recursive = True))
+      self.CasesPaths = sorted(glob(f'{self.CurrentFolder}{os.sep}**{os.sep}{ConfigPath.INPUT_FILE_EXTENSION}', recursive = True))
 
       # Remove the volumes in the folder 'derivatives' (creates issues for
       # loading cases)
@@ -417,26 +430,111 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                          in item]
 
       if not self.CasesPaths:
-            msg_box = qt.QMessageBox()
-            msg_box.setWindowTitle("No files found")
-            msg_box.setIcon(qt.QMessageBox.Warning)
-            text = "No files found in the selected directory!"
-            text += "\n\nMake sure the configured extension is in the right format."
-            text += "\n\nThen restart the module"
-            msg_box.setText(text)
-            msg_box.exec()
-            return
+          message = ('No files found in the selected directory!'
+                     f'\n\nCurrent file extension configuration: '
+                     f'{ConfigPath.INPUT_FILE_EXTENSION}'
+                     "\n\nMake sure the configured extension is "
+                     "in the right format."
+                     "\n\nFor example: check configuration_config.yml file in "
+                     "SlicerCART project or in output folder under _conf "
+                     "folder."
+                     "\n\nThen restart the module.")
+          Dev.show_message_box(self, message, box_title='ATTENTION!')
+          return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
 
-      self.ui.SlicerDirectoryListView.clear()
-      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+      self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
 
+      # If output folder has already been selected from continue from
+      # existing folder, this code updates the volume folders of output folder.
+      if self.outputFolder != None:
+          UserPath.write_in_filepath(self, self.outputFolder,
+                                     self.CurrentFolder)
+          self.manage_workflow_and_classification()
+
+  @enter_function
+  def reset_ui(self):
+      self.ui.SlicerDirectoryListView.clear()
+      self.ui.SlicerDirectoryListView.addItems(self.Cases)
+
       self.currentCase_index = 0 # THIS IS THE CENTRAL THING THAT HELPS FOR CASE NAVIGATION
+      self.update_ui()
+
+  @enter_function
+  def update_ui(self):
       self.updateCaseAll()
       self.loadPatient()
+
+  @enter_function
+  def set_patient(self, filename):
+      """
+      Set the patient to be displayed in UI case list and Slicer Viewer from
+      filename.
+      """
+      index = self.WorkFiles.find_index_from_filename(filename,
+                                              self.Cases)
+      currentCasePath = self.WorkFiles.find_path_from_filename(filename)
+
+      self.currentCase = filename
+      self.currentCase_index = index
+      self.currentCasePath = currentCasePath
+
+  @enter_function
+  def manage_workflow(self):
+      """
+      Allows to work from appropriate working list and remaining list.
+      """
+
+      self.config_yaml = ConfigPath.open_project_config_file()
+      # Instantiate a WorkFiles class object to facilitate cases lists
+      # management.
+      self.WorkFiles = WorkFiles(self.CurrentFolder, self.outputFolder)
+
+      # Set up working list appropriateness compared to volumes folder selected.
+      if self.WorkFiles.check_working_list() == False:
+          print('\n\n INVALID WORKFLOW. CANNOT CONTINUE WITH CURRENT SELECTED '
+                'VOLUMES AND OUTPUT FOLDERS.\n\n')
+          # Output folder is inconsistent with Volumes Folder.
+          # We should NEVER be able to save any other segmentations.
+          message = ('The UI case list is now invalid. \n'
+                     f'In the output folder {self.outputFolder}'
+                     f'working_list and remaining_list, '
+                     'files are inconsistent and corrupted.\n\n'
+                     'Cannot continue with Slicer from now one.\n\n'
+                     'Please restart SlicerCART if you want to continue.\n\n'
+                     'Ensure you select appropriate volumes and output '
+                     'folder, and reset working_list and remaining_list.\n'
+                     '(For example, delete them).')
+          Dev.show_message_box(self, message)
+          return
+
+      # Re-assignation of self.Cases and self.CasesPath based on working list.
+      self.Cases = self.WorkFiles.get_working_list_filenames(self)
+      self.CasesPaths = self.WorkFiles.get_working_list_filepaths(self.Cases)
+      self.reset_ui()
+
+      # Get the first case of remaining list (considers if empty).
+      remaining_list_filenames = (
+          self.WorkFiles.get_remaining_list_filenames(self))
+
+      if self.WorkFiles.check_remaining_first_element(remaining_list_filenames):
+          Debug.print(self, 'First case in remaining list ok.')
+          remaining_list_first = self.WorkFiles.get_remaining_list_filenames(
+              self)[0]
+      else:
+          Debug.print(self, 'Remaining list empty. Select case from working '
+                            'list (working list should never be empty).')
+          remaining_list_first = self.select_next_working_case()
+
+      self.set_patient(remaining_list_first)
+
+      # Assign segmentation labels in the segmentation UI
+      self.set_segmentation_config_ui()
+
+      self.update_ui()
 
   def validateBIDS(self, path):
         validator = BIDSValidator()
@@ -446,7 +544,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             for subdir, dirs, files in os.walk(path):
                 for file in files:
-                    if file.endswith(INPUT_FILE_EXTENSION.split("*")[1]):
+                    if file.endswith(ConfigPath.INPUT_FILE_EXTENSION.split("*")[1]):
                         try:
                             path = "/sub" + (subdir + "/" + file).split("/sub", 1)[1]
                             is_valid = validator.is_bids(path)
@@ -465,22 +563,25 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         return is_structure_valid
 
+  @enter_function
   def updateCaseAll(self):
-      # All below is dependent on self.currentCase_index updates, 
+      # All below is dependent on self.currentCase_index updates,
       self.currentCase = self.Cases[self.currentCase_index]
       self.currentCasePath = self.CasesPaths[self.currentCase_index]
-      
-      if not IS_DISPLAY_TIMER_REQUESTED:
-          self.enableSegmentAndPaintButtons()      
+
+      if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
+          self.enableSegmentAndPaintButtons()
 
       self.updateCurrentPatient()
       # Highlight the current case in the list view (when pressing on next o)
-      self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+      self.ui.SlicerDirectoryListView.setCurrentItem(
+          self.ui.SlicerDirectoryListView.item(self.currentCase_index))
       self.update_current_segmentation_status()
 
+  @enter_function
   def update_current_segmentation_status(self):
       current_color = self.ui.SlicerDirectoryListView.currentItem().foreground().color()
-      if current_color == qt.QColor('black'):
+      if current_color == qt.QColor(self.foreground):
           self.ui.CurrentStatus.setText('Segmentation Status : Not done')
       elif current_color == qt.QColor('orange'):
           self.ui.CurrentStatus.setText('Segmentation Status : Done by another annotator')
@@ -519,6 +620,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.CurrentPath.setReadOnly(True)
       self.ui.CurrentPath.setText(self.currentCasePath)
       
+  @enter_function
   def loadPatient(self):
       timer_index = 0
       self.timers = []
@@ -542,17 +644,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # print(' node', self.VolumeNode)
 
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
-      Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
+      if ConfigPath.MODALITY == 'CT':
+          Debug.print(self, 'MODALITY==CT')
+          Vol_displayNode.SetWindow(ConfigPath.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(ConfigPath.CT_WINDOW_LEVEL)
+      Vol_displayNode.SetInterpolate(ConfigPath.INTERPOLATE_VALUE)
       self.newSegmentation()
 
       self.updateCurrentOutputPathAndCurrentVolumeFilename()
   
+  @enter_function
   def updateCurrentOutputPathAndCurrentVolumeFilename(self):
-      if self.currentCasePath == None or self.CurrentFolder == None or self.outputFolder == None:
+      if (self.currentCasePath == None
+              or self.CurrentFolder == None
+              or self.outputFolder == None):
           return
-      
+
       i = 0
       relativePath = ''
       for c in self.currentCasePath:
@@ -560,11 +667,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               relativePath = relativePath + c
           i = i + 1
 
-      self.currentOutputPath = os.path.split(self.outputFolder + relativePath)[0]
-      self.currentVolumeFilename = os.path.split(self.outputFolder + relativePath)[1].split(".")[0]
+      self.currentOutputPath = (
+          os.path.split(self.outputFolder + relativePath))[0]
+      self.currentVolumeFilename = (
+          os.path.split(self.outputFolder + relativePath)[1].split("."))[0]
   
 
-  # Getter method to get the segmentation node name    - Not sure if this is really useful here. 
+  # Getter method to get the segmentation node name
+  # - Not sure if this is really useful here.
   @property
   def segmentationNodeName(self):
     return f"{os.path.split(self.currentCasePath)[1].split('.')[0]}_segmentation"
@@ -749,7 +859,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if (self.ui.PauseTimerButton.isChecked()):
             self.ui.PauseTimerButton.toggle()
     
-        if not IS_DISPLAY_TIMER_REQUESTED:
+        if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
             self.enableSegmentAndPaintButtons()
         else:
             self.disableSegmentAndPaintButtons() 
@@ -819,6 +929,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               timer.stop()
           timer_index = timer_index + 1
             
+  @enter_function
   def createFolders(self):
       self.revision_step = self.ui.RevisionStep.currentText
       if len(self.revision_step) != 0:
@@ -846,6 +957,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.toggleStartTimerButton() 
 
 
+  @enter_function
   def resetClassificationInformation(self):
         # Try/Except to prevent crashing when selecting another file in the
         # UI case list if no classification_config_yaml file is already created.
@@ -860,90 +972,249 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         except:
             pass
 
-        
-  
+  @enter_function
   def getClassificationInformation(self):
-      self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-      header = None
-      if os.path.exists(self.outputClassificationInformationFile) and os.path.isfile(self.outputClassificationInformationFile):
-            with open(self.outputClassificationInformationFile, 'r') as f:
-                header = f.readlines()[0]
-    
-      label_string = ""
-      data_string = ""
+      """
+      Get all classification information available from both existing csv
+      file and from the current SlicerCART module. Then, update all
+      information available to an updated dataframe.
+      return: dataframe with all previous and actual classification labels.
+      """
+      self.outputClassificationInformationFile = (
+          os.path.join(self.currentOutputPath,
+                       '{}_ClassificationInformation.csv'.format(
+                           self.currentVolumeFilename)))
+      df = None
+      if os.path.exists(
+              self.outputClassificationInformationFile) and os.path.isfile(
+              self.outputClassificationInformationFile):
+          df = pd.read_csv(self.outputClassificationInformationFile)
 
-      if header is not None:
-            label_string = header.split('time,')[1]
+      label_string_slicer = ""
+      data_string_slicer = ""
 
-            labels = label_string.split(',')
+      if df is not None:
+          # Means that classification csv file already exists.
+          Debug.print(self, 'Classification csv file already exists. To '
+                            'update.')
 
-            number_of_checkboxes = len(self.config_yaml["checkboxes"].items())
-            number_of_comboboxes = len(self.config_yaml["comboboxes"].items())
-            number_of_freetextboxes = len(self.config_yaml["freetextboxes"].items())
+          # Get Slicer Classification data only
+          label_string_slicer, data_string_slicer = (
+              self.get_classif_config_data())
+          Debug.print(self, 'Got classification details from Slicer.')
 
-            for i, label in enumerate(labels):
-                data = ""
-                if '\n' in label:
-                    label = label.replace('\n', '')
-                if 0 <= i < number_of_checkboxes:
-                    for _, (objectName, checkbox_label) in enumerate(self.config_yaml["checkboxes"].items()):
-                        if label == checkbox_label:
-                            data = "No"
-                            if self.checkboxWidgets[objectName].isChecked():
-                                data = "Yes"
-                elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
-                    for _, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
-                        combobox_label = comboBoxName.replace("_", " ").capitalize()
-                        if label == combobox_label:
-                            data = self.comboboxWidgets[comboBoxName].currentText
-                elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
-                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.config_yaml["freetextboxes"].items()):
-                        if label == free_text_label:
-                            data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+          # Add Slicer Classification data header to csv df
+          df = self.add_missing_columns_to_df(df, label_string_slicer)
+          # Extract column names into a dictionary
+          columns_dict = self.extract_header_from_df(df)
 
-                if i > 0:
-                    data_string = data_string + ","
-                data_string = data_string + data
+          # Extract previous data into a dictionary
+          data_dict = {col: df[col].tolist() for col in df.columns}
+
+
+          # Update classification data with annotation information (e.g.
+          # annotator names, degree, revision step, etc.)
+          data_string_slicer.update(self.build_current_classif_dictionary())
+
+          # Check if any columns in actual classification labels has been
+          # removed, and add -- if the column that has been removed
+          data_string_slicer = (
+              self.add_mark_for_removed_columns(df,  data_string_slicer))
+
+          # Ensure each element of the dictionary is ready to be converted in df
+          data_string_slicer = (
+              self.convert_string_values_to_list_element(data_string_slicer))
+
+          # At this point, previous dict and new dict should have the same
+          # format: combine the dictionaries
+          combined_df = self.combine_dict(data_dict, data_string_slicer)
+          df = combined_df
 
       else:
-            for i, (objectName, label) in enumerate(self.config_yaml["checkboxes"].items()):
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
-                
-                data = "No"
-                if self.checkboxWidgets[objectName].isChecked():
-                    data = "Yes"
-                
-                data_string = data_string + data
-            
-            for i, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
-                label = comboBoxName.replace("_", " ").capitalize()
+          # Classification csv file does not exist already.
+          label_string, data_string = self.get_classif_config_data()
+          info_dict = self.build_current_classif_dictionary()
 
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
+          data_dict = {}
+          data_dict.update(info_dict)
+          data_dict.update(data_string)
 
-                data = self.comboboxWidgets[comboBoxName].currentText
-                data_string = data_string + data
-            
-            for i, (freeTextBoxObjectName, label) in enumerate(self.config_yaml["freetextboxes"].items()):
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
-                
-                data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
-                data_string = data_string + data
+          # Ensure dictionary is ready to be converted to df
+          data_dict = self.convert_string_values_to_list_element(data_dict)
+          df = pd.DataFrame(data_dict)
+
+      return df
+
+  @enter_function
+  def get_classif_config_data(self):
+      """
+      Get classification configuration data (both labels names and values)
+      :return: 2 DICTIONARIES: one containing the label information; another
+      containing the data for each labels.
+      """
+      label_string = {}
+      data_string = {}
+
+      # list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
+      for element in CLASSIFICATION_BOXES_LIST:
+          # label_string, data_string = self.build_classification_labels()
+          label_temp, data_temp = self.build_classification_labels(element)
+
+          label_string.update(label_temp)
+          data_string.update(data_temp)
 
       return label_string, data_string
-  
+
+
+  @enter_function
+  def build_classification_labels(self, classif_label):
+      """
+      Create a dictionary for both header (label names) and classification
+      values.
+      :param classif_label: string of name of type of labels (e.g. "checkboxes")
+      :return: 2 DICTIONARIES one with names and types of columns; another
+      with data values.
+      """
+      header_dict = {}
+      value_dict = {}
+
+      for i, (objectName, label) in enumerate(
+              self.config_yaml[classif_label].items()):
+
+          local_header_dict = {}
+
+          # Adapt the format of label value saving depending of the type
+          if classif_label == "checkboxes":
+              local_header_dict[label] = classif_label
+              data = "No"
+              if self.checkboxWidgets[objectName].isChecked():
+                  data = "Yes"
+
+          elif classif_label == "comboboxes":
+              local_header_dict[objectName] = classif_label
+              data = self.comboboxWidgets[objectName].currentText
+
+          elif classif_label == "freetextboxes":
+              local_header_dict[label] = classif_label
+              data = self.freeTextBoxes[objectName].text.replace(
+                  "\n", " // ")
+
+          header_dict[f"{local_header_dict}"] = classif_label
+          value_dict[f"{local_header_dict}"] = data
+
+      return header_dict, value_dict
+
+  @enter_function
+  def add_missing_columns_to_df(self, df, columns_dict):
+      """
+      Add columns to a dataframe if it is not in dictionary.
+      :param df: dataframe to check if columns are present
+      :columns_dict: dictionary of all columns needed.
+      :return: dataframe with all required columns.
+      If column is not already existing, all non-existing columns for existing
+      rows are filled with '--' (this helps tracing back if classification
+      configuration has changed).
+      """
+      # Add missing columns from the dictionary
+      for column in columns_dict:
+          if column not in df.columns:
+              # df[column] = np.nan
+              df[column] = '--'
+      return df
+
+  @enter_function
+  def add_mark_for_removed_columns(self, dfcsv, slicer_dict):
+      """
+      Add '--' in the actual data for previously existing column that has
+      been removed in the actual configuration.
+      :param dfcsv: dataframe from previous csv file
+      :param slicer_dict: dictionary of classification labels from slicer ui.
+      :return: dictionary of data with all previously existing columns and
+      actual columns (removed or added).
+      """
+      initial_columns = dfcsv.columns.tolist()
+      for column in initial_columns:
+          if column not in slicer_dict:
+              slicer_dict[column] = '--'
+      return slicer_dict
+
+  @enter_function
+  def convert_string_values_to_list_element(self, dict):
+      """
+      Ensure each value of a dictionary containing columns name as keys and
+      values as column values are formatted to list to make it comptabile
+      with using pandas functions.
+      :param: dict: dictionary to make compatible.
+      :return: dictionary compatible to be converted to dataframe.
+      """
+      # Ensure all values are lists
+      for key in dict:
+          if not isinstance(dict[key], list):
+              dict[key] = [dict[key]]
+      return dict
+
+  @enter_function
+  def combine_dict(self, dict1, dict2):
+      """
+      Combine 2 dictionaries into a dataframe
+      :param dict1 first dictionary to combine
+      :param dict2 second dictionary to combine
+      :return: dataframe with both dictionary content
+      """
+      # Convert dictionaries to DataFrames
+      df1 = pd.DataFrame(dict1)
+      df2 = pd.DataFrame(dict2)
+
+      # Concatenate the DataFrames
+      result_df = pd.concat([df1, df2], ignore_index=True)
+      return result_df
+
+  @enter_function
+  def extract_header_from_df(self, df):
+      """
+      Extract columns name from dataframe.
+      :param: df: dataframe
+      :return: dictionary of columns names as keys and type of
+      classification label as values.
+      """
+      label_string = {}
+      columns_name = list(df.columns.tolist())  # Get a list of column names
+
+      for col in columns_name:
+          try:
+              # Attempt to evaluate the string as a dictionary
+              col_dict = eval(col)
+              if isinstance(col_dict, dict):
+                  # Extract the single key-value pair from the dictionary
+                  for key, value in col_dict.items():
+                      label_string[col] = value
+          except (SyntaxError, NameError, ValueError):
+              # Handle cases where col is not a valid dictionary
+              label_string[col] = col
+
+      return label_string
+
+  @enter_function
+  def build_current_classif_dictionary(self):
+      """
+      Build dictionary with current demographic and general Slicer annotator
+      information.
+      :return: dictionary where keys are Column name for general information
+      and values are corresponding data from actual configuration.
+      """
+      currentClassificationInformationVersion = self.getClassificationInformationVersion()
+      print('info current build', currentClassificationInformationVersion)
+      info_dict = {}
+      info_dict['Volume filename'] = self.currentCase
+      info_dict['Classification version'] = currentClassificationInformationVersion
+      info_dict['Annotator Name'] = self.annotator_name
+      info_dict['Annotator degree'] = self.annotator_degree
+      info_dict['Revision step'] = self.ui.RevisionStep.currentText
+      info_dict['Date and time'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+
+      return info_dict
+
+  @enter_function
   def cast_segmentation_to_uint8(self):
       for case in self.predictions_paths:
           # Load the segmentation
@@ -969,6 +1240,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           else:
               raise ValueError('The input segmentation file must be in nii, nii.gz or nrrd format.')
   
+  @enter_function
   def onSaveSegmentationButton(self):
       # By default creates a new folder in the volume directory 
       # Stop the timer when the button is pressed
@@ -982,8 +1254,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Create folders if not exist
       self.createFolders()
       
-      # Make sure to select the first segmentation node  (i.e. the one that was created when the module was loaded, not the one created when the user clicked on the "Load mask" button)
-      self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
+      # Make sure to select the first segmentation node
+      # (i.e. the one that was created when the module was loaded,
+      # not the one created when the user clicked on the "Load mask" button)
+      self.segmentationNode = (
+          slicer.util.getNodesByClass('vtkMRMLSegmentationNode'))[0]
 
       currentSegmentationVersion = self.getCurrentSegmentationVersion()
 
@@ -993,16 +1268,20 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       # Save if annotator_name is not empty and timer started:
-      if self.annotator_name and self.time is not None: 
-          
+      if self.annotator_name and self.time is not None:
+
           self.saveSegmentationInformation(currentSegmentationVersion)
-          
-          if 'nrrd' in INPUT_FILE_EXTENSION:
+
+          # If not working, the solution is likely to add here:
+          # self.config_yaml = ConfigPath.open_project_config_file() # Get latest/appropriate configuration
+          # self.config_yaml = ConfigPath.set_config_value(self.config_yaml) # Set appropriate values for configuration
+
+          if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNrrdSegmentation(currentSegmentationVersion)
-          
-          if 'nii' in INPUT_FILE_EXTENSION:
+
+          if 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
             self.saveNiiSegmentation(currentSegmentationVersion)
-        
+
           msg_box = qt.QMessageBox()
           msg_box.setWindowTitle("Success")
           msg_box.setIcon(qt.QMessageBox.Information)
@@ -1017,11 +1296,88 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
               msgboxtime.exec()
           elif self.time is None:
               print("Error: timer is not started for some unknown reason.")
-      
+
       self.cast_segmentation_to_uint8()
 
       self.update_case_list_colors()
 
+      # One segment has been saved, which allows to load the next case from now.
+      self.saved_selected = True
+      self.select_next_remaining_case()
+
+  @enter_function
+  def select_next_remaining_case(self):
+      Debug.print(self, f'self.currentCase_index: {self.currentCase_index}')
+      Debug.print(self, f'self.currentCase: {self.currentCase}')
+      Debug.print(self, f'self.currentCasePath: {self.currentCasePath}')
+      Debug.print(self,
+                  f'self.currentCase_index + 1 = {self.currentCase_index + 1}')
+
+      remaining_list_filenames = self.WorkFiles.get_remaining_list_filenames()
+
+      if ((remaining_list_filenames == [])
+          or (remaining_list_filenames == None)
+          or (len(remaining_list_filenames) == 0)):
+
+          Debug.print(self, 'Remaining list empty!')
+          next_case_name = self.select_next_working_case()
+
+          # Update SlicerCART UI with the appropriate case.
+          self.set_patient(next_case_name)
+          self.update_ui()
+
+          return
+
+      if self.currentCase in remaining_list_filenames:
+          current_case_index = self.WorkFiles.find_index_from_filename(
+              self.currentCase, remaining_list_filenames)
+          next_case_index = current_case_index + 1
+
+          if next_case_index >= len(remaining_list_filenames):
+              Debug.print(self, 'This is the last case!')
+              next_case_name = self.currentCase #So, remain on the last case.
+
+          else:
+              next_case_name = remaining_list_filenames[next_case_index]
+
+          self.WorkFiles.adjust_remaining_list(self.currentCase)
+
+      else:
+          # self.CurrentCase not in remaining list: going to the next case in
+          # the working list.
+          next_case_name = self.select_next_working_case()
+          # define next case index
+
+      self.set_patient(next_case_name)
+      self.update_ui()
+
+  @enter_function
+  def select_next_working_case(self):
+      """
+      Select the next case to be displayed from the working list.
+      """
+
+      working_list_filenames = self.WorkFiles.get_working_list_filenames()
+      index_in_working_list = self.WorkFiles.find_index_from_filename(
+          self.currentCase, working_list_filenames)
+
+      # Means that segmentation have already been saved.
+      if self.saved_selected:
+          next_case_index = index_in_working_list + 1
+
+      else:
+          next_case_index = index_in_working_list
+
+      if next_case_index >= len(working_list_filenames):
+          Debug.print(self, 'This is the last case of working list.')
+          next_case_name = self.currentCase
+
+      else:
+          next_case_name = working_list_filenames[next_case_index]
+
+      return next_case_name
+
+  @enter_function
   def qualityControlOfLabels(self):
       is_valid = True 
 
@@ -1141,33 +1497,20 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         with open(self.outputSegmentationInformationFile, 'w') as f:
             f.write(tag_str + "\n")
             f.write(data_str + "\n")
-        
-  def saveClassificationInformation(self, classification_information_labels_string, classification_information_data_string):
-        currentClassificationInformationVersion = self.getClassificationInformationVersion()
 
-        tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time" 
-        tag_str = tag_str + "," + classification_information_labels_string
-        
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentClassificationInformationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + classification_information_data_string
-        
-        self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputClassificationInformationFile):
-            with open(self.outputClassificationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputClassificationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
-  
+  @enter_function
+  def saveClassificationInformation(self, classification_df):
+      """
+      Save updated classification information to a csv file.
+      :param: dataframe containing all updated classification data.
+      """
+      self.outputClassificationInformationFile = os.path.join(
+          self.currentOutputPath,
+          '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
+
+      classification_df.to_csv(self.outputClassificationInformationFile,
+                               index=False)
+
   def getClassificationInformationVersion(self):
       version = "v"
       classificationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_ClassificationInformation.csv'
@@ -1182,17 +1525,22 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           version = f'{version}{next_version_number:02d}'
 
       return version 
-  
+
+  @enter_function
   def getCurrentSegmentationVersion(self):
-      list_of_segmentation_filenames = glob(f'{self.currentOutputPath}{os.sep}{INPUT_FILE_EXTENSION}')
-      
+      # Adjust the version according to each individual file.
+      list_of_segmentation_filenames = glob(
+          f'{self.currentOutputPath}{os.sep}'
+          f'{self.currentVolumeFilename}{ConfigPath.INPUT_FILE_EXTENSION}')
+
       version = 'v'
       if list_of_segmentation_filenames == []:
           version = version + "01"
       else:
-          existing_versions = [(int)(filename.split('_v')[1].split(".")[0]) for filename in list_of_segmentation_filenames]
-          next_version_number =  max(existing_versions) + 1
-          next_version_number = min(next_version_number, 99) # max 99 versions
+          existing_versions = [(int)(filename.split('_v')[1].split(".")[0]) for
+                               filename in list_of_segmentation_filenames]
+          next_version_number = max(existing_versions) + 1
+          next_version_number = min(next_version_number, 99)  # max 99 versions
           version = f'{version}{next_version_number:02d}'
       return version
       
@@ -1215,55 +1563,92 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
       
-  def verify_empty(self):
-      if self.outputFolder is not None and os.path.exists(self.outputFolder):
+  @enter_function
+  def check_volume_folder_selected(self):
+      Debug.print(self, f'self.Currentfolder: {self.CurrentFolder}')
+      if self.CurrentFolder != None:
+          return True
+      return False
 
-        content_of_output_folder = os.listdir(self.outputFolder)
-        if '.DS_Store' in content_of_output_folder:
-            content_of_output_folder.remove('.DS_Store')
-        
-        if len(content_of_output_folder) > 0:
-            self.outputFolder = None
-
-            msg = qt.QMessageBox()
-            msg.setIcon(qt.QMessageBox.Critical)
-            msg.setText("Error : The output folder must be empty ")
-            msg.setInformativeText('Given that there is a new configuration of SlicerCART, the output folder must be empty. ')
-            msg.setWindowTitle("ERROR : The output folder must be empty ")
-            msg.exec()
-        else:
-            path_to_saved_config_files = f'{self.outputFolder}{os.sep}{CONF_FOLDER_NAME}'
-
-            if os.path.exists(path_to_saved_config_files) == False:
-                os.makedirs(path_to_saved_config_files)
-
-            path_to_config_copy = f'{path_to_saved_config_files}{os.sep}{CONFIG_COPY_FILENAME}'
-
-            shutil.copy(CONFIG_FILE_PATH, path_to_config_copy)
-
+  @enter_function
   def onSelectOutputFolder(self):
-      self.outputFolder = qt.QFileDialog.getExistingDirectory(None,"Open a folder", self.DefaultDir, qt.QFileDialog.ShowDirsOnly)
 
-      if REQUIRE_EMPTY: 
-          self.verify_empty()
-      
+      if self.check_volume_folder_selected():
+          self.outputFolder = (
+              qt.QFileDialog.getExistingDirectory(
+                  None,
+                  "Open a folder",
+                  self.DefaultDir,
+                  qt.QFileDialog.ShowDirsOnly))
+          ConfigPath.set_output_folder(self.outputFolder)
+      else:
+          Dev.show_message_box(self, 'Please select volumes folder first.',
+                               box_title='ATTENTION!')
+          return
+
+
+      # MB: Deactivated related to issue 112. To discuss in team (to remove).
+      # if REQUIRE_EMPTY:
+      #     self.verify_empty()
+
+      ConfigPath.check_existing_configuration()
+      ConfigPath.delete_temp_file()
+
+      # Robust. If the next output folder selected (from a change) is empty,
+      # ensure it will select the correct output folder path
+      ConfigPath.write_correct_path()
+
+      # Save the associated volume_folder_path with the output_folder selected.
+      UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
+
+      self.manage_workflow_and_classification()
+
+      ConfigPath.write_config_file()
+
+      self.set_ui_enabled_options()
+
+  @enter_function
+  def manage_workflow_and_classification(self):
+      # Update classification labels (part 1 of 2)
+      initial_config_content = ConfigPath.get_initial_config_after_modif()
+      temp_dict = ConfigPath.extract_config_classification(
+          initial_config_content)
+
+      self.manage_workflow()
+
+      # Update classification labels (part 2 of 2)
+      # To do after manage workflow because manage workflow looks for the
+      # optimal configuration file to use.
+      self.config_yaml = ConfigPath.compare_and_merge_classification(
+          self.config_yaml, temp_dict)
+
+      # Load classification parameters in the ui
+      self.set_classification_config_ui()
+
+  @enter_function
+  def set_ui_enabled_options(self):
       if self.outputFolder is not None:
           self.ui.LoadClassification.setEnabled(True)
           self.ui.LoadSegmentation.setEnabled(True)
 
           self.ui.SaveSegmentationButton.setEnabled(True)
           self.ui.SaveClassificationButton.setEnabled(True)
-          
+
           if self.CurrentFolder is not None:
-                self.updateCurrentOutputPathAndCurrentVolumeFilename()
+              self.updateCurrentOutputPathAndCurrentVolumeFilename()
 
-                self.update_case_list_colors()
+              self.update_case_list_colors()
 
-                self.ui.SlicerDirectoryListView.setCurrentItem(self.ui.SlicerDirectoryListView.item(self.currentCase_index))
-                self.update_current_segmentation_status()
+              self.ui.SlicerDirectoryListView.setCurrentItem(
+                  self.ui.SlicerDirectoryListView.item(self.currentCase_index))
+              self.update_current_segmentation_status()
 
-                self.predictions_paths = sorted(glob(os.path.join(self.outputFolder, f'{INPUT_FILE_EXTENSION}')))
+              self.predictions_paths = sorted(glob(
+                  os.path.join(self.outputFolder, f'{ConfigPath.INPUT_FILE_EXTENSION}')))
+      else:
+          Debug.print(self, 'No output folder selected.')
 
+  @enter_function
   def update_case_list_colors(self):
       if self.outputFolder is None or self.CurrentFolder is None:
           return
@@ -1280,7 +1665,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
  
             currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
             if currentCaseSegmentationStatus == 0:
-                item.setForeground(qt.QColor('black'))
+                item.setForeground(qt.QColor(self.foreground))
             elif currentCaseSegmentationStatus == 1:
                 item.setForeground(qt.QColor('orange'))
             elif currentCaseSegmentationStatus == 2:
@@ -1318,7 +1703,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
 
-  def onLoadClassification(self): 
+  @enter_function
+  def onLoadClassification(self):
       classificationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_ClassificationInformation.csv'
       classificationInformation_df = None
       if os.path.exists(classificationInformationPath):
@@ -1335,22 +1721,30 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       loadClassificationWindow = LoadClassificationWindow(self, classificationInformation_df)
       loadClassificationWindow.show()
 
+  @enter_function
   def onSaveClassificationButton(self):
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
-      classification_information_labels_string, classification_information_data_string = self.getClassificationInformation()
+      classification_df = self.getClassificationInformation()
       
       # Create folders if don't exist
       self.createFolders()
 
-      if self.annotator_name is not None: 
-          self.saveClassificationInformation(classification_information_labels_string, classification_information_data_string)
-          msg_box = qt.QMessageBox()
-          msg_box.setWindowTitle("Success")
-          msg_box.setIcon(qt.QMessageBox.Information)
-          msg_box.setText("Classification saved successfully!")
-          msg_box.exec()
+      if self.annotator_name is not None:
+          self.saveClassificationInformation(classification_df)
+          # Those lines can be re-activated if wanted to display a success
+          # message when saved.
+          # msg_box = qt.QMessageBox()
+          # msg_box.setWindowTitle("Success")
+          # msg_box.setIcon(qt.QMessageBox.Information)
+          # msg_box.setText("Classification saved successfully!")
+          # msg_box.exec()
+
+          # Go automatically to the next case in the UI list when
+          # classification has been saved (if it<s the last case, it stays on
+          # it)
+          self.onNextButton()
 
       else:
           msgboxtime = qt.QMessageBox()
@@ -1430,6 +1824,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compareSegmentVersionsWindow = CompareSegmentVersionsWindow(self, segmentationInformation_df)
       compareSegmentVersionsWindow.show()
 
+  @enter_function
   def compareSegmentVersions(self, selected_label, selected_version_file_paths):
       self.labelOfCompareSegmentVersions = selected_label
       self.colorsSelectedVersionFilePathsForCompareSegmentVersions = {}
@@ -1445,8 +1840,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
       Vol_displayNode = self.VolumeNode.GetDisplayNode()
       Vol_displayNode.AutoWindowLevelOff()
-      Vol_displayNode.SetWindow(CT_WINDOW_WIDTH)
-      Vol_displayNode.SetLevel(CT_WINDOW_LEVEL)
+      if ConfigPath.MODALITY == 'CT':
+          Debug.print(self, 'MODALITY==CT')
+          Vol_displayNode.SetWindow(ConfigPath.CT_WINDOW_WIDTH)
+          Vol_displayNode.SetLevel(ConfigPath.CT_WINDOW_LEVEL)
       Vol_displayNode.SetInterpolate(INTERPOLATE_VALUE)
 
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -1455,10 +1852,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.resetTimer()
       
       for (segment_name, version_file_path) in selected_version_file_paths.items():
-            if 'nrrd' in INPUT_FILE_EXTENSION:
+            if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
                 slicer.util.loadSegmentation(version_file_path)
                 currentSegmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-            elif 'nii' in INPUT_FILE_EXTENSION:
+            elif 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
                 labelmapVolumeNode = slicer.util.loadLabelVolume(version_file_path)
                 currentSegmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
                 slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, currentSegmentationNode)
@@ -1509,10 +1906,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.ShowSegmentVersionLegendButton.setVisible(False)
 
   def loadSegmentation(self, absolute_path_to_segmentation_file):
-        if 'nrrd' in INPUT_FILE_EXTENSION:
+        if 'nrrd' in ConfigPath.INPUT_FILE_EXTENSION:
             slicer.util.loadSegmentation(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.util.getNodesByClass('vtkMRMLSegmentationNode')[0]
-        elif 'nii' in INPUT_FILE_EXTENSION:
+        elif 'nii' in ConfigPath.INPUT_FILE_EXTENSION:
             labelmapVolumeNode = slicer.util.loadLabelVolume(absolute_path_to_segmentation_file)
             self.segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode")
             slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmapVolumeNode, self.segmentationNode)
@@ -1554,16 +1951,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         return list_of_segment_names
 
   def onPushDefaultMin(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+      fresh_config = ConfigPath.open_project_config_file()
+      self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"] = fresh_config["labels"][self.current_label_index]["lower_bound_HU"]
+      self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPushDefaultMax(self):
-      with open(CONFIG_FILE_PATH, 'r') as file:
-        fresh_config = yaml.safe_load(file)
-        self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]     
-        self.setUpperAndLowerBoundHU(self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"], self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
+      fresh_config = ConfigPath.open_project_config_file()
+      self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"] = fresh_config["labels"][self.current_label_index]["upper_bound_HU"]
+      self.setUpperAndLowerBoundHU(
+          self.config_yaml["labels"][self.current_label_index]["lower_bound_HU"],
+          self.config_yaml["labels"][self.current_label_index]["upper_bound_HU"])
 
   def onPush_ShowSegmentVersionLegendButton(self):
       segmentationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
@@ -1607,6 +2004,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         removedNode = self.lineDetails.pop(lastMarkupNode.GetName())
         
+  @enter_function
   def onDropDownButton_label_select(self, value):
       self.current_label_index = value
       label = self.config_yaml["labels"][value]

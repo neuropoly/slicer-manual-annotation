@@ -21,7 +21,9 @@ KEYBOARD_SHORTCUTS:
   callback: onPushButton_Interpolate
   shortcut: i
 checkboxes:
+  Anoxic_injury_checkbox: Anoxic injury
   Brain_edema_checkbox: Brain edema
+  Craniectomy_checkbox: Craniectomy
   Craniotomy_checkbox: Craniotomy
   EDH_checkbox: EDH
   EVD_checkbox: EVD
@@ -38,8 +40,13 @@ checkboxes:
   Pressure_monitor_checkbox: Pressure monitor
   SAH_checkbox: SAH
   SDH_checkbox: SDH
-  za1: Za1
+  Tonsillar_herniation_checkbox: Tonsillar herniation
 comboboxes:
+  atrophy:
+    atrophy_mild: Mild
+    atrophy_moderate: Moderate
+    atrophy_none: None
+    atrophy_severe: Severe
   test_dd:
     '1': '1'
   ventricular_size:
@@ -59,8 +66,6 @@ default_volume_directory: ''
 enable_debug: true
 freetextboxes:
   cheese: Cheese
-  kiki: Kiki
-  maxime: Maxime
   number_of_focal_points: Number of focal points
   other_comments: Comments
 impose_bids_format: false

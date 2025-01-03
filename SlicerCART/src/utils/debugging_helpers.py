@@ -63,7 +63,6 @@ class Debug:
         filename = os.path.join(folderpath, 'debug_df.csv')
         df.to_csv(filename, index=False)
 
-
 def enter_function(func):
     """
     Decorator that enables to print the function name in the python console

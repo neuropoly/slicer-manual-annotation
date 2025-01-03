@@ -1,5 +1,6 @@
 from utils import *
 class LoadClassificationWindow(qt.QWidget):
+   @enter_function
    def __init__(self, segmenter, classificationInformation_df, parent = None):
       super(LoadClassificationWindow, self).__init__(parent)
 
@@ -69,6 +70,7 @@ class LoadClassificationWindow(qt.QWidget):
       self.setWindowTitle("Load Classification")
       self.resize(800, 400)
 
+   @enter_function
    def pushLoad(self):
        selected_version = self.versionDropdown.currentText
        selected_version_df = self.classificationInformation_df[self.classificationInformation_df['Classification version']==selected_version].reset_index(drop = True)

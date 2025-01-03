@@ -217,14 +217,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.UB_HU.setValue(self.UB_HU)
         self.ui.LB_HU.setValue(self.LB_HU)
 
-        # clear classification widgets
-        for i in reversed(range(self.ui.ClassificationGridLayout.count())): 
-            if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
-                self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+        self.set_classification_config_ui()
 
-        comboboxesStartRow = self.setupCheckboxes(3)
-        freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-        self.setupFreeText(freetextStartRow)
         
         # Initialize timers
         self.timers = []
@@ -279,6 +273,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         for label in self.config_yaml["labels"]:
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
+  @enter_function
+  def set_classification_config_ui(self):
+      # clear classification widgets
+      for i in reversed(range(self.ui.ClassificationGridLayout.count())):
+          if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+              self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(
+                  None)
+
+      comboboxesStartRow = self.setupCheckboxes(3)
+      freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+      self.setupFreeText(freetextStartRow)
+
   def set_master_volume_intensity_mask_according_to_modality(self):
       if ConfigPath.MODALITY == 'CT':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
@@ -434,7 +440,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.outputFolder != None:
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
-          self.manage_workflow()
+          self.manage_workflow_and_classification()
 
   @enter_function
   def reset_ui(self):
@@ -934,6 +940,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.toggleStartTimerButton() 
 
 
+  @enter_function
   def resetClassificationInformation(self):
         # Try/Except to prevent crashing when selecting another file in the
         # UI case list if no classification_config_yaml file is already created.
@@ -948,90 +955,248 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         except:
             pass
 
-        
-  
+  @enter_function
   def getClassificationInformation(self):
-      self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-      header = None
-      if os.path.exists(self.outputClassificationInformationFile) and os.path.isfile(self.outputClassificationInformationFile):
-            with open(self.outputClassificationInformationFile, 'r') as f:
-                header = f.readlines()[0]
-    
-      label_string = ""
-      data_string = ""
+      """
+      Get all classification information available from both existing csv
+      file and from the current SlicerCART module. Then, update all
+      information available to an updated dataframe.
+      return: dataframe with all previous and actual classification labels.
+      """
+      self.outputClassificationInformationFile = (
+          os.path.join(self.currentOutputPath,
+                       '{}_ClassificationInformation.csv'.format(
+                           self.currentVolumeFilename)))
+      df = None
+      if os.path.exists(
+              self.outputClassificationInformationFile) and os.path.isfile(
+              self.outputClassificationInformationFile):
+          df = pd.read_csv(self.outputClassificationInformationFile)
 
-      if header is not None:
-            label_string = header.split('time,')[1]
+      label_string_slicer = ""
+      data_string_slicer = ""
 
-            labels = label_string.split(',')
+      if df is not None:
+          # Means that classification csv file already exists.
+          Debug.print(self, 'Classification csv file already exists. To '
+                            'update.')
 
-            number_of_checkboxes = len(self.config_yaml["checkboxes"].items())
-            number_of_comboboxes = len(self.config_yaml["comboboxes"].items())
-            number_of_freetextboxes = len(self.config_yaml["freetextboxes"].items())
+          # Get Slicer Classification data only
+          label_string_slicer, data_string_slicer = (
+              self.get_classif_config_data())
+          Debug.print(self, 'Got classification details from Slicer.')
 
-            for i, label in enumerate(labels):
-                data = ""
-                if '\n' in label:
-                    label = label.replace('\n', '')
-                if 0 <= i < number_of_checkboxes:
-                    for _, (objectName, checkbox_label) in enumerate(self.config_yaml["checkboxes"].items()):
-                        if label == checkbox_label:
-                            data = "No"
-                            if self.checkboxWidgets[objectName].isChecked():
-                                data = "Yes"
-                elif number_of_checkboxes <= i < number_of_checkboxes + number_of_comboboxes:
-                    for _, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
-                        combobox_label = comboBoxName.replace("_", " ").capitalize()
-                        if label == combobox_label:
-                            data = self.comboboxWidgets[comboBoxName].currentText
-                elif number_of_checkboxes + number_of_comboboxes <= i < number_of_checkboxes + number_of_comboboxes + number_of_freetextboxes:
-                    for _, (freeTextBoxObjectName, free_text_label) in enumerate(self.config_yaml["freetextboxes"].items()):
-                        if label == free_text_label:
-                            data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
+          # Add Slicer Classification data header to csv df
+          df = self.add_missing_columns_to_df(df, label_string_slicer)
+          # Extract column names into a dictionary
+          columns_dict = self.extract_header_from_df(df)
 
-                if i > 0:
-                    data_string = data_string + ","
-                data_string = data_string + data
+          # Extract previous data into a dictionary
+          data_dict = {col: df[col].tolist() for col in df.columns}
+
+
+          # Update classification data with annotation information (e.g.
+          # annotator names, degree, revision step, etc.)
+          data_string_slicer.update(self.build_current_classif_dictionary())
+
+          # Check if any columns in actual classification labels has been
+          # removed, and add -- if the column that has been removed
+          data_string_slicer = (
+              self.add_mark_for_removed_columns(df,  data_string_slicer))
+
+          # Ensure each element of the dictionary is ready to be converted in df
+          data_string_slicer = (
+              self.convert_string_values_to_list_element(data_string_slicer))
+
+          # At this point, previous dict and new dict should have the same
+          # format: combine the dictionaries
+          combined_df = self.combine_dict(data_dict, data_string_slicer)
+          df = combined_df
 
       else:
-            for i, (objectName, label) in enumerate(self.config_yaml["checkboxes"].items()):
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
-                
-                data = "No"
-                if self.checkboxWidgets[objectName].isChecked():
-                    data = "Yes"
-                
-                data_string = data_string + data
-            
-            for i, (comboBoxName, options) in enumerate(self.config_yaml["comboboxes"].items()):
-                label = comboBoxName.replace("_", " ").capitalize()
+          # Classification csv file does not exist already.
+          label_string, data_string = self.get_classif_config_data()
+          info_dict = self.build_current_classif_dictionary()
 
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
+          data_dict = {}
+          data_dict.update(info_dict)
+          data_dict.update(data_string)
 
-                data = self.comboboxWidgets[comboBoxName].currentText
-                data_string = data_string + data
-            
-            for i, (freeTextBoxObjectName, label) in enumerate(self.config_yaml["freetextboxes"].items()):
-                if label_string != "":
-                    label_string = label_string + ","
-                    data_string = data_string + ","
-                
-                label_string = label_string + label
-                
-                data = self.freeTextBoxes[freeTextBoxObjectName].text.replace("\n", " // ")
-                data_string = data_string + data
+          # Ensure dictionary is ready to be converted to df
+          data_dict = self.convert_string_values_to_list_element(data_dict)
+          df = pd.DataFrame(data_dict)
+
+      return df
+
+  @enter_function
+  def get_classif_config_data(self):
+      """
+      Get classification configuration data (both labels names and values)
+      :return: 2 DICTIONARIES: one containing the label information; another
+      containing the data for each labels.
+      """
+      label_string = {}
+      data_string = {}
+
+      # list_of_boxes = ["checkboxes", "comboboxes", "freetextboxes"]
+      for element in CLASSIFICATION_BOXES_LIST:
+          # label_string, data_string = self.build_classification_labels()
+          label_temp, data_temp = self.build_classification_labels(element)
+
+          label_string.update(label_temp)
+          data_string.update(data_temp)
 
       return label_string, data_string
-  
+
+
+  @enter_function
+  def build_classification_labels(self, classif_label):
+      """
+      Create a dictionary for both header (label names) and classification
+      values.
+      :param classif_label: string of name of type of labels (e.g. "checkboxes")
+      :return: 2 DICTIONARIES one with names and types of columns; another
+      with data values.
+      """
+      header_dict = {}
+      value_dict = {}
+
+      for i, (objectName, label) in enumerate(
+              self.config_yaml[classif_label].items()):
+
+          local_header_dict = {}
+
+          # Adapt the format of label value saving depending of the type
+          if classif_label == "checkboxes":
+              local_header_dict[label] = classif_label
+              data = "No"
+              if self.checkboxWidgets[objectName].isChecked():
+                  data = "Yes"
+
+          elif classif_label == "comboboxes":
+              local_header_dict[objectName] = classif_label
+              data = self.comboboxWidgets[objectName].currentText
+
+          elif classif_label == "freetextboxes":
+              local_header_dict[label] = classif_label
+              data = self.freeTextBoxes[objectName].text.replace(
+                  "\n", " // ")
+
+          header_dict[f"{local_header_dict}"] = classif_label
+          value_dict[f"{local_header_dict}"] = data
+
+      return header_dict, value_dict
+
+  @enter_function
+  def add_missing_columns_to_df(self, df, columns_dict):
+      """
+      Add columns to a dataframe if it is not in dictionary.
+      :param df: dataframe to check if columns are present
+      :columns_dict: dictionary of all columns needed.
+      :return: dataframe with all required columns.
+      If column is not already existing, all non-existing columns for existing
+      rows are filled with '--' (this helps tracing back if classification
+      configuration has changed).
+      """
+      # Add missing columns from the dictionary
+      for column in columns_dict:
+          if column not in df.columns:
+              # df[column] = np.nan
+              df[column] = '--'
+      return df
+
+  @enter_function
+  def add_mark_for_removed_columns(self, dfcsv, slicer_dict):
+      """
+      Add '--' in the actual data for previously existing column that has
+      been removed in the actual configuration.
+      :param dfcsv: dataframe from previous csv file
+      :param slicer_dict: dictionary of classification labels from slicer ui.
+      :return: dictionary of data with all previously existing columns and
+      actual columns (removed or added).
+      """
+      initial_columns = dfcsv.columns.tolist()
+      for column in initial_columns:
+          if column not in slicer_dict:
+              slicer_dict[column] = '--'
+      return slicer_dict
+
+  @enter_function
+  def convert_string_values_to_list_element(self, dict):
+      """
+      Ensure each value of a dictionary containing columns name as keys and
+      values as column values are formatted to list to make it comptabile
+      with using pandas functions.
+      :param: dict: dictionary to make compatible.
+      :return: dictionary compatible to be converted to dataframe.
+      """
+      # Ensure all values are lists
+      for key in dict:
+          if not isinstance(dict[key], list):
+              dict[key] = [dict[key]]
+      return dict
+
+  @enter_function
+  def combine_dict(self, dict1, dict2):
+      """
+      Combine 2 dictionaries into a dataframe
+      :param dict1 first dictionary to combine
+      :param dict2 second dictionary to combine
+      :return: dataframe with both dictionary content
+      """
+      # Convert dictionaries to DataFrames
+      df1 = pd.DataFrame(dict1)
+      df2 = pd.DataFrame(dict2)
+
+      # Concatenate the DataFrames
+      result_df = pd.concat([df1, df2], ignore_index=True)
+      return result_df
+
+  @enter_function
+  def extract_header_from_df(self, df):
+      """
+      Extract columns name from dataframe.
+      :param: df: dataframe
+      :return: dictionary of columns names as keys and type of
+      classification label as values.
+      """
+      label_string = {}
+      columns_name = list(df.columns.tolist())  # Get a list of column names
+
+      for col in columns_name:
+          try:
+              # Attempt to evaluate the string as a dictionary
+              col_dict = eval(col)
+              if isinstance(col_dict, dict):
+                  # Extract the single key-value pair from the dictionary
+                  for key, value in col_dict.items():
+                      label_string[col] = value
+          except (SyntaxError, NameError, ValueError):
+              # Handle cases where col is not a valid dictionary
+              label_string[col] = col
+
+      return label_string
+
+  @enter_function
+  def build_current_classif_dictionary(self):
+      """
+      Build dictionary with current demographic and general Slicer annotator
+      information.
+      :return: dictionary where keys are Column name for general information
+      and values are corresponding data from actual configuration.
+      """
+      currentClassificationInformationVersion = self.getClassificationInformationVersion()
+      print('info current build', currentClassificationInformationVersion)
+      info_dict = {}
+      info_dict['Volume filename'] = self.currentCase
+      info_dict['Classification version'] = currentClassificationInformationVersion
+      info_dict['Annotator Name'] = self.annotator_name
+      info_dict['Annotator degree'] = self.annotator_degree
+      info_dict['Revision step'] = self.ui.RevisionStep.currentText
+      info_dict['Date and time'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+
+      return info_dict
+
   @enter_function
   def cast_segmentation_to_uint8(self):
       for case in self.predictions_paths:
@@ -1315,33 +1480,20 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         with open(self.outputSegmentationInformationFile, 'w') as f:
             f.write(tag_str + "\n")
             f.write(data_str + "\n")
-        
-  def saveClassificationInformation(self, classification_information_labels_string, classification_information_data_string):
-        currentClassificationInformationVersion = self.getClassificationInformationVersion()
 
-        tag_str = "Volume filename,Classification version,Annotator Name,Annotator degree,Revision step,Date and time" 
-        tag_str = tag_str + "," + classification_information_labels_string
-        
-        data_str = self.currentCase 
-        data_str = data_str + "," + currentClassificationInformationVersion
-        data_str = data_str + "," + self.annotator_name
-        data_str = data_str + "," + self.annotator_degree
-        data_str = data_str + "," + self.revision_step[0]
-        data_str = data_str + "," + datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        data_str = data_str + "," + classification_information_data_string
-        
-        self.outputClassificationInformationFile = os.path.join(self.currentOutputPath,
-                                            '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
-        if not os.path.isfile(self.outputClassificationInformationFile):
-            with open(self.outputClassificationInformationFile, 'w') as f:
-                f.write(tag_str)
-                f.write("\n")
-                f.write(data_str)
-        else:
-            with open(self.outputClassificationInformationFile, 'a') as f:
-                f.write("\n")
-                f.write(data_str)
-  
+  @enter_function
+  def saveClassificationInformation(self, classification_df):
+      """
+      Save updated classification information to a csv file.
+      :param: dataframe containing all updated classification data.
+      """
+      self.outputClassificationInformationFile = os.path.join(
+          self.currentOutputPath,
+          '{}_ClassificationInformation.csv'.format(self.currentVolumeFilename))
+
+      classification_df.to_csv(self.outputClassificationInformationFile,
+                               index=False)
+
   def getClassificationInformationVersion(self):
       version = "v"
       classificationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_ClassificationInformation.csv'
@@ -1432,9 +1584,29 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
 
-      self.manage_workflow()
+      self.manage_workflow_and_classification()
+
+      ConfigPath.write_config_file()
 
       self.set_ui_enabled_options()
+
+  @enter_function
+  def manage_workflow_and_classification(self):
+      # Update classification labels (part 1 of 2)
+      initial_config_content = ConfigPath.get_initial_config_after_modif()
+      temp_dict = ConfigPath.extract_config_classification(
+          initial_config_content)
+
+      self.manage_workflow()
+
+      # Update classification labels (part 2 of 2)
+      # To do after manage workflow because manage workflow looks for the
+      # optimal configuration file to use.
+      self.config_yaml = ConfigPath.compare_and_merge_classification(
+          self.config_yaml, temp_dict)
+
+      # Load classification parameters in the ui
+      self.set_classification_config_ui()
 
   @enter_function
   def set_ui_enabled_options(self):
@@ -1514,7 +1686,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
           return
 
-  def onLoadClassification(self): 
+  @enter_function
+  def onLoadClassification(self):
       classificationInformationPath = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_ClassificationInformation.csv'
       classificationInformation_df = None
       if os.path.exists(classificationInformationPath):
@@ -1531,17 +1704,18 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       loadClassificationWindow = LoadClassificationWindow(self, classificationInformation_df)
       loadClassificationWindow.show()
 
+  @enter_function
   def onSaveClassificationButton(self):
       self.annotator_name = self.ui.Annotator_name.text
       self.annotator_degree = self.ui.AnnotatorDegree.currentText
 
-      classification_information_labels_string, classification_information_data_string = self.getClassificationInformation()
+      classification_df = self.getClassificationInformation()
       
       # Create folders if don't exist
       self.createFolders()
 
-      if self.annotator_name is not None: 
-          self.saveClassificationInformation(classification_information_labels_string, classification_information_data_string)
+      if self.annotator_name is not None:
+          self.saveClassificationInformation(classification_df)
           msg_box = qt.QMessageBox()
           msg_box.setWindowTitle("Success")
           msg_box.setIcon(qt.QMessageBox.Information)

@@ -244,6 +244,59 @@ class ConfigPath():
         """
         self.outputFolder = outputFolder
 
+    @enter_function
+    def get_initial_config_after_modif(self):
+        """
+        Read the initial configuration file. To use after Slicer
+        Configuration Set Up Window has been modified.
+        :return: content of the initial configuration file (dictionary)
+        """
+        # Read at startup the initial config file
+        with open(CONFIG_FILE_PATH, 'r') as file:
+            content = yaml.safe_load(file)
+        return content
+
+    @enter_function
+    def extract_config_classification(self, content):
+        """
+        Get only the classification configuration from the content of a
+        config file.
+        :param content: content of a config file
+        :return: classification labels as a dictionary
+        """
+        classif_dict = {}
+        for element in CLASSIFICATION_BOXES_LIST:
+            classif_dict[element] = content[element]
+        return classif_dict
+
+    @enter_function
+    def compare_and_merge_classification(self, final_config_file, temp_dict):
+        """
+        Compare possibly modified classification labels with final config
+        file (e.g. in the output folder or the initial config file if output
+        folder has not yet been selected).
+        :param: final_config_file: content of final config file (dictionary)
+        :param: temp_dict: dictionary containing classification labels
+        :return: final config file content (all config parameters)
+        """
+
+        initial_config_file_dict = (
+            ConfigPath.extract_config_classification(final_config_file))
+
+        for key in list(
+                initial_config_file_dict.keys()):  # Use list() to avoid RuntimeError
+            if key not in temp_dict:
+                del initial_config_file_dict[key]
+
+        # Add or update keys from temp_dict to initial_config_file_dict
+        for key, value in temp_dict.items():
+            initial_config_file_dict[key] = value
+
+        for element in initial_config_file_dict:
+            final_config_file[element] = initial_config_file_dict[element]
+
+        return final_config_file
+
 
 # Creating an instance of ConfigPath. This ensures that all the same
 # config values will be used in the different files/modules.

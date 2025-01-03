@@ -217,14 +217,16 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.UB_HU.setValue(self.UB_HU)
         self.ui.LB_HU.setValue(self.LB_HU)
 
-        # clear classification widgets
-        for i in reversed(range(self.ui.ClassificationGridLayout.count())): 
-            if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
-                self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+        self.set_classification_config_ui()
 
-        comboboxesStartRow = self.setupCheckboxes(3)
-        freetextStartRow = self.setupComboboxes(comboboxesStartRow)
-        self.setupFreeText(freetextStartRow)
+        # # clear classification widgets
+        # for i in reversed(range(self.ui.ClassificationGridLayout.count())):
+        #     if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+        #         self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(None)
+        #
+        # comboboxesStartRow = self.setupCheckboxes(3)
+        # freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+        # self.setupFreeText(freetextStartRow)
         
         # Initialize timers
         self.timers = []
@@ -279,6 +281,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         for label in self.config_yaml["labels"]:
             self.ui.dropDownButton_label_select.addItem(label["name"])
   
+  @enter_function
+  def set_classification_config_ui(self):
+      # clear classification widgets
+      for i in reversed(range(self.ui.ClassificationGridLayout.count())):
+          if self.ui.ClassificationGridLayout.itemAt(i).widget() is not None:
+              self.ui.ClassificationGridLayout.itemAt(i).widget().setParent(
+                  None)
+
+      comboboxesStartRow = self.setupCheckboxes(3)
+      freetextStartRow = self.setupComboboxes(comboboxesStartRow)
+      self.setupFreeText(freetextStartRow)
+
+
   def set_master_volume_intensity_mask_according_to_modality(self):
       if ConfigPath.MODALITY == 'CT':
             self.segmentEditorNode.SetMasterVolumeIntensityMask(True)
@@ -434,7 +449,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if self.outputFolder != None:
           UserPath.write_in_filepath(self, self.outputFolder,
                                      self.CurrentFolder)
-          self.manage_workflow()
+          print('fomr contineu exitinsg config')
+          self.manage_workflow_and_classification()
+          print('amange worked')
+          # self.set_classification_config_ui()
+          print('classif souhld be ok')
+
+          # self.manage_workflow()
 
   @enter_function
   def reset_ui(self):
@@ -1579,6 +1600,26 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Save the associated volume_folder_path with the output_folder selected.
       UserPath.write_in_filepath(self, self.outputFolder, self.CurrentFolder)
 
+      self.manage_workflow_and_classification()
+      # # Update classification labels (part 1 of 2)
+      # initial_config_content = ConfigPath.get_initial_config_after_modif()
+      # temp_dict = ConfigPath.extract_config_classification(
+      #     initial_config_content)
+      #
+      # self.manage_workflow()
+      #
+      # # Update classification labels (part 2 of 2)
+      # # To do after manage workflow because manage workflow looks for the
+      # # optimal configuration file to use.
+      # self.config_yaml = ConfigPath.compare_and_merge_classification(
+      #     self.config_yaml, temp_dict)
+
+      ConfigPath.write_config_file()
+
+      self.set_ui_enabled_options()
+
+  @enter_function
+  def manage_workflow_and_classification(self):
       # Update classification labels (part 1 of 2)
       initial_config_content = ConfigPath.get_initial_config_after_modif()
       temp_dict = ConfigPath.extract_config_classification(
@@ -1592,9 +1633,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.config_yaml = ConfigPath.compare_and_merge_classification(
           self.config_yaml, temp_dict)
 
-      ConfigPath.write_config_file()
-
-      self.set_ui_enabled_options()
+      # Load classification parameters in the ui
+      self.set_classification_config_ui()
 
   @enter_function
   def set_ui_enabled_options(self):

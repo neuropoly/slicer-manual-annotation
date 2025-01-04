@@ -72,6 +72,7 @@ class LoadSegmentationsWindow(qt.QWidget):
       self.setWindowTitle("Load Segmentations")
       self.resize(800, 400)
 
+   @enter_function
    def pushLoad(self):
        selected_version = self.versionDropdown.currentText
 
@@ -82,9 +83,16 @@ class LoadSegmentationsWindow(qt.QWidget):
            segmentation_file_extension = ".seg.nrrd"
 
        absolute_path_to_segmentation = f'{self.segmenter.currentOutputPath}{os.sep}{self.segmenter.currentVolumeFilename}_{selected_version}{segmentation_file_extension}'
+
+       print('absolute_path_to_segmentation', absolute_path_to_segmentation)
+
        self.segmenter.loadSegmentation(absolute_path_to_segmentation)
 
        self.close()
 
+   @enter_function
    def pushCancel(self):
+
+       print('self cancel')
+
        self.close()

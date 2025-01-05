@@ -122,6 +122,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.color_active = "yellowgreen"
     self.color_inactive = "indianred"
 
+    # Segmentation variables
+    # Track if segmentation is modified
+    self.segmentation_modified = False
+    self.observer_tags = {}
+
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
     self.config_yaml = ConfigPath.open_project_config_file()
@@ -134,9 +139,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.SaveSegmentationButton.connect('clicked(bool)', self.onSaveSegmentationButton)
     self.ui.SelectOutputFolder.connect('clicked(bool)', self.onSelectOutputFolder)
     self.ui.LoadSegmentation.connect('clicked(bool)', self.onLoadSegmentation)
-    # self.ui.ToggleSegmentation.connect('clicked(bool)',
-    #                          self.toggle_segmentation_masks)
-    # self.ui.ToggleSegmentation.setStyleSheet("background-color: red")
+
+    self.ui.ToggleSegmentation.connect('clicked(bool)',
+                             self.toggle_segmentation_masks)
+    self.ui.ToggleSegmentation.setStyleSheet("background-color: red")
 
     self.ui.CompareSegmentVersions.connect('clicked(bool)', self.onCompareSegmentVersions)
     self.ui.LoadClassification.connect('clicked(bool)', self.onLoadClassification)
@@ -186,100 +192,260 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.ui.pushButton_ToggleFill.setStyleSheet("background-color : indianred")
     # self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
+    self.ui.pushButton_ToggleVisibility.setChecked(True)
     self.ui.pushButton_ToggleVisibility.setStyleSheet(f"background-color : "
-                                                      f"{self.color_inactive}")
+                                                      f"{self.color_active}")
+
+    self.mask_visible_flag_level2 = True
+
+
+    self.ui.ToggleSegmentation.setStyleSheet(f"background-color : {self.color_inactive}")
 
     self.ui.lcdNumber.setStyleSheet("background-color : black")
     
     self.MostRecentPausedCasePath = ""
-  
+
+    # print('before adding observer')
+    # # Observe the scene for added nodes
+    # self.sceneObserverTag = slicer.mrmlScene.AddObserver(
+    #     slicer.vtkMRMLScene.NodeAddedEvent, self.onNodeAdded
+    # )
+    # print('after adding observer')
+    # # # Check if a segmentation node is already in the scene
+    # segmentationNode = self.findSegmentationNode()
+    # if segmentationNode:
+    #     print("Found existing segmentation node, adding paint observer.")
+    #     self.addPaintObserver(segmentationNode)
+
+
+  @enter_function
+  def onNodeAdded(self, caller, event):
+      """
+      Callback function triggered when a node is added to the scene.
+      """
+      # The added node is passed as the third argument
+      addedNode = event  # This is the added node
+
+      # if isinstance(caller, slicer.vtkMRMLSegmentationNode):
+      if isinstance(addedNode, slicer.vtkMRMLSegmentationNode):
+          print("Segmentation node added, adding paint observer.")
+          self.addPaintObserver(addedNode)
+
+      else:
+          print(
+              f"Node added is not a segmentation node: {caller.GetClassName()}")
+
+  @enter_function
+  def addPaintObserver(self, segmentationNode):
+      """
+      Add an observer to monitor painting or erasing in a segmentation node.
+      """
+      if segmentationNode:
+          print("Adding paint observer to segmentation node.")
+          segmentationNode.AddObserver(
+              vtk.vtkCommand.ModifiedEvent, self.onSegmentationModified
+          )
+
+  @enter_function
+  def onSegmentationModified(self, caller, event):
+      """
+      Callback triggered when the segmentation node is modified.
+      """
+      print("Segmentation node modified.")
+      self.updateButtonColor()
+
+  @enter_function
+  def updateButtonColor(self):
+      """
+      Updates the button color when segmentation changes occur.
+      """
+      self.ui.pushButton_ToggleVisibility.setStyleSheet(
+          f"background-color: green;")
+
+  @enter_function
+  def segmentationChangedCallback(self, caller, event):
+      print("Segmentation was changed!")
+      # You can add specific logic here to identify painting or erasing events
+
+
+  # Define the callback function
+  @enter_function
+  def visibilityModifiedCallback(self, caller, event):
+      print("The paint effect was modified!", event)
+      # self.ui.pushButton_ToggleVisibility.setChecked(True)
+      # self.ui.pushButton_ToggleVisibility.setStyleSheet(
+      #     f"background-color: {self.color_active};")
+      # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+      #
+      # # Logic to handle the modification
+      # # Example: Check what segment is modified or what area is affected
+      # print("Paint effect callback triggered.")
+      # self.resetObserver(self.segmentationNode)
+      # If segments have been drawn and are now visible, update button to active (green)
+
+      if self.ui.pushButton_ToggleVisibility.isChecked():
+        print('in true segments visibiles')
+        return
+        # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+        # self.ui.pushButton_ToggleVisibility.setStyleSheet(f"background-color : "
+        #                                                   f"{self.color_active}")
+
+      else:
+          print('in false segment visible')
+
+          if self.mask_visible_flag_level2:
+              return
+          else:
+              self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(
+                  True)
+              self.ui.pushButton_ToggleVisibility.setStyleSheet(
+                  f"background-color : "
+                  f"{self.color_active}")
+              self.mask_visible_flag_level2 = True
+
+
+
+
+          # self.mask_visible_flag_level2 = False
+          # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+          # self.ui.pushButton_ToggleVisibility.setStyleSheet(
+          #     f"background-color : {self.color_inactive}")
+
+
+
+
+
+
+
+
+
+
+
+
+      if self.mask_visible_flag_level2:
+          print('in if self mask visible level2')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+          self.ui.pushButton_ToggleVisibility.setStyleSheet(f"background-color : "
+                                                              f"{self.color_active}")
+      else:
+          print('else visibilitymodifed callback mask visible flag false')
+          self.ui.pushButton_ToggleVisibility.setChecked(False)
+          self.ui.pushButton_ToggleVisibility.setStyleSheet(
+              f"background-color: {self.color_inactive};")
+          self.mask_visible_flag_level2 = True
+
+          # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+
+
+
+      # if self.ui.pushButton_ToggleVisibility.isChecked():
+      #   print('in true segments visibiles')
+      #   self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+      #   self.ui.pushButton_ToggleVisibility.setStyleSheet(f"background-color : "
+      #                                                     f"{self.color_active}")
+
+
+
+
+      # else:
+      #   print('in false segment visible')
+      #
+      #   if
+
+
+        # self.ui.pushButton_ToggleVisibility.setChecked(True)
+        # self.ui.pushButton_ToggleVisibility.setStyleSheet(
+        #     f"background-color: {self.color_active};")
+        # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+
+
   def setup_configuration(self):
-        self.config_yaml = ConfigPath.open_project_config_file()
-        # Warning: if incorrect config values that have been changed create
-        # new errors around those line of codes. A solution is likely to add:
-        # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
-        # (This sets appropriate values for configuration; to insert after
-        # open_project_config_file)
-        
-        if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
-            self.ui.PauseTimerButton.hide()
-            self.ui.StartTimerButton.hide()  
+    self.config_yaml = ConfigPath.open_project_config_file()
+    # Warning: if incorrect config values that have been changed create
+    # new errors around those line of codes. A solution is likely to add:
+    # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
+    # (This sets appropriate values for configuration; to insert after
+    # open_project_config_file)
 
-        if ConfigPath.IS_MOUSE_SHORTCUTS_REQUESTED:
-            # MB
-            self.interactor1 = slicer.app.layoutManager().sliceWidget(
-                    'Yellow').sliceView().interactor()
-            self.interactor2 = slicer.app.layoutManager().sliceWidget(
-                'Red').sliceView().interactor()
+    if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
+        self.ui.PauseTimerButton.hide()
+        self.ui.StartTimerButton.hide()
 
-            # Apply the custom interactor style
-            styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
-            self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
-            self.interactor1.SetInteractorStyle(self.styleYellow)
+    if ConfigPath.IS_MOUSE_SHORTCUTS_REQUESTED:
+        # MB
+        self.interactor1 = slicer.app.layoutManager().sliceWidget(
+                'Yellow').sliceView().interactor()
+        self.interactor2 = slicer.app.layoutManager().sliceWidget(
+            'Red').sliceView().interactor()
 
-            styleRed = slicer.app.layoutManager().sliceWidget('Red')
-            self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
-            self.interactor2.SetInteractorStyle(self.styleRed)
+        # Apply the custom interactor style
+        styleYellow = slicer.app.layoutManager().sliceWidget('Yellow')
+        self.styleYellow = CustomInteractorStyle(sliceWidget=styleYellow)
+        self.interactor1.SetInteractorStyle(self.styleYellow)
 
-        self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
-        self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
-        
-        # Change the value of the upper and lower bound of the HU
-        self.ui.UB_HU.setValue(self.UB_HU)
-        self.ui.LB_HU.setValue(self.LB_HU)
+        styleRed = slicer.app.layoutManager().sliceWidget('Red')
+        self.styleRed = CustomInteractorStyle(sliceWidget=styleRed)
+        self.interactor2.SetInteractorStyle(self.styleRed)
 
-        self.set_classification_config_ui()
+    self.LB_HU = self.config_yaml["labels"][0]["lower_bound_HU"]
+    self.UB_HU = self.config_yaml["labels"][0]["upper_bound_HU"]
 
-        
-        # Initialize timers
-        self.timers = []
-        timer_index = 0
-        for label in self.config_yaml["labels"]:
-            self.timers.append(Timer(number=timer_index))
-            timer_index = timer_index + 1
-        
-        if not ConfigPath.IS_CLASSIFICATION_REQUESTED:
-            self.ui.MRMLCollapsibleButton.setVisible(False)
-        if not ConfigPath.IS_SEGMENTATION_REQUESTED:
-            self.ui.MRMLCollapsibleButton_2.setVisible(False)
+    # Change the value of the upper and lower bound of the HU
+    self.ui.UB_HU.setValue(self.UB_HU)
+    self.ui.LB_HU.setValue(self.LB_HU)
 
-        if ConfigPath.MODALITY == 'MRI':
-            self.ui.ThresholdLabel.setVisible(False)
-            self.ui.MinimumLabel.setVisible(False)
-            self.ui.MaximumLabel.setVisible(False)
-            self.ui.LB_HU.setVisible(False)
-            self.ui.UB_HU.setVisible(False)
-            self.ui.pushDefaultMin.setVisible(False)
-            self.ui.pushDefaultMax.setVisible(False)
+    self.set_classification_config_ui()
 
-        if self.config_yaml['is_keyboard_shortcuts_requested']:
-            for i in self.config_yaml["KEYBOARD_SHORTCUTS"]:
 
-                shortcutKey = i.get("shortcut")
-                callback_name = i.get("callback")
-                button_name = i.get("button")
+    # Initialize timers
+    self.timers = []
+    timer_index = 0
+    for label in self.config_yaml["labels"]:
+        self.timers.append(Timer(number=timer_index))
+        timer_index = timer_index + 1
 
-                button = getattr(self.ui, button_name)
-                callback = getattr(self, callback_name)
+    if not ConfigPath.IS_CLASSIFICATION_REQUESTED:
+        self.ui.MRMLCollapsibleButton.setVisible(False)
+    if not ConfigPath.IS_SEGMENTATION_REQUESTED:
+        self.ui.MRMLCollapsibleButton_2.setVisible(False)
 
-                self.connectShortcut(shortcutKey, button, callback)
-                
-        if self.config_yaml['is_display_timer_requested']:
-            self.ui.lcdNumber.setStyleSheet("background-color : black")
-        else:
-            self.ui.lcdNumber.setVisible(False)
-        
-        # Display the selected color view at module startup
-        if self.config_yaml['slice_view_color'] == "Yellow":
-            slicer.app.layoutManager().setLayout(
-                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
-        if self.config_yaml['slice_view_color'] == "Red":
-            slicer.app.layoutManager().setLayout(
-                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
-        if self.config_yaml['slice_view_color'] == "Green":
-            slicer.app.layoutManager().setLayout(
-                slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
-            
+    if ConfigPath.MODALITY == 'MRI':
+        self.ui.ThresholdLabel.setVisible(False)
+        self.ui.MinimumLabel.setVisible(False)
+        self.ui.MaximumLabel.setVisible(False)
+        self.ui.LB_HU.setVisible(False)
+        self.ui.UB_HU.setVisible(False)
+        self.ui.pushDefaultMin.setVisible(False)
+        self.ui.pushDefaultMax.setVisible(False)
+
+    if self.config_yaml['is_keyboard_shortcuts_requested']:
+        for i in self.config_yaml["KEYBOARD_SHORTCUTS"]:
+
+            shortcutKey = i.get("shortcut")
+            callback_name = i.get("callback")
+            button_name = i.get("button")
+
+            button = getattr(self.ui, button_name)
+            callback = getattr(self, callback_name)
+
+            self.connectShortcut(shortcutKey, button, callback)
+
+    if self.config_yaml['is_display_timer_requested']:
+        self.ui.lcdNumber.setStyleSheet("background-color : black")
+    else:
+        self.ui.lcdNumber.setVisible(False)
+
+    # Display the selected color view at module startup
+    if self.config_yaml['slice_view_color'] == "Yellow":
+        slicer.app.layoutManager().setLayout(
+            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpYellowSliceView)
+    if self.config_yaml['slice_view_color'] == "Red":
+        slicer.app.layoutManager().setLayout(
+            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpRedSliceView)
+    if self.config_yaml['slice_view_color'] == "Green":
+        slicer.app.layoutManager().setLayout(
+            slicer.vtkMRMLLayoutNode.SlicerLayoutOneUpGreenSliceView)
+
 
   # @enter_function
   # def set_segmentation_config_ui(self):
@@ -323,7 +489,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print('value of self.pushBu', self.ui.pushButton_ToggleFill.isChecked())
 
-      if self.ui.pushButton_ToggleVisibility.isChecked():
+      if self.ui.ToggleSegmentation.isChecked():
           print('in if')
 
           segmentation_name = "Segmentation_1"
@@ -735,6 +901,15 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.newSegmentation()
 
       self.updateCurrentOutputPathAndCurrentVolumeFilename()
+
+      # if self.ui.pushButton_ToggleVisibility.isChecked():
+      #     self.onPushButton_ToggleVisibility()
+      if self.ui.ToggleSegmentation.isChecked():
+          self.toggle_segmentation_masks()
+
+
+
+
   
   @enter_function
   def updateCurrentOutputPathAndCurrentVolumeFilename(self):
@@ -808,6 +983,7 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 
+  @enter_function
   def newSegmentation(self):
       # Create segment editor widget and node
       self.segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
@@ -823,7 +999,67 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.segmentEditorWidget.setSourceVolumeNode(self.VolumeNode)
       # set refenrence geometry to Volume node (important for the segmentation to be in the same space as the volume)
       segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(self.VolumeNode)
-      self.createNewSegments() 
+      self.createNewSegments()
+
+
+      # self.segmentEditorWidget.paintEffect.addObserver(
+      #     vtk.vtkCommand.ModifiedEvent, self.segmentationChangedCallback)
+      # self.segmentEditorWidget.eraseEffect.addObserver(
+      #     vtk.vtkCommand.ModifiedEvent, self.segmentationChangedCallback)
+      # Get the Segment Editor widget
+      # segmentEditorWidget = slicer.modules.segmenteditor.widgetRepresentation().self().editor
+      #
+      # self.segmentEditorWidget.setActiveEffectByName("Paint")
+      # self.effect = self.segmentEditorWidget.activeEffect()
+      # # Seems that you need to activate the effect to see it in Slicer
+      # self.effect.activate()
+      #
+      # # Add observer to detect when the paint effect is modified
+      # self.segmentEditorWidget.onModify = self.segmentationChangedCallback()
+
+      # Add an observer to detect changes in the segmentation node (affecting segments)
+      # segmentationNode.AddObserver(vtk.vtkCommand.ModifiedEvent,
+      #                              self.segmentationChangedCallback)
+      # Get the SegmentEditor widget
+      # segmentationNode.AddObserver(vtk.vtkCommand.VisibilityModifiedEvent,
+      #                              self.paintModifiedCallback)
+      # Get the segmentation node
+      # Get the segmentation node
+      segmentationNode = slicer.mrmlScene.GetFirstNodeByClass(
+          'vtkMRMLSegmentationNode')
+
+      # Get the display node for the segmentation (which controls the visibility of all segments)
+      displayNode = segmentationNode.GetDisplayNode()
+
+      # Add an observer to catch visibility changes
+      displayNode.AddObserver(vtk.vtkCommand.ModifiedEvent,
+                              self.visibilityModifiedCallback)
+
+      # # Now you can loop through the segments if you need to check or modify them individually
+      # segments = Dev.get_active_segments(self, segmentationNode)
+      # num_segments = Dev.get_number_of_segments(self, segments)
+      # segment_names = Dev.get_segment_names_list(self, segments)
+      # print('Segment names:', segment_names)
+      #
+      # for i in range(num_segments):
+      #     segment = segmentationNode.GetSegmentation().GetSegment(
+      #         segment_names[i])
+      #
+      #     # Get the display node for the segment (this manages visibility)
+      #     displayNode = segment.GetDisplayNode()
+      #
+      #     # Add an observer to catch visibility changes
+      #     displayNode.AddObserver(vtk.vtkCommand.ModifiedEvent,
+      #                             self.visibility_modified_callback)
+
+      # self.segmentationNode.AddObserver(
+      #     self.segmentationNode.GetSegmentation().SegmentModified,
+      #     self.paintModifiedCallback)
+
+
+      # self.addPaintObserver(segmentationNode)
+      # self.onSegmentationModified
+
 
       # restart the current timer 
       self.timers[self.current_label_index] = Timer(number=self.current_label_index)
@@ -832,12 +1068,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       
   # Load all segments at once    
   def createNewSegments(self):
-        for label in self.config_yaml["labels"]:
-            self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
-        
-        first_label_name = self.config_yaml["labels"][0]["name"]
-        first_label_segment_name = first_label_name
-        self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+      for label in self.config_yaml["labels"]:
+          self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
+          first_label_name = self.config_yaml["labels"][0]["name"]
+          first_label_segment_name = first_label_name
+          self.onPushButton_select_label(first_label_segment_name, self.config_yaml["labels"][0]["lower_bound_HU"], self.config_yaml["labels"][0]["upper_bound_HU"])
+
+
 
   def newSegment(self, segment_name=None):
     
@@ -858,6 +1095,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.segmentationNode.GetSegmentation().AddEmptySegment(self.segment_name)
 
       return self.segment_name
+
+
+
+
 
   def onNewLabelSegm(self, label_name, label_color_r, label_color_g, label_color_b, label_LB_HU, label_UB_HU):
       segment_name = self.newSegment(label_name)  
@@ -1886,7 +2127,50 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #     #     self.set_button_color(self.ui.ToggleSegmentation, self.color_active)
   #     # else:
   #     #     self.set_button_color(self.ui.ToggleSegmentation, self.color_inactive)
-  #
+
+  @enter_function
+  def toggle_segmentation_masks(self):
+      self.startTimerForActions()
+      self.previousAction = 'segmentation'
+      print('value of visibl', self.ui.ToggleSegmentation.isChecked())
+      if self.ui.ToggleSegmentation.isChecked():
+          print('in if toggle visb checked')
+          self.ui.ToggleSegmentation.setStyleSheet(
+              f"background-color : {self.color_active}")
+          # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+
+          latest_version_path = self.get_latest_path()
+
+          print('latest_version_path', latest_version_path)
+
+          if latest_version_path is None:
+              print('no segmentatino found nothing to do')
+              return
+
+          print('segmentation found')
+          self.replace_segments(latest_version_path)
+          # self.loadSegmentation(latest_version_path)
+          print('segmentation laoded')
+
+      else:
+          print('in else toggle visib checked')
+          # self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
+          # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+          # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+          self.ui.ToggleSegmentation.setStyleSheet(
+              f"background-color : {self.color_inactive}")
+          # self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
+          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+
+          segmentation_node = Dev.get_segmentation_node(self)
+          segmentation = segmentation_node.GetSegmentation()
+          segmentation.RemoveAllSegments()
+          self.loadPatient()
+
+
+          # self.get_latest_path()
+
 
   @enter_function
   def get_latest_path(self):
@@ -2277,6 +2561,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   
   def onPushButton_Paint(self):
         self.startTimerForActions()
+
+
+
         self.previousAction = 'segmentation'
         selected_segment_id = self.segmentationNode.GetSegmentation().GetSegmentIdBySegmentName(self.config_yaml["labels"][self.current_label_index]['name'])
         self.segmentEditorNode.SetSelectedSegmentID(selected_segment_id)
@@ -2318,45 +2605,106 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   #         self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
   #         self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
 
+  # @enter_function
+  # def onPushButton_ToggleVisibility(self):
+  #     self.startTimerForActions()
+  #     self.previousAction = 'segmentation'
+  #     print('value of visibl', self.ui.pushButton_ToggleVisibility.isChecked())
+  #     if self.ui.pushButton_ToggleVisibility.isChecked():
+  #         print('in if toggle visb checked')
+  #         self.ui.pushButton_ToggleVisibility.setStyleSheet(
+  #             f"background-color : {self.color_active}")
+  #         # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+  #         self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+  #
+  #         latest_version_path = self.get_latest_path()
+  #
+  #         print('latest_version_path', latest_version_path)
+  #
+  #         if latest_version_path is None:
+  #             print('no segmentatino found nothing to do')
+  #             return
+  #
+  #         print('segmentation found')
+  #         self.replace_segments(latest_version_path)
+  #         # self.loadSegmentation(latest_version_path)
+  #         print('segmentation laoded')
+  #
+  #     else:
+  #         print('in else toggle visib checked')
+  #         # self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
+  #         # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+  #         # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+  #         self.ui.pushButton_ToggleVisibility.setStyleSheet(
+  #             f"background-color : {self.color_inactive}")
+  #         # self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
+  #         self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+  #
+  #         # self.get_latest_path()
+
   @enter_function
   def onPushButton_ToggleVisibility(self):
-      self.startTimerForActions()
-      self.previousAction = 'segmentation'
-      print('value of visibl', self.ui.pushButton_ToggleVisibility.isChecked())
+
+      print('ToggleVisibility', self.ui.pushButton_ToggleVisibility.isChecked())
+
+      # self.segmentationNode.AddObserver(
+      #     self.segmentationNode.GetSegmentation().SegmentModified,
+      #     self.paintModifiedCallback)
+
+
       if self.ui.pushButton_ToggleVisibility.isChecked():
-          print('in if toggle visb checked')
-          self.ui.pushButton_ToggleVisibility.setStyleSheet(
-              f"background-color : {self.color_active}")
-          # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
-          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
-
-          latest_version_path = self.get_latest_path()
-
-          print('latest_version_path', latest_version_path)
-
-          if latest_version_path is None:
-              print('no segmentatino found nothing to do')
-              return
-
-          print('segmentation found')
-          self.replace_segments(latest_version_path)
-          # self.loadSegmentation(latest_version_path)
-          print('segmentation laoded')
+        print('in true segments visibiles')
+        self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+        self.ui.pushButton_ToggleVisibility.setStyleSheet(f"background-color : "
+                                                          f"{self.color_active}")
 
 
 
 
       else:
-          print('in else toggle visib checked')
-          # self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
-          # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
-          # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
-          self.ui.pushButton_ToggleVisibility.setStyleSheet(
-              f"background-color : {self.color_inactive}")
-          # self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
-          self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+        print('in false segment visible')
+        # self.mask_visible_flag_level2 = False
+        self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+        self.ui.pushButton_ToggleVisibility.setStyleSheet(
+            f"background-color : {self.color_inactive}")
+        self.mask_visible_flag_level2 = False
 
-          self.get_latest_path()
+
+
+  # self.startTimerForActions()
+      # self.previousAction = 'segmentation'
+      # print('value of visibl', self.ui.pushButton_ToggleVisibility.isChecked())
+      # if self.ui.pushButton_ToggleVisibility.isChecked():
+      #     print('in if toggle visb checked')
+      #     self.ui.pushButton_ToggleVisibility.setStyleSheet(
+      #         f"background-color : {self.color_active}")
+      #     # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+      #     self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+      #
+      #     latest_version_path = self.get_latest_path()
+      #
+      #     print('latest_version_path', latest_version_path)
+      #
+      #     if latest_version_path is None:
+      #         print('no segmentatino found nothing to do')
+      #         return
+      #
+      #     print('segmentation found')
+      #     self.replace_segments(latest_version_path)
+      #     # self.loadSegmentation(latest_version_path)
+      #     print('segmentation laoded')
+      #
+      # else:
+      #     print('in else toggle visib checked')
+      #     # self.ui.pushButton_ToggleVisibility.setStyleSheet("background-color : yellowgreen")
+      #     # self.ui.pushButton_ToggleVisibility.setText('Visibility: ON')
+      #     # self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(True)
+      #     self.ui.pushButton_ToggleVisibility.setStyleSheet(
+      #         f"background-color : {self.color_inactive}")
+      #     # self.ui.pushButton_ToggleVisibility.setText('Visibility: OFF')
+      #     self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(False)
+      #
+      #     # self.get_latest_path()
 
   def togglePaintMask(self):
         if self.ui.pushButton_TogglePaintMask.isChecked():

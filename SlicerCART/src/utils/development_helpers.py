@@ -61,14 +61,6 @@ class Dev:
     def get_number_of_segments(self, segments):
         return segments.GetNumberOfSegments()
 
-    def get_segment_names_list(self, segments):
-        segment_names = []
-        for i in range(Dev.get_number_of_segments(self, segments)):
-            segment = segments.GetNthSegment(i)
-            segment_name = segment.GetName()
-            segment_names.append(segment.GetName())
-        return segment_names
-
 
     # Check functions
     @enter_function

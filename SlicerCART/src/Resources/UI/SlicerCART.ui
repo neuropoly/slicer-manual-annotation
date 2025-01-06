@@ -165,7 +165,7 @@
                <item>
                  <widget class="QPushButton" name="ToggleSegmentation">
                    <property name="text">
-                     <string>Load masks2</string>
+                     <string>Load latest masks</string>
                    </property>
                   <property name="checkable">
                    <bool>true</bool>

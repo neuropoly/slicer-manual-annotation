@@ -212,10 +212,9 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       print("The paint effect was modified!", event)
 
-      self.count += 1
       print('self count', self.count)
 
-      jacques = False
+      toggle_to_set = False
 
       # if self.ui.pushButton_ToggleVisibility.isChecked():
       #     self.segmentationNode.GetDisplayNode().SetAllSegmentsVisibility(true)
@@ -239,12 +238,11 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                   f"background-color : "
                   f"{self.color_active}")
               # self.ui.pushButton_ToggleVisibility.setChecked(True)
-              jacques = True
-              # return
+              toggle_to_set = True
 
-      self.ui.pushButton_ToggleVisibility.setChecked(jacques)
+      self.ui.pushButton_ToggleVisibility.setChecked(toggle_to_set)
 
-      print('jacques: ', jacques)
+      print('jacques: ', toggle_to_set)
       print('toggle sel is checkd: ', self.ui.pushButton_ToggleVisibility.isChecked())
 
 

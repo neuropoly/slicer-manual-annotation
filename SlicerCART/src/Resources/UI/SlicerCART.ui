@@ -50,7 +50,7 @@
              <item row="3" column="1">
               <widget class="QPushButton" name="pushButton_ToggleVisibility">
                <property name="text">
-                <string>Visibility: ON</string>
+                <string>Segments visibles</string>
                </property>
                <property name="checkable">
                 <bool>true</bool>
@@ -154,11 +154,25 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="LoadSegmentation">
-             <property name="text">
-              <string>Load segmentation...</string>
-             </property>
-            </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                 <widget class="QPushButton" name="LoadSegmentation">
+                   <property name="text">
+                     <string>Load segmentation</string>
+                   </property>
+                 </widget>
+               </item>
+               <item>
+                 <widget class="QPushButton" name="ToggleSegmentation">
+                   <property name="text">
+                     <string>Load latest masks</string>
+                   </property>
+                  <property name="checkable">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+               </item>
+             </layout>
            </item>
            <item>
             <widget class="QPushButton" name="CompareSegmentVersions">

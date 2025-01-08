@@ -239,6 +239,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
     # (This sets appropriate values for configuration; to insert after
     # open_project_config_file)
+    
+    dataProbeWidget = slicer.util.findChild(slicer.util.mainWindow(), 'DataProbeCollapsibleWidget')
+    dataProbeWidget.collapsed = True
+
 
     if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
         self.ui.PauseTimerButton.hide()
@@ -1744,6 +1748,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def update_case_list_colors(self):
+      
+      #This removed, because outputFolder not defined when segmentation is picked up from an existing output folder
         #if self.outputFolder is None or self.CurrentFolder is None:
             #return
 

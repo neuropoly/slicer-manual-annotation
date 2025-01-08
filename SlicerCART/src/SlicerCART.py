@@ -519,7 +519,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
-
       self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
@@ -1752,15 +1751,19 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         for case in self.Cases:
             case_id = case.split('.')[0]
             item = qt.QListWidgetItem(case_id)
- 
-            currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
-            if currentCaseSegmentationStatus == 0:
-                item.setForeground(qt.QColor(self.foreground))
-            elif currentCaseSegmentationStatus == 1:
-                item.setForeground(qt.QColor('orange'))
-            elif currentCaseSegmentationStatus == 2:
-                item.setForeground(qt.QColor('green'))
-            
+            segmentation_information_path = f'{self.currentOutputPath}{os.sep}{case_id}_SegmentationInformation.csv'
+            print(segmentation_information_path)
+            segmentation_information_df = None
+            if os.path.exists(segmentation_information_path):
+                segmentation_information_df = pd.read_csv(segmentation_information_path)
+                currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
+                if currentCaseSegmentationStatus == 0:
+                    item.setForeground(qt.QColor(self.foreground))
+                elif currentCaseSegmentationStatus == 1:
+                    item.setForeground(qt.QColor('orange'))
+                elif currentCaseSegmentationStatus == 2:
+                    item.setForeground(qt.QColor('green'))
+                
             self.ui.SlicerDirectoryListView.addItem(item)
 
           

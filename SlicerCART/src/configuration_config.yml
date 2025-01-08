@@ -98,5 +98,5 @@ labels:
   name: PHE
   upper_bound_HU: 33
   value: 3
-modality: MRI
+modality: CT
 slice_view_color: Yellow

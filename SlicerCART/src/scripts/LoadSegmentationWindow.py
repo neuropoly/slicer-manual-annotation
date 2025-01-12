@@ -72,6 +72,7 @@ class LoadSegmentationsWindow(qt.QWidget):
       self.setWindowTitle("Load Segmentations")
       self.resize(800, 400)
 
+   @enter_function
    def pushLoad(self):
        selected_version = self.versionDropdown.currentText
 
@@ -86,5 +87,6 @@ class LoadSegmentationsWindow(qt.QWidget):
 
        self.close()
 
+   @enter_function
    def pushCancel(self):
        self.close()

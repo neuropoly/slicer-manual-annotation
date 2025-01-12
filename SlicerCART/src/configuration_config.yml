@@ -20,6 +20,9 @@ KEYBOARD_SHORTCUTS:
 - button: pushButton_Interpolate
   callback: onPushButton_Interpolate
   shortcut: i
+- button: SaveClassificationButton
+  callback: onSaveClassificationButton
+  shortcut: c
 checkboxes:
   Anoxic_injury_checkbox: Anoxic injury
   Brain_edema_checkbox: Brain edema
@@ -77,7 +80,7 @@ is_keyboard_shortcuts_requested: true
 is_mouse_shortcuts_requested: true
 is_segmentation_requested: true
 is_semi_automatic_phe_tool_requested: true
-keep_working_list: false
+keep_working_list: true
 labels:
 - color_b: 10
   color_g: 10

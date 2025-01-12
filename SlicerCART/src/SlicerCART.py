@@ -242,6 +242,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # self.config_yaml = ConfigPath.set_config_value(self.config_yaml)
     # (This sets appropriate values for configuration; to insert after
     # open_project_config_file)
+    
+    dataProbeWidget = slicer.util.findChild(slicer.util.mainWindow(), 'DataProbeCollapsibleWidget')
+    dataProbeWidget.collapsed = True
+
 
     if not ConfigPath.IS_DISPLAY_TIMER_REQUESTED:
         self.ui.PauseTimerButton.hide()
@@ -522,7 +526,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           return
 
       self.Cases = sorted([os.path.split(i)[-1] for i in self.CasesPaths])
-
       self.reset_ui()
 
       self.ui.pushButton_Interpolate.setEnabled(True)
@@ -1779,31 +1782,35 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def update_case_list_colors(self):
-      if self.outputFolder is None or self.CurrentFolder is None:
-          return
       
-      segmentation_information_path = f'{self.currentOutputPath}{os.sep}{self.currentVolumeFilename}_SegmentationInformation.csv'
-      segmentation_information_df = None
-      if os.path.exists(segmentation_information_path):
-          segmentation_information_df = pd.read_csv(segmentation_information_path)
+      #This removed, because outputFolder not defined when segmentation is picked up from an existing output folder
+        #if self.outputFolder is None or self.CurrentFolder is None:
+            #return
 
-          self.ui.SlicerDirectoryListView.clear()
-          for case in self.Cases:
+        self.ui.SlicerDirectoryListView.clear()
+        for case in self.Cases:
             case_id = case.split('.')[0]
             item = qt.QListWidgetItem(case_id)
- 
-            currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
-            if currentCaseSegmentationStatus == 0:
-                item.setForeground(qt.QColor(self.foreground))
-            elif currentCaseSegmentationStatus == 1:
-                item.setForeground(qt.QColor('orange'))
-            elif currentCaseSegmentationStatus == 2:
-                item.setForeground(qt.QColor('green'))
-            
+            segmentation_information_path = f'{self.currentOutputPath}{os.sep}{case_id}_SegmentationInformation.csv'
+            segmentation_information_df = None
+            if os.path.exists(segmentation_information_path):
+                segmentation_information_df = pd.read_csv(segmentation_information_path)
+                currentCaseSegmentationStatus = self.get_segmentation_status(case, segmentation_information_df)
+                if currentCaseSegmentationStatus == 0:
+                    item.setForeground(qt.QColor(self.foreground))
+                    
+                #If annotator name is empty or the annotator has never annotated this image
+                elif currentCaseSegmentationStatus == 1:
+                    item.setForeground(qt.QColor('orange'))
+                    
+                #If the annotator is a returning annotator
+                elif currentCaseSegmentationStatus == 2:
+                    item.setForeground(qt.QColor('green'))
+                
             self.ui.SlicerDirectoryListView.addItem(item)
-      else:
-          return
-  
+
+          
+          
   def get_segmentation_status(self, case, segmentation_information_df):
       self.annotator_name = self.ui.Annotator_name.text
 

@@ -2363,6 +2363,8 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # Note it seems that sometimes you need to activate the effect first with :
       # Assign effect to the segmentEditorWidget using the active effect
       self.effect = self.segmentEditorWidget.activeEffect()
+      self.effect.setParameter("EraseAllSegments", "1") #erase all visible active segments
+
       # Seems that you need to activate the effect to see it in Slicer
       self.effect.activate()
       self.segmentEditorNode.SetMasterVolumeIntensityMask(False)

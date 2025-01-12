@@ -124,9 +124,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # MB: code below added in the configuration setup since its absence
     # created issues when trying to load cases after selecting a volume folder.
     self.config_yaml = ConfigPath.open_project_config_file()
+    # ATTENTION! self.current_label_index refers to an index, but it is
+    # getting its value based on the first label value (assumes it is always
+    # 1): so, first index value = 1 -1 == 0
     self.current_label_index = (self.config_yaml['labels'][0]['value']-1)
-    print('set up current label index initial', self.current_label_index)
-
   
     self.ui.PauseTimerButton.setText('Pause')
     self.ui.SelectVolumeFolder.connect('clicked(bool)', self.onSelectVolumesFolderButton)
@@ -849,8 +850,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   # Load all segments at once    
   @enter_function
   def createNewSegments(self):
-      print('self config labels new segments', self.config_yaml["labels"])
-      # self.config_yaml = ConfigPath.open_project_config_file()
       for label in self.config_yaml["labels"]:
           self.onNewLabelSegm(label["name"], label["color_r"], label["color_g"], label["color_b"], label["lower_bound_HU"], label["upper_bound_HU"])
           first_label_name = self.config_yaml["labels"][0]["name"]
@@ -885,8 +884,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.SegmentID = Segmentation.GetSegmentIdBySegmentName(segment_name)
       segment = Segmentation.GetSegment(self.SegmentID)
       segment.SetColor(label_color_r/255,label_color_g/255,label_color_b/255)
-      print('segment name', segment_name)
-
       self.onPushButton_select_label(segment_name, label_LB_HU, label_UB_HU)
    
   @enter_function
@@ -899,17 +896,6 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.LB_HU = label_LB_HU
       self.UB_HU = label_UB_HU
 
-      print('in on push button select label')
-      print('self current label index', self.current_label_index)
-      print('self timers', self.timers)
-      print('self timers type', type(self.timers))
-      print('times number', Timer(number=self.current_label_index))
-      print('self most recent paused path', self.MostRecentPausedCasePath)
-      # print('self currentcase path', self.CurrentCasePath)
-      print('self mostrecent paused path', self.MostRecentPausedCasePath)
-
-
-  
       if (self.MostRecentPausedCasePath != self.currentCasePath and self.MostRecentPausedCasePath != ""):
         self.timers[self.current_label_index] = Timer(
             number=self.current_label_index) # new path, new timer
@@ -1037,25 +1023,13 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   # for the timer Class not the LCD one
   @enter_function
   def timer_router(self):
-      print('self.current_label_index', self.current_label_index)
-      print('self timers', self.timers)
       self.config_yaml = ConfigPath.open_project_config_file()
-      # self.config_yaml = ConfigPath.set_config_values(self.config_yaml)
-
-      print('self.current_label_index2', self.current_label_index)
-      print('self timers2', self.timers)
-      print('types self timers', type(self.timers))
-      for i in range(0, len(self.timers)):
-          print(' obejctif', i, self.timers[i].__dict__)
-
-      # self.timers[self.current_label_index].start()
       self.timers[self.current_label_index].start()
-
       self.flag = True
       
       timer_index = 0
       for timer in self.timers:
-          if timer_index != (self.current_label_index):
+          if timer_index != self.current_label_index:
               timer.stop()
           timer_index = timer_index + 1
             
@@ -1392,10 +1366,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       currentSegmentationVersion = self.getCurrentSegmentationVersion()
 
-      # # quality control check
-      # is_valid = self.qualityControlOfLabels()
-      # if is_valid == False:
-      #     return
+      # quality control check (number of labels)
+      is_valid = self.qualityControlOfLabels()
+      if is_valid == False:
+          return
 
       # Save if annotator_name is not empty and timer started:
       if self.annotator_name and self.time is not None:
@@ -1663,20 +1637,10 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           f'{self.currentOutputPath}{os.sep}'
           f'{self.currentVolumeFilename}{ConfigPath.INPUT_FILE_EXTENSION}')
 
-
-      print('currentoutput path', self.currentOutputPath)
-      print('current volume filename,', self.currentVolumeFilename)
-
-      print('configpath input fle ext', ConfigPath.INPUT_FILE_EXTENSION)
-      print('list of segmentation filenames', list_of_segmentation_filenames)
-
-
       version = 'v'
       if list_of_segmentation_filenames == []:
           version = version + "01"
       else:
-          # existing_versions = [(int)(filename.split('_v')[1].split(".")[0]) for
-          #                      filename in list_of_segmentation_filenames]
           existing_versions = self.look_for_existing_version(
               list_of_segmentation_filenames)
 
@@ -1687,6 +1651,14 @@ class SlicerCARTWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   @enter_function
   def look_for_existing_version(self, list_of_segmentation_filenames):
+      """
+        Check for all versions in the folder, but avoid to crash if other
+        files than segmentatino are in the folder where segmentation
+        masks should be saved.
+        :param list_of_segmentation_filenames: list of all files in the
+        folder where segmentation should be saved.
+        :return: list of existing versions for the current file
+      """
       existing_versions = []
       for filename in list_of_segmentation_filenames:
           # Check if '_v' exists in the filename

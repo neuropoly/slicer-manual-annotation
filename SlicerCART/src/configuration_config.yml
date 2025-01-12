@@ -24,34 +24,53 @@ KEYBOARD_SHORTCUTS:
   callback: onSaveClassificationButton
   shortcut: c
 checkboxes:
-  Hemorrhage: Hemorrhage
-  dernier: Dernier
+  Anoxic_injury_checkbox: Anoxic injury
+  Brain_edema_checkbox: Brain edema
+  Craniectomy_checkbox: Craniectomy
+  Craniotomy_checkbox: Craniotomy
+  EDH_checkbox: EDH
+  EVD_checkbox: EVD
+  ICH_checkbox: ICH
+  IVH_checkbox: IVH
+  Infarct_checkbox: Infarct
+  Intra_axial_tumor_checkbox: Intra-axial tumor
+  Menigioma_checkbox: Meningioma
+  Metal_artifact_checkbox: Metal artifact
+  Midline_shift_checkbox: Midline shift
+  Motion_artifact_checkbox: Motion artifact
+  Multiple_lesions_checkbox: Multiple lesions
+  Normal_checkbox: Normal
+  Pressure_monitor_checkbox: Pressure monitor
+  SAH_checkbox: SAH
+  SDH_checkbox: SDH
+  Tonsillar_herniation_checkbox: Tonsillar herniation
 comboboxes:
-  Vertebral_Level:
-    C1-C2: C1-C2
-    C2-C3: C2-C3
-    C3-C4: C3-C4
-    C4-C5: C4-C5
-    C5-C6: C5-C6
-    C6-C7: C6-C7
-    C7-T1: C7-T1
-    Other: Other
-    T1-T2: T1-T2
-    T2-T3: T2-T3
-  abc:
+  atrophy:
+    atrophy_mild: Mild
+    atrophy_moderate: Moderate
+    atrophy_none: None
+    atrophy_severe: Severe
+  test_dd:
     '1': '1'
-    '2': '2'
-    a: a
-    b: b
+  ventricular_size:
+    ventricular_size_mild: Mild
+    ventricular_size_moderate: Moderate
+    ventricular_size_normal: Normal/proportional
+    ventricular_size_severe: Severe
+  white_matter_changes:
+    wmc_mild: Mild
+    wmc_moderate: Moderate
+    wmc_none: None
+    wmc_severe: Severe
 ct_window_level: 45
 ct_window_width: 85
 default_segmentation_directory: ''
 default_volume_directory: ''
 enable_debug: true
 freetextboxes:
-  '123': '123'
-  Comments-any: Comments-any
-  dragon: Dragon
+  cheese: Cheese
+  number_of_focal_points: Number of focal points
+  other_comments: Comments
 impose_bids_format: false
 input_filetype: '*.nii.gz'
 interpolate_value: 0
@@ -63,18 +82,18 @@ is_segmentation_requested: true
 is_semi_automatic_phe_tool_requested: true
 keep_working_list: true
 labels:
-- color_b: 122
-  color_g: 11
-  color_r: 123
+- color_b: 10
+  color_g: 10
+  color_r: 255
   lower_bound_HU: 30
-  name: anika
+  name: ICH
   upper_bound_HU: 90
   value: 1
-- color_b: 2
-  color_g: 222
-  color_r: 22
+- color_b: 70
+  color_g: 230
+  color_r: 230
   lower_bound_HU: 30
-  name: qwe
+  name: IVH
   upper_bound_HU: 90
   value: 2
 modality: MRI
